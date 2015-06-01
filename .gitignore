@@ -19,5 +19,8 @@ bin/credits.html
 !bin/www/tester/irt.db
 !bin/www/tester/*.exe
 !bin/package.json
+!bin/www/img/*
+!bin/www/fonts/*
+
 
 
