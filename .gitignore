@@ -1,0 +1,22 @@
+#
+# NOTE! Don't add files that are generated in specific
+# subdirectories here. Add them in the ".gitignore" file
+# in that subdirectory instead.
+#
+# Normal rules
+#
+
+*.*
+bin/node_modules/
+!bin/www/*
+!*.py
+!*.js
+!*.html
+!*.css
+!bin/www/jquery-ui/*
+bin/credits.html
+*.txt
+!bin/www/tester/irt.db
+!bin/www/tester/*.exe
+
+
