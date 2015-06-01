@@ -1,0 +1,74 @@
+body div {
+	position: absolute;
+	top: 0px;
+	bottom: 0px;
+	left: 0px;
+	border-style: solid;
+	border-width: medium;
+	overflow:hidden;
+	width: 100%;
+	background-color: #fff;
+	display:block;
+}
+
+body div div{
+    /*
+	display:table;
+	position:relative;
+	padding-top: 50px;
+	left: 20%;
+	top: 50px;
+	padding-right: 7%;
+	*/
+	position:relative;
+	display:-webkit-box;
+	-webkit-box-pack:center;
+	-webkit-box-align:center;
+	-webkit-box-orient: vertical;
+
+	margin-top: 10%;
+	margin-left: 20%;
+	height: 300px;
+	width:50%;
+	border-style: solid;
+	border-width: medium;
+	background-color: gray;
+}
+
+body div div div{
+	/*
+	display:table-row;
+	text-align:right;
+	margin-top: 20px;
+	*/
+	display:-webkit-box;
+	-webkit-box-pack:center;
+	-webkit-box-align:end;
+	//background-color: YELLOW;
+	height: 30%;
+	width: 80%;
+	margin-top: 0;
+	margin-left: 0;
+	margin-right: 10%;
+	font-family: Helvetica, Arial, sans-serif;
+	font-size: 24px;
+	font-weight: bold;
+	text-shadow: 1px 1px 1px rgba(0,0,0,.6);
+	border-style: none;
+}
+
+input {
+	font-family: Helvetica, Arial, sans-serif;
+	//line-height: 40px;
+	font-size: 24px;
+	font-weight: bold;
+	text-shadow: 1px 1px 1px rgba(0,0,0,.6);
+	width: 350px;
+	height: 40px;
+}
+
+#passwd {
+	font-size: 32px;
+	letter-spacing: 10px;
+	//border-color: red;
+}

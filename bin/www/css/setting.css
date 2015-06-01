@@ -1,0 +1,11 @@
+body div {
+  position: absolute;
+  top: 0px;
+  bottom: 0px;
+  left: 0px;
+  border-style: solid;
+  border-width: middle;
+  overflow:none;
+  width: 100%;
+  background-color: gray;
+}

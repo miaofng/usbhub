@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>INSULATION RESISTOR TESTER - E2XX</title>
+<link rel="stylesheet" href="jquery-ui/themes/base/all.css">
+<link rel="stylesheet" href="jquery-ui/demos/demos.css">
+<link rel="stylesheet" href="css/testing.css">
+
+<script src="jquery-ui/external/jquery/jquery.js"></script>
+<script src="jquery-ui/ui/core.js"></script>
+<script src="jquery-ui/ui/widget.js"></script>
+<script src="jquery-ui/ui/position.js"></script>
+<script src="jquery-ui/ui/menu.js"></script>
+<script src="script/testing.js"></script>
+
+</head>
+<body>
+  <div id="panel_top">
+    <div id="panel_info">
+      <div>filename: <input id="fname" type="text" value="---" disabled="disabled"/></div>
+      <div>Barcode: <input id="barcode" type="text" value=""></div>
+    </div>
+
+    <div id="panel_result">BOOTING...</div>
+
+    <div id="panel_stat">
+      <div>TOTAL: <span id="num_total">&nbsp;</span></div>
+      <div>OK: <span id="num_pass">&nbsp;</span></div>
+      <div>NG: <span id="num_fail">&nbsp;</span></div>
+    </div>
+  </div>
+  <div id="panel_bottom">
+    <div id="panel_src">
+      <textarea id="gft" wrap="off" readonly="readonly">
+	    A0
+	  </textarea>
+    </div>
+
+    <div id="panel_detail">
+	  <pre id="table">
+	  </pre>
+    </div>
+
+    <div id="panel_ctrl">
+      <div><input id="button_mode" type="button" value="AUTO MODE"/></div>
+      <div>PART#: <span id="partnr">&nbsp;</span></div>
+      <div>DATE: <span id="date">2015/05/06</span></div>
+      <div>CURRENT TIME: <span id="time_cur">&nbsp;</span></div>
+	  <div>RUN TIME: <span id="time_run">&nbsp;</span></div>
+	  <div>TEST TIME: <span id="time_test">&nbsp;</span></div>
+	  <div>GOODNESS RATE: <span id="passrate">&nbsp;</span></div>
+	  <div>BADNESS RATE: <span id="failrate">&nbsp;</span></div>
+	  <div>
+	    <input id="button_file" type="file" accept="*.gft"  nwworkingdir="C:\Windows" hidden="hidden"/>
+        <input id="button_model" type="button" value="MODEL"/>
+      </div>
+      <div><input id="button_run" type="button" value="RUN"/></div>
+    </div>
+  </div>
+</body>
