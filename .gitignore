@@ -18,5 +18,6 @@ bin/credits.html
 *.txt
 !bin/www/tester/irt.db
 !bin/www/tester/*.exe
+!bin/package.json
 
 
