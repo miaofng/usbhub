@@ -165,6 +165,10 @@
 	text-align: center;
 }
 
+.linenr_bp {
+	background-color: #FF0000;
+}
+
 /*test result panel*/
 #table {
 	width: 100%;

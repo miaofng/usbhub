@@ -3,6 +3,12 @@ var fs = window.parent.require('fs');
 var path = window.parent.require('path');
 var fdialogs = window.parent.require('node-webkit-fdialogs')
 
+//to be stored in browser's session
+var test = {
+	"mode":"AUTO",
+	"bplist":{},
+};
+
 //for datafile modification monitoring
 var datafile = '';
 var datafile_size = 0;
@@ -20,12 +26,29 @@ function gft_load(gft) {
 			content = content.replace(/\r/g, '');
 			content = content.replace(/^/gm, function(x) {
 				var span = "<span class='linenr'>"+i+"</span>  "
+				var span_bp = "<span class='linenr linenr_bp'>"+i+"</span>  "
+				span = (test.bplist[i.toString()]) ? span_bp : span;
 				i ++;
 				return span;
 			});
 			$('#gft').html(content+"\n\n");
 			$('#fname').val(path.basename(gft, ".gft"));
 			irt.cfg_set("gft_last", gft);
+
+			//add event handle
+			$(".linenr").dblclick(function(){
+				var line = $(this).html();
+				if(test.bplist[line] == null) {
+					//add break point
+					$(this).addClass("linenr_bp");
+					test.bplist[line] = true;
+				}
+				else {
+					//remove break point
+					$(this).removeClass("linenr_bp");
+					test.bplist[line] = null;
+				}
+			});
 		}
 	});
 }
@@ -82,8 +105,8 @@ function timer_tick_update() {
 		}
 
 		var status = result["status"];
-		if(status != storage.testing_status) {
-			storage.testing_status = status;
+		if(status != test.status) {
+			test.status = status;
 			irt_show_status(status);
 		}
 
@@ -125,19 +148,19 @@ $(function() {
 	});
 
 	//load settings saved in session
-	storage = window.sessionStorage;
-	if(storage.testing_mode == null) {
-		storage.testing_mode = "AUTO";
+	var session = window.sessionStorage;
+	if(session.test != null) {
+		test = JSON.parse(session.test);
 	}
 
-	//load storage settings
-	$("#button_mode").val(storage["testing_mode"]+" MODE");
-	irt_show_status(storage.testing_status);
+	//init status display
+	$("#button_mode").val(test.mode+" MODE");
+	irt_show_status(test.status);
 
 	$("#button_mode").click(function(){
-		if(storage["testing_mode"] == "AUTO") storage["testing_mode"] = "STEP";
-		else storage["testing_mode"] = "AUTO";
-		$(this).val(storage["testing_mode"]+" MODE");
+		if(test.mode == "AUTO") test.mode = "STEP";
+		else test.mode = "AUTO";
+		$(this).val(test.mode + " MODE");
 	});
 
 	$("#button_model").click(function(){
@@ -171,5 +194,6 @@ $(function() {
 	$(window).unload(function(){
 		clearInterval(timer_tick);
 		irt.exit();
+		session.test = JSON.stringify(test);
 	});
 });
