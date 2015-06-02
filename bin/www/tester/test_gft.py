@@ -32,26 +32,26 @@ class GFTest(Test):
 		#file format check
 		tail = os.path.split(self.gft)[1]
 		[head,ext] = os.path.splitext(self.gft)
-		if ext != ".gft":
-			self.log("Checking File EXT Name ...", False)
-			return False
+		ok_ext = (ext == ".gft")
+		self.log(self.gft)
+		self.log("Checking File EXT Name ...", ok_ext)
 
-		if not os.path.isfile(self.gft):
-			self.log(self.gft)
-			self.log("Checking File Existence ...", False)
-			return False
+		ok_gft = os.path.isfile(self.gft)
+		self.log("Checking File Existence ...", ok_gft)
 
 		#query the model config in sqlite
 		model = os.path.basename(head)
 		self.model = self.db.model_get(model)
-		if self.model == None:
-			self.log(model)
-			self.log("Searching Model Configuration ...", False)
-			return False
+		ok_model = self.model != None
+		self.log(model)
+		self.log("Searching Model Configuration ...", ok_model)
+		self.log(str(self.model))
 
 		#checking the barcode configuration
 		self.barcode_config = json.loads(self.model["barcode"])
-		return True
+		self.log(str(self.barcode_config))
+		ok = ok_ext and ok_gft and ok_model
+		return ok
 
 	def run(self):
 		if self.precheck() == False:
@@ -77,7 +77,7 @@ class GFTest(Test):
 				line = "R%04d = %.3fohm"%(i, err*10)
 				self.log(line, err<0.6)
 				if self.flag_stop:
-					self.log("Test Abort!!!")
+					self.log("Test Abort by usr!!!")
 					self.tester.failed()
 					return
 
