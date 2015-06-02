@@ -7,6 +7,7 @@ import getopt #https://docs.python.org/2/library/getopt.html
 import time
 import json
 from test import Test
+from test_gft import GFTest
 import shlex
 
 class Shell:
@@ -91,7 +92,15 @@ class Shell:
 
 		#try to execute the specified test
 		#print opts, args
-		self.tester.test = Test(self.tester)
+		para = {"mode":"AUTO", "mask":0}
+		for opt in opts:
+			if(opt[0] == "-m" or opt[0] == "--mode"):
+				para["mode"] = opt[1]
+			elif (opt[0] == "-x" or opt[0] == "--mask"):
+				para["mask"] = int(opt[1])
+
+		gft = args[0]
+		self.tester.test = GFTest(self.tester, gft, para)
 		return result
 
 	def cmd_stop(self, req):

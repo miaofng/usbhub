@@ -147,7 +147,10 @@ $(function() {
 	$("#button_run").click(function(){
 		var run = $(this).val();
 		if(run == "RUN") {
-			irt.query("test", function(data) {
+			irt.cfg_get('gft_last', function(gft_file) {
+				cmdline = 'test "' + gft_file + '"';
+				irt.query(cmdline, function(data) {
+				});
 			});
 		}
 		else {
