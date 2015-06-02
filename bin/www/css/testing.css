@@ -154,6 +154,15 @@
 #gft {
 	width: 100%;
 	height: 100%;
+	overflow:auto;
+	background-color: #ffffff;
+}
+
+.linenr {
+	display:inline-block;
+	background-color: #AAAAAA;
+	width: 30px;
+	text-align: center;
 }
 
 /*test result panel*/

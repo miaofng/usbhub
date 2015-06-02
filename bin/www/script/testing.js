@@ -1,8 +1,9 @@
 var irt = window.parent.require('./script/irt.js');
 var fs = window.parent.require('fs');
 var path = window.parent.require('path');
-var fdialogs = window.parent.require('node-webkit-fdialogs');
+var fdialogs = window.parent.require('node-webkit-fdialogs')
 
+//for datafile modification monitoring
 var datafile = '';
 var datafile_size = 0;
 
@@ -15,7 +16,14 @@ function gft_load(gft) {
 		if(err) {
 		}
 		else {
-			$('#gft').val(content);
+			var i = 0;
+			content = content.replace(/\r/g, '');
+			content = content.replace(/^/gm, function(x) {
+				var span = "<span class='linenr'>"+i+"</span>  "
+				i ++;
+				return span;
+			});
+			$('#gft').html(content+"\n\n");
 			$('#fname').val(path.basename(gft, ".gft"));
 			irt.cfg_set("gft_last", gft);
 		}
@@ -23,21 +31,21 @@ function gft_load(gft) {
 }
 
 function result_load(datafile) {
-	console.time("result_load");
-		fs.readFile(datafile, "ascii", function (err, content) {
-			if(err) {
-			}
-			else {
-				content = content.replace(/\[(\w+)\]/g, function(x) {
-					if(x == "[PASS]") return "<span class='record_pass'>[PASS]</span>";
-					else return "<span class='record_fail'>[FAIL]</span>";
-				});
-				var ctrl_table = $("#table");
-				ctrl_table.html(content);
-				ctrl_table.scrollTop(ctrl_table[0].scrollHeight);
-				console.timeEnd("result_load");
-			}
-		});
+	//console.time("result_load");
+	fs.readFile(datafile, "ascii", function (err, content) {
+		if(err) {
+		}
+		else {
+			content = content.replace(/\[(\w+)\]/gi, function(x) {
+				if(x == "[PASS]") return "<span class='record_pass'>[PASS]</span>";
+				else return "<span class='record_fail'>[FAIL]</span>";
+			});
+			var ctrl_table = $("#table");
+			ctrl_table.html(content+"\n");
+			ctrl_table.scrollTop(ctrl_table[0].scrollHeight);
+			//console.timeEnd("result_load");
+		}
+	});
 }
 
 function irt_show_status(status) {
