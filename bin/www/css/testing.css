@@ -23,30 +23,46 @@
 	height: 100px;
 	width: 100%;
 	margin-left: 0px;
+
+	display: flex;
+	flex-direction: row;
+	justify-content: flex-start;
+	align-items: flex-start;
 }
 
 #panel_bottom {
-  position: absolute;
-  left: 0px;
-  top: 104px;
-  bottom: 0px;
-  width: 100%;
-  margin-left: 0px;
+	position: absolute;
+	left: 0px;
+	top: 104px;
+	bottom: 0px;
+	width: 100%;
+	margin-left: 0px;
+
+	display: flex;
+	flex-direction: row;
+	justify-content: flex-start;
+	align-items: flex-start;
 }
 
 #panel_info {
 	float: left;
-	width: 45%;
+	width: 500px;
 	height: 100%;
     border-style: solid;
     border-width: thin;
 	margin-left: 2px;
 	background-color: gray;
+
+	flex-shrink: 0;
+	flex-basis: 500px;
+	display: flex;
+	flex-direction: column;
+	justify-content: flex-start;
+	align-items: flex-left;
 }
 
 #panel_result {
-	float: left;
-	width: 25%;
+	width: 1000px;
 	height: 100%;
 	border-style: solid;
 	border-width: thin;
@@ -58,53 +74,80 @@
 	font-size: 48px;
 	font-weight: bold;
 	text-shadow: 1px 1px 1px rgba(0,0,0,.6);
+
+	flex-basis: 1000px;
+	flex-grow：1;
 }
 
 #panel_stat {
-	float:left;
-	width:29%;
+	width: 400px;
 	height: 100%;
     border-style: solid;
     border-width: thin;
 	margin-left: 2px;
 	background-color: gray;
+
+	display: flex;
+	flex-shrink: 0;
+	flex-direction: column;
+	justify-content: flex-start;
+	align-items: flex-end;
 }
 
 #panel_info div, #panel_stat div, #panel_ctrl div {
-	margin: 8px;
+	display: flex;
+	flex-direction: row;
+	justify-content: flex-end;
+	align-items: flex-start;
+
+	margin-top: 8px;
+	margin-right: 20px;
 	text-align: right;
 	width: 90%;
 }
 
 #panel_src {
-	float: left;
-	width: 15%;
+	width: 200px;
 	height: 100%;
     border-style: solid;
     border-width: thin;
 	margin-left: 2px;
 	background-color: gray;
+
+	flex-shrink: 0;
+	flex-basis: 200px;
+	display: flex;
+	flex-direction: column;
+	justify-content: flex-start;
+	align-items: flex-end;
 }
 
 #panel_detail {
-	float: left;
-	width: 55%;
+	width: 1000px;
 	height: 100%;
     border-style: solid;
     border-width: thin;
 	margin-left: 2px;
 	background-color: #fff;
-	//overflow: scroll;
+
+	flex-basis: 1000px;
+	flex-grow：1;
 }
 
 #panel_ctrl {
-	float: left;
-	width: 29%;
+	width: 400px;
 	height: 100%;
     border-style: solid;
     border-width: thin;
 	margin-left: 2px;
 	background-color: gray;
+
+	flex-shrink: 0;
+	flex-basis: 400px;
+	display: flex;
+	flex-direction: column;
+	justify-content: flex-start;
+	align-items: flex-end;
 }
 
 /*info panel*/
@@ -140,6 +183,7 @@
 	font-weight: bold;
 	text-shadow: 1px 1px 1px rgba(0,0,0,.6);
 	padding-right : 5px;
+	margin-left: 5px;
 }
 
 #num_pass {
@@ -222,6 +266,7 @@
 /*test control panel*/
 #panel_ctrl div span {
 	padding-right : 5px;
+	margin-left: 5px;
 	display:inline-block;
 	background: #fff;
 	width: 50%;
