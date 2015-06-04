@@ -14,6 +14,7 @@ bin/node_modules/
 !*.html
 !*.css
 !bin/www/jquery-ui/*
+!bin/www/jquery-ui/images/*
 bin/credits.html
 *.txt
 !bin/www/tester/irt.db
