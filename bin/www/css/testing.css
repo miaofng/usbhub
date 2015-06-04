@@ -56,7 +56,7 @@
 
 #panel_info {
 	float: left;
-	width: 500px;
+	width: 600px;
 	height: 100%;
     border-style: solid;
     border-width: thin;
@@ -64,7 +64,7 @@
 	background-color: gray;
 
 	flex-shrink: 1;
-	flex-basis: 500px;
+	flex-basis: 600px;
 	display: flex;
 	flex-direction: column;
 	justify-content: flex-start;
@@ -73,7 +73,7 @@
 }
 
 #panel_result {
-	width: 800px;
+	width: 1000px;
 	height: 100%;
 	border-style: solid;
 	border-width: thin;
@@ -87,8 +87,7 @@
 	text-shadow: 1px 1px 1px rgba(0,0,0,.6);
 
 	flex-shrink: 2;
-	flex-basis: 800px;
-	flex-grow：1;
+	flex-basis: 1000px;
 }
 
 #panel_stat {
@@ -156,28 +155,38 @@
 	width: 100%;
 	height: 100%;
 	color: gray;
+	font-weight: bold;
+	text-shadow: 1px 1px 1px rgba(0,0,0,.6);
+	//background-color: red;
+	padding: 0px;
+	box-sizing: border-box;
+	border: 1px solid gray;
+}
+
+#mask label span {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+
+	width: 100%;
+	height: 100%;
+	padding: 0;
 	font-family: Helvetica, Arial, sans-serif;
 	font-size: 20px;
 	line-height: 20px;
-	font-weight: bold;
-	text-shadow: 1px 1px 1px rgba(0,0,0,.6);
+	box-sizing: border-box;
 }
 
+#mask .ui-button.ui-state-hover .ui-button-text {
+    //color: blue;
+    //background-color: yellow;
+}
 #mask .ui-button.ui-state-active .ui-button-text {
     color: #00ff00;
     //background-color: pink;
+	//border: 1px solid #00ff00;
+	border: none;
 }
-
-/*
-#mask div {
-	font-family: Helvetica, Arial, sans-serif;
-	font-size: 20px;
-	line-height: 20px;
-	font-weight: bold;
-	//background: red;
-	//background-image: url(../img/stop.gif);
-}
-*/
 
 #panel_src {
 	width: 200px;
@@ -197,14 +206,14 @@
 }
 
 #panel_detail {
-	width: 1000px;
+	width: 1400px;
 	height: 100%;
     border-style: solid;
     border-width: thin;
 	margin-left: 2px;
 	background-color: #fff;
 
-	flex-basis: 1000px;
+	flex-basis: 1400px;
 	flex-grow：1;
 }
 
@@ -327,7 +336,7 @@
 }
 
 /*test control panel*/
-#panel_ctrl div span {
+#panel_ctrl > div > span {
 	padding-right : 5px;
 	margin-left: 5px;
 	display:inline-block;
