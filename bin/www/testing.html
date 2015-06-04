@@ -3,8 +3,10 @@
 <head>
 <meta charset="utf-8">
 <title>INSULATION RESISTOR TESTER - E2XX</title>
+<link rel="stylesheet" href="jquery-ui/jquery-ui.min.css">
 <link rel="stylesheet" href="css/testing.css">
 <script src="jquery-ui/external/jquery/jquery.js"></script>
+<script src="jquery-ui/jquery-ui.min.js"></script>
 <script src="script/testing.js"></script>
 </head>
 <body>
@@ -34,7 +36,12 @@
     </div>
 
     <div id="panel_ctrl">
-      <div><input id="button_mode" type="button" value="AUTO MODE"/></div>
+      <div id="mask">
+          <div><input id="A" type="checkbox"/><label for="A">A</label></div>
+		  <div><input id="B" type="checkbox"/><label for="B">B</label></div>
+		  <div><input id="C" type="checkbox"/><label for="C">C</label></div>
+		  <div><input id="D" type="checkbox"/><label for="D">D</label></div>
+      </div>
       <div>PART#: <span id="partnr">&nbsp;</span></div>
       <div>DATE: <span id="date">2015/05/06</span></div>
       <div>CURRENT TIME: <span id="time_cur">&nbsp;</span></div>
@@ -42,6 +49,7 @@
 	  <div>TEST TIME: <span id="time_test">&nbsp;</span></div>
 	  <div>GOODNESS RATE: <span id="passrate">&nbsp;</span></div>
 	  <div>BADNESS RATE: <span id="failrate">&nbsp;</span></div>
+	   <div><input id="button_mode" type="button" value="AUTO MODE"/></div>
 	  <div>
 	    <input id="button_file" type="file" accept="*.gft"  nwworkingdir="C:\Windows" hidden="hidden"/>
         <input id="button_model" type="button" value="MODEL"/>

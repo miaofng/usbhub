@@ -157,6 +157,12 @@ $(function() {
 	$("#button_mode").val(test.mode+" MODE");
 	irt_show_status(test.status);
 
+	$( "#mask input" ).button({
+		//disabled: true,
+	}).click(function(){
+		alert(this.id + "=" + this.checked);
+	});
+
 	$("#button_mode").click(function(){
 		if(test.mode == "AUTO") test.mode = "STEP";
 		else test.mode = "AUTO";
