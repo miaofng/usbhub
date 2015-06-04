@@ -71,12 +71,12 @@ class Tester:
 		self.nr_ok = self.nr_ng + 1
 
 	def barcode_get(self):
-		self.test.mdelay(2000)
+		self.test.mdelay(500)
 		self.barcode = str(random.randint(15200,99000))
 		return self.barcode
 
 	def wait_fixture(self):
-		self.test.mdelay(5000)
+		self.test.mdelay(1000)
 
 def signal_handler(signal, frame):
 	print 'user abort'
