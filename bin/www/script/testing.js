@@ -32,7 +32,8 @@ function gft_load(gft) {
 				return span;
 			});
 			$('#gft').html(content+"\n\n");
-			$('#fname').val(path.basename(gft, ".gft"));
+			var model = path.basename(gft, ".gft");
+			$('#fname').val(model);
 			irt.cfg_set("gft_last", gft);
 
 			//add event handle
@@ -48,6 +49,33 @@ function gft_load(gft) {
 					$(this).removeClass("linenr_bp");
 					test.bplist[line] = null;
 				}
+			});
+
+			irt.model_get(model, function(model) {
+				$("#mask").hide();
+				//update sub board display for mask purpose
+				if(model == null) {
+					alert("Model is Not Found in Database!!!");
+					return;
+				}
+				console.dir(model);
+				var html = [];
+				var nsubs = model.nrow * model.ncol;
+				for(var i = 0; i < nsubs; i ++) {
+					var subname = String.fromCharCode("A".charCodeAt()+i);
+					html[i] = '<div><input id="'+subname+'" type="checkbox" checked="checked"/>' +
+					'<label for="'+subname+'">'+subname+'</label></div>';
+				}
+				html = html.join("\n");
+				$("#mask").html(html);
+				$( "#mask input" ).button({
+					//disabled: true,
+				});
+
+				var w = 100/model.ncol + "%";
+				var h = 100/model.nrow + "%";
+				$("#mask div").removeAttr("width").removeAttr("height").css({"width":w, "height":h});
+				$("#mask").show();
 			});
 		}
 	});

@@ -20,6 +20,16 @@ exports.cfg_set = function(name, value) {
 	});
 };
 
+exports.model_get = function(model, cb) {
+	db.get("SELECT * FROM model WHERE name = ?", model, function(err, row) {
+		if(err) {
+		}
+		else {
+			cb(row);
+		}
+	});
+};
+
 exports.start = function() {
 	var server = net.createServer();
 	server.once('error', function(err) {
