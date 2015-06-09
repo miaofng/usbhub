@@ -6,6 +6,7 @@ var fdialogs = window.parent.require('node-webkit-fdialogs')
 //to be stored in browser's session
 var test = {
 	"mode":"AUTO",
+	"mask": 0,
 	"bplist":{},
 	"status": 'INIT', //irt-ui itself status
 };
@@ -65,13 +66,19 @@ function gft_load(gft) {
 				var nsubs = model.nrow * model.ncol;
 				for(var i = 0; i < nsubs; i ++) {
 					var subname = String.fromCharCode("A".charCodeAt()+i);
-					html[i] = '<div><input id="'+subname+'" type="checkbox" checked="checked"/>' +
-					'<label for="'+subname+'">'+subname+'</label></div>';
+					var checked = (test.mask & (1 << i)) ? "" : 'checked = "checked"';
+					html[i] = '<div><input id="'+i+'" type="checkbox" ' + checked + ' />' +
+					'<label for="'+i+'">'+subname+'</label></div>';
 				}
 				html = html.join("\n");
 				$("#mask").html(html);
 				$( "#mask input" ).button({
 					//disabled: true,
+				}).click(function(){
+					//alert(this.id + "=" + this.checked);
+					var sub = parseInt(this.id);
+					var checked = (this.checked) ? 0 : 1;
+					test.mask = (test.mask & ~(1 << sub)) | (checked << sub);
 				});
 
 				var w = 100/model.ncol + "%";
@@ -212,8 +219,6 @@ $(function() {
 
 	$( "#mask input" ).button({
 		//disabled: true,
-	}).click(function(){
-		//alert(this.id + "=" + this.checked);
 	});
 
 	$("#button_mode").click(function(){
@@ -240,9 +245,13 @@ $(function() {
 		var run = $(this).val();
 		if(run == "RUN") {
 			irt.cfg_get('gft_last', function(gft_file) {
-				cmdline = 'test "' + gft_file + '"';
-				irt.query(cmdline, function(data) {
-				});
+				cmdline = [];
+				cmdline.push("test");
+				cmdline.push("--mode=" + test.mode);
+				cmdline.push("--mask=" + test.mask);
+				cmdline.push('"'+gft_file+'"');
+				cmdline = cmdline.join(" ");
+				irt.query(cmdline, function(data) {});
 			});
 		}
 		else {
