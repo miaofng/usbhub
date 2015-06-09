@@ -7,6 +7,7 @@ var fdialogs = window.parent.require('node-webkit-fdialogs')
 var test = {
 	"mode":"AUTO",
 	"bplist":{},
+	"status": 'INIT', //irt-ui itself status
 };
 
 //for datafile modification monitoring
@@ -55,7 +56,8 @@ function gft_load(gft) {
 				$("#mask").hide();
 				//update sub board display for mask purpose
 				if(model == null) {
-					alert("Model is Not Found in Database!!!");
+					//alert("Model is Not Found in Database!!!");
+					test.status = 'MODEL NOT FOUND';
 					return;
 				}
 				console.dir(model);
@@ -76,6 +78,7 @@ function gft_load(gft) {
 				var h = 100/model.nrow + "%";
 				$("#mask div").removeAttr("width").removeAttr("height").css({"width":w, "height":h});
 				$("#mask").show();
+				test.status = "READY";
 			});
 		}
 	});
@@ -102,14 +105,24 @@ function result_load(datafile) {
 function irt_show_status(status) {
 	$("#panel_result").html(status);
 	switch(status) {
-	case "PASS": $("#panel_result").css("background-color", "#00ff00"); break;
+	case "TESTING":
+		$("#panel_result").css("background-color", "#ffff00");
+		break;
+	case "READY":
+	case "PASS":
+		$("#panel_result").css("background-color", "#00ff00");
+		break;
+
+	case "INIT":
+	case "LOADING":
+		$("#panel_result").css("background-color", "#c0c0c0");
+		break;
+
 	case "ERROR":
 		$("#button_run").attr("disabled", true);
-	case "FAIL":
+	default:
 		$("#panel_result").css("background-color", "#ff0000");
 		break;
-	default:
-		$("#panel_result").css("background-color", "#c0c0c0");
 	}
 }
 
@@ -125,16 +138,28 @@ function timer_tick_update() {
 			$("#button_run").val("STOP");
 			$("#button_mode").attr("disabled", true);
 			$("#button_model").attr("disabled", true);
+			$("#mask input").attr("disabled", true);
 		}
 		else {
 			$("#button_run").val("RUN");
 			$("#button_mode").attr("disabled", false);
 			$("#button_model").attr("disabled", false);
+			$("#mask input").attr("disabled", false);
 		}
 
-		var status = result["status"];
-		if(status != test.status) {
-			test.status = status;
+		if(test.status == 'READY') {
+			$("#button_run").attr("disabled", false);
+		}
+		else {
+			$("#button_run").attr("disabled", true);
+		}
+
+
+		if(test.status != "READY") {
+			irt_show_status(test.status);
+		}
+		else {
+			var status = result["status"];
 			irt_show_status(status);
 		}
 
@@ -188,7 +213,7 @@ $(function() {
 	$( "#mask input" ).button({
 		//disabled: true,
 	}).click(function(){
-		alert(this.id + "=" + this.checked);
+		//alert(this.id + "=" + this.checked);
 	});
 
 	$("#button_mode").click(function(){
@@ -205,6 +230,7 @@ $(function() {
 		});
 
 		Dialog.getFilePath(function (err, gft_file) {
+			test.status = 'LOADING';
 			gft_load(gft_file);
 		});
 	});
