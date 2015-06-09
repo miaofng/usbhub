@@ -72,6 +72,12 @@ class Shell:
 
 		return result
 
+	def cmd_reset(self, req):
+		result = {"error": "E_OK",}
+		if(self.tester.status == "PASS") or (self.tester.status == "FAIL"):
+			self.tester.status = "READY"
+		return result;
+
 	def cmd_test(self, req):
 		result = {"error": "E_OK",}
 		argvs = req["cmdline"]

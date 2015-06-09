@@ -231,6 +231,7 @@ $(function() {
 
 		Dialog.getFilePath(function (err, gft_file) {
 			test.status = 'LOADING';
+			irt.query("reset", function(data) {});
 			gft_load(gft_file);
 		});
 	});
