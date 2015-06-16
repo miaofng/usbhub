@@ -35,6 +35,23 @@ class Db:
 		record = cursor.fetchone()
 		return record
 
+	def test_add(self, result):
+		cursor = self.conn.cursor()
+		cols = vals = ""
+		for key in result:
+			cols += key + ","
+			if isinstance(result[key], int):
+				vals += str(result[key]) + ","
+			else:
+				vals += '"%s",'%str(result[key])
+
+		cols = cols + "time"
+		vals = vals + 'datetime("now", "localtime")'
+		sql = "INSERT INTO test(%s) VALUES(%s)"%(cols, vals)
+		cursor.execute(sql)
+		self.conn.commit()
+		return sql
+
 
 #module self test
 if __name__ == '__main__':
@@ -46,6 +63,8 @@ if __name__ == '__main__':
 	nr_ok = int(nr_ok)
 	print "nr_ok = %d"%nr_ok
 	db.cfg_set("nr_ok", nr_ok + 1)
+	print db.test_add({"model": "12345", "barcode": "00002", "failed": 0, "runtime":3455, "duration": 5})
+
 	name = raw_input("pls input the model name to query:")
 	model = db.model_get(name)
 	print model
