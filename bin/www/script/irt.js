@@ -30,6 +30,16 @@ exports.model_get = function(model, cb) {
 	});
 };
 
+exports.test_get = function(id, cb) {
+	db.get("SELECT * FROM test WHERE id = ?", id, function(err, row) {
+		if(err) {
+		}
+		else {
+			cb(row);
+		}
+	});
+};
+
 exports.start = function() {
 	var server = net.createServer();
 	server.once('error', function(err) {

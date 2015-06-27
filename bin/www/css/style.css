@@ -45,12 +45,23 @@
 	-o-transition: color .2s ease-in-out;
 	-ms-transition: color .2s ease-in-out;
 	transition: color .2s ease-in-out;
-	background: url(../img/bubble.png) no-repeat 6px center;
+	background: url(../img/about.png) no-repeat 6px center;
 }
 .menu li:first-child a {
 	border-left: none;
-	background: url(../img/docs.png) no-repeat 6px center;
+	background: url(../img/testing.png) no-repeat 6px center;
 }
+
+.menu li:nth-child(2) a {
+	border-left: none;
+	background: url(../img/records.png) no-repeat 6px center;
+}
+
+.menu li:nth-child(3) a {
+	border-left: none;
+	background: url(../img/login.png) no-repeat 6px center;
+}
+
 .menu li:last-child a {
 	border-right: none;
 	background: none;

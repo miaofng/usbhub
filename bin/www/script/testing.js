@@ -39,7 +39,7 @@ function gft_load(gft) {
 			irt.cfg_set("gft_last", gft);
 
 			//add event handle
-			$(".linenr").dblclick(function(){
+			$(".linenr").click(function(){
 				var line = $(this).html();
 				if(test.bplist[line] == null) {
 					//add break point

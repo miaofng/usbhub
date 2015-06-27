@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>INSULATION RESISTOR TESTER - E2XX</title>
+<link rel="stylesheet" href="jquery-ui/jquery-ui.min.css">
+<link rel="stylesheet" href="jquery-ui/jquery-ui.theme.min.css">
+<link rel="stylesheet" href="css/records.css">
+<script src="jquery-ui/external/jquery/jquery.js"></script>
+<script src="jquery-ui/jquery-ui.min.js"></script>
+<script src="script/records.js"></script>
+</head>
+<body>
+  <div id="panel_top">
+    <div id="panel_info">
+      <div>Model: <input id="model" type="text" value="---" disabled="disabled"/></div>
+      <div>Barcode: <input id="barcode" type="text" value="" readonly="readonly"></div>
+    </div>
+
+    <div id="panel_result">...</div>
+	<div id="panel_stat">
+        g:/irt-ui/data/2015-06-14/xxx.data
+	</div>
+  </div>
+  <div id="panel_bottom">
+    <div id="panel_left">
+      <div>START: <input id="s_start" value="2015-06-16"/></div>
+      <div>END: <input id="s_end" value="2015-06-16"/></div>
+      <div>MODEL: <input id="s_model" value="*"/></div>
+      <div>BARCODE: <input id="s_barcode" value="*"/></div>
+      <div><input id="search" type="button" value="Search!"/></div>
+      <div id="list" wrap="off" readonly="readonly">
+	  </div>
+	  <div> <a href="">PREV</a>&nbsp;&nbsp;&nbsp;&nbsp;<a href="">NEXT</a> </div>
+      <div>&nbsp;</div>
+    </div>
+
+    <div id="panel_detail">
+	  <pre id="table">
+	  </pre>
+    </div>
+
+    <div id="panel_right">
+      <div id="mask">
+        <div><input id="0" type="checkbox" checked="checked"/><label for="0">...</label></div>
+      </div>
+      <div>DATE: <span id="date">2015/05/06</span></div>
+      <div>TIME: <span id="time_cur">&nbsp;</span></div>
+      <div>RUN TIME: <span id="time_run">&nbsp;</span></div>
+      <div>DURATION: <span id="time_test">&nbsp;</span></div>
+    </div>
+  </div>
+
+</body>
