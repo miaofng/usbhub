@@ -56,19 +56,32 @@ class Tester:
 		self.status = "TESTING"
 		self.datafile = os.path.abspath(datafile)
 
+	def save(self):
+		record = {}
+		record["model"] = self.test.model["name"]
+		record["mask"] = self.test.mask
+		record["barcode"] = self.barcode
+		record["runtime"] = self.runtime()
+		record["duration"] = self.testtime()
+		record["failed"] = 0
+		record["datafile"] = self.datafile
+		self.db.test_add(record)
+
 	def finish(self, status):
 		self.time_test_start = 0
 		self.status = status
 
 	def passed(self):
-		self.time_test_start = 0
 		self.status = "PASS"
 		self.nr_ok = self.nr_ok + 1
+		self.save()
+		self.time_test_start = 0
 
 	def failed(self):
-		self.time_test_start = 0
 		self.status = "FAIL"
 		self.nr_ok = self.nr_ng + 1
+		self.save()
+		self.time_test_start = 0
 
 	def barcode_get(self):
 		self.test.mdelay(500)
