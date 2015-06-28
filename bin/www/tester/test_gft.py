@@ -64,13 +64,13 @@ class GFTest(Test):
 			#1, wait for barcode ready
 			barcode = self.tester.barcode_get()
 			self.path = os.path.join(self.dat_dir, time.strftime("%H_%M_")+barcode+".dat")
+			self.tester.start(self.path)
 			self.log_start(self.path)
 
 			#2, wait for fixture ready
 			self.tester.wait_fixture()
 
 			#3, test start
-			self.tester.start(self.path)
 			for i in range(0, 1000):
 				self.mdelay(5)
 				err = random.random()
@@ -81,7 +81,7 @@ class GFTest(Test):
 					self.tester.failed()
 					return
 
-			self.tester.failed()
+			self.tester.failed(1)
 
 
 #module self test

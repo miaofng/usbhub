@@ -56,20 +56,17 @@ class Shell:
 
 	def cmd_status(self, req):
 		result = {}
-		result["testing"] = False
 		result["status"] = self.tester.status
+		result["ecode"] = self.tester.ecode
 		result["runtime"] = int(self.tester.runtime())
 		result["nr_ok"] = str(self.tester.nr_ok)
 		result["nr_ng"] = str(self.tester.nr_ng)
 		result["barcode"] = self.tester.barcode
 		result["datafile"] = self.tester.datafile
+		result["testtime"] = int(self.tester.testtime())
+		result["testing"] = False
 		if hasattr(self.tester, "test"):
 			result["testing"] = True
-
-		seconds = self.tester.testtime()
-		if seconds != None:
-			result["testtime"] = int(seconds)
-
 		return result
 
 	def cmd_reset(self, req):
