@@ -84,7 +84,8 @@ class Tester:
 		self.finish("PASS")
 
 	def failed(self, ecode = -1):
-		self.ecode = ecode
+		if ecode != 0:
+			self.ecode = ecode
 		self.nr_ng = self.nr_ng + 1
 		self.finish("FAIL")
 

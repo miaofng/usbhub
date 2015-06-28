@@ -63,6 +63,11 @@ class GFTest(Test):
 		while True:
 			#1, wait for barcode ready
 			barcode = self.tester.barcode_get()
+			if self.flag_stop:
+				self.log("Test Abort by usr!!!")
+				self.tester.failed(0)
+				return
+
 			self.path = os.path.join(self.dat_dir, time.strftime("%H_%M_")+barcode+".dat")
 			self.tester.start(self.path)
 			self.log_start(self.path)

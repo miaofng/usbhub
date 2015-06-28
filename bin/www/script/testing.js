@@ -5,6 +5,7 @@ var fdialogs = window.parent.require('node-webkit-fdialogs')
 
 //to be stored in browser's session
 var test = {
+	"model": null,
 	"mode":"AUTO",
 	"mask": 0,
 	"bplist":{},
@@ -61,13 +62,15 @@ function gft_load(gft) {
 					test.status = 'MODEL NOT FOUND';
 					return;
 				}
+
+				test.model = model;
 				console.dir(model);
 				var html = [];
 				var nsubs = model.nrow * model.ncol;
 				for(var i = 0; i < nsubs; i ++) {
 					var subname = String.fromCharCode("A".charCodeAt()+i);
 					var checked = (test.mask & (1 << i)) ? "" : 'checked = "checked"';
-					html[i] = '<div><input id="'+i+'" type="checkbox" ' + checked + ' />' +
+					html[i] = '<div id="mask'+i+'"><input id="'+i+'" type="checkbox" ' + checked + ' />' +
 					'<label for="'+i+'">'+subname+'</label></div>';
 				}
 				html = html.join("\n");
@@ -110,6 +113,8 @@ function result_load(datafile) {
 }
 
 function irt_show_status(status) {
+	var ecode = arguments[1] ? arguments[1] : 0;
+
 	$("#panel_result").html(status);
 	switch(status) {
 	case "TESTING":
@@ -127,9 +132,23 @@ function irt_show_status(status) {
 
 	case "ERROR":
 		$("#button_run").attr("disabled", true);
+	case "FAIL":
 	default:
 		$("#panel_result").css("background-color", "#ff0000");
 		break;
+	}
+
+	if(test.model != null) {
+		for(var i = 0; i < test.model.nsub; i ++) {
+			//border color?
+			var border_color = "gray";
+			if((1 << i) & ecode) {
+				border_color = "red";
+			}
+
+			var target = "#mask" + i + " label";
+			$(target).css("border-color", border_color);
+		}
 	}
 }
 
@@ -166,8 +185,7 @@ function timer_tick_update() {
 			irt_show_status(test.status);
 		}
 		else {
-			var status = result["status"];
-			irt_show_status(status);
+			irt_show_status(result.status, result.ecode);
 		}
 
 		$("#num_pass").html(result["nr_ok"]);
