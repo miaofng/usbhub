@@ -40,6 +40,49 @@ exports.test_get = function(id, cb) {
 	});
 };
 
+exports.test_enum = function(cnds, cb) {
+	var date_start = cnds.date_start.trim();
+	var date_end = cnds.date_end.trim();
+	var model = cnds.model.replace(/\*/g, "%");
+	var barcode = cnds.barcode.replace(/\*/g, "%");
+	var nrecords = cnds.max_records;
+	var scnd = ecnd = nlim = "";
+
+	if(date_start.length > 0) {
+		scnd = 'AND strftime("%s", time) > strftime("%s", "'+date_start+'")';
+	}
+	if(date_end.length > 0) {
+		ecnd = 'AND strftime("%s", time) < strftime("%s", "'+date_end+'", "+1 day")';
+	}
+	if(nrecords != null) {
+		nlim = 'LIMIT ' + nrecords;
+	}
+
+	model = (model.length == 0) ? "%" : model;
+	barcode = (barcode.length == 0) ? "%" : barcode;
+	var where = 'WHERE model LIKE "' +model+ '" AND barcode LIKE "' +barcode+ '"';
+	where = where + " " + scnd + " " + ecnd + " " + nlim;
+	var sql = "SELECT * FROM test " + where;
+
+	db.all(sql, function(err, rows) {
+		if(err) {
+		}
+		else {
+			cb(rows);
+		}
+	});
+};
+
+exports.model_enum = function(name, cb) {
+	db.all('SELECT * FROM model WHERE name like "%'+name+'%" LIMIT 10', function(err, rows) {
+		if(err) {
+		}
+		else {
+			cb(rows);
+		}
+	});
+};
+
 exports.start = function() {
 	var server = net.createServer();
 	server.once('error', function(err) {

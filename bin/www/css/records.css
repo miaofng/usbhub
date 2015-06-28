@@ -163,7 +163,31 @@
 	flex-direction: column;
 	justify-content: flex-start;
 	align-items: flex-end;
-	-webkit-user-select: none;
+	//-webkit-user-select: none;
+	overflow:auto;
+}
+
+#s_result {
+	display: table;
+	width: 100%;
+}
+
+#s_result ul {
+	display: table-row;
+	line-height:1.5em;
+	width: 100%;
+}
+
+.title {
+	color: white;
+	background-color: #000000;
+}
+
+#s_result ul li {
+	display: table-cell;
+	border:1px solid white;
+	text-align: center;
+	background-color: #E0E0E0;
 }
 
 #mask {

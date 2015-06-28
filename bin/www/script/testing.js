@@ -153,9 +153,10 @@ function irt_show_status(status) {
 }
 
 function timer_tick_update() {
-	var d=new Date();
-	$("#time_cur").html(d.toTimeString().substr(0, 8));
-	$("#date").html(d.toLocaleDateString());
+	var date=new Date();
+	var sdate = date.toLocaleDateString();
+	$("#time_cur").html(date.toTimeString().substr(0, 8));
+	$("#date").html(sdate);
 	irt.query("status", function(data) {
 		var result = JSON.parse(data);
 		//console.dir(result);
