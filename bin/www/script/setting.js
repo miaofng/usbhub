@@ -116,6 +116,15 @@ function prn_load(prn) {
 	});
 }
 
+function gcfg_load(){
+	irt.cfg_get("nr_ok", function(value){
+		$("#g_nr_ok").val(value);
+	});
+	irt.cfg_get("nr_ng", function(value){
+		$("#g_nr_ng").val(value);
+	});
+}
+
 $(function() {
 	irt.init();
 	var session = window.sessionStorage;
@@ -194,6 +203,8 @@ $(function() {
 			});
 		}
 	});
+
+	gcfg_load();
 
 	//load settings saved in session
 	settings.s_model = isNaN(settings.s_search) ? "*" : settings.s_model;
