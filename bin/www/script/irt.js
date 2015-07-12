@@ -14,7 +14,7 @@ exports.cfg_get = function(name, cb) {
 
 exports.cfg_set = function(name, value) {
 	db.run("UPDATE cfg SET value=? WHERE name = ?", value, name, function(err) {
-		if(err != null) {
+		if(err) {
 			console.log("cfg: "+name+"="+value+" "+err);
 		}
 	});
@@ -22,10 +22,10 @@ exports.cfg_set = function(name, value) {
 
 exports.model_get = function(model, cb) {
 	db.get("SELECT * FROM model WHERE name = ?", model, function(err, row) {
-		if(err != null) {
+		if(err) {
 		}
 		else {
-			if(cb != null) {
+			if(cb) {
 				cb(row);
 			}
 		}
@@ -39,7 +39,7 @@ exports.model_set = function(model, cb) {
 		WHERE id=$id \
 	";
 
-	if(isNaN(model.id) || (model.id == null)) {
+	if(!model.id) {
 		sql = "INSERT INTO model(name, nrow, ncol, nsub, points, offset, barcode) \
 			VALUES($name, $nrow, $ncol, $nsub, $points, $offset, $barcode) \
 		";
@@ -50,7 +50,7 @@ exports.model_set = function(model, cb) {
 		para["$"+key] = model[key];
 	});
 	db.run(sql, para, function(err) {
-		if(cb != null) {
+		if(cb) {
 			cb(err, this.lastID);
 		}
 	});
@@ -59,11 +59,11 @@ exports.model_set = function(model, cb) {
 
 exports.model_get_by_id = function(model_id, cb) {
 	db.get("SELECT * FROM model WHERE id = ?", model_id, function(err, row) {
-		if(err != null) {
+		if(err) {
 			alert(err.message);
 		}
 		else {
-			if(cb != null) {
+			if(cb) {
 				cb(row);
 			}
 		}
@@ -72,11 +72,11 @@ exports.model_get_by_id = function(model_id, cb) {
 
 exports.model_del = function(model_id, cb) {
 	db.run("DELETE FROM model WHERE id = ?", model_id, function(err) {
-		if(err != null) {
+		if(err) {
 			alert(err.message);
 		}
 		else {
-			if(cb != null) {
+			if(cb) {
 				cb();
 			}
 		}
@@ -88,7 +88,7 @@ exports.test_get = function(id, cb) {
 		if(err) {
 		}
 		else {
-			if(cb != null) {
+			if(cb) {
 				cb(row);
 			}
 		}
@@ -99,25 +99,25 @@ exports.test_enum = function(cnds, cb) {
 	var where = [];
 	var cnd;
 
-	if(!isNaN(cnds.date_start)) {
+	if(cnds.date_start) {
 		var sdate = cnds.date_start.trim();
 		if(sdate.length > 0) {
-			cnd = 'strftime("%s", time) > strftime("%s", "{date}")';
+			cnd = 'strftime("%s", time) >= strftime("%s", "{date}")';
 			cnd = cnd.replace("{date}", sdate);
 			where.push(cnd);
 		}
 	}
 
-	if(!isNaN(cnds.date_end)) {
+	if(cnds.date_end) {
 		var edate = cnds.date_end.trim();
 		if(edate.length > 0) {
-			cnd = 'strftime("%s", time) < strftime("%s", "{date}")';
+			cnd = 'strftime("%s", time) <= strftime("%s", "{date} 23:59:59" )';
 			cnd = cnd.replace("{date}", edate);
 			where.push(cnd);
 		}
 	}
 
-	if(!isNaN(cnds.model)) {
+	if(cnds.model) {
 		var model = cnds.model.trim();
 		if(model.length > 0) {
 			model = model.replace(/\*/g, "%");
@@ -127,11 +127,11 @@ exports.test_enum = function(cnds, cb) {
 		}
 	}
 
-	if(!isNaN(cnds.barcode)) {
+	if(cnds.barcode) {
 		var barcode = cnds.barcode.trim();
 		if(barcode.length > 0) {
 			barcode = barcode.replace(/\*/g, "%");
-			cnd = 'barcode like "{name}"';
+			cnd = 'barcode like "{name}%"';
 			cnd = cnd.replace("{name}", barcode);
 			where.push(cnd);
 		}
@@ -140,12 +140,12 @@ exports.test_enum = function(cnds, cb) {
 	if(where.length > 0) {
 		var WHERE = " WHERE " + where.join(" AND ");
 	}
-	if(!isNaN(cnds.max_records)) {
+	if(cnds.max_records) {
 		var LIMIT = ' LIMIT ' + cnds.max_records;
 	}
 
 	var sql = "SELECT * FROM test " + WHERE + LIMIT;
-	console.log(sql);
+	//console.log(sql);
 	db.all(sql, function(err, rows) {
 		if(err) {
 		}
@@ -159,7 +159,7 @@ exports.model_enum = function(name) {
 	var max_records = (arguments.length > 2) ? arguments[1] : 10;
 	var cb = (arguments.length > 2) ? arguments[2] : arguments[1];
 	var model = name.replace(/\*/g, "%");
-	db.all('SELECT * FROM model WHERE name like ? LIMIT ?', [model, max_records], function(err, rows) {
+	db.all('SELECT * FROM model WHERE name like ? LIMIT ?', [model+"%", max_records], function(err, rows) {
 		if(err) {
 		}
 		else {
