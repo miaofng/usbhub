@@ -3,21 +3,55 @@
 <head>
 <meta charset="utf-8">
 <title>INSULATION RESISTOR TESTER - E2XX</title>
+<link rel="stylesheet" href="jquery-ui/jquery-ui.min.css">
+<link rel="stylesheet" href="jquery-ui/jquery-ui.theme.min.css">
 <link rel="stylesheet" href="css/setting.css">
 <script src="jquery-ui/external/jquery/jquery.js"></script>
+<script src="jquery-ui/jquery-ui.min.js"></script>
 <script src="script/setting.js"></script>
 </head>
 <body>
-  <div>
-  <pre>
-  <code>
-#include <stdio.h>
-int main(int argc, char *argv[]) {
-	int x;
-	int y;
-	printf("hello world");
-}
-  </code>
-  </pre>
+  <div id="panel_bottom">
+	<div id="panel_left">
+      <div class="panel_head">GLOBAL SETTINGS</div>
+	  <div>Data DIR: <input id="g_dat_dir" value="../../../data/"/></div>
+	  <div>Old Passwd: <input id="g_oldpasswd" type="PASSWORD" value="admin"/></div>
+      <div>New Passwd: <input id="g_newpasswd" type="PASSWORD"/></div>
+	  <div>Confirm: <input id="g_confirm" type="PASSWORD"/></div>
+    </div>
+
+    <div id="panel_detail">
+	  <div class="panel_head">MODEL LIST</div>
+      <div id="list">
+		<div id="s_result"></div>
+	  </div>
+	  <div>SEARCH: <input id="s_model" value=""/></div>
+	  <!-- <div>
+        <a href="">PREV</a>&nbsp;&nbsp;&nbsp;&nbsp;<a href="">NEXT</a>
+      </div>
+      <div>&nbsp;</div>
+	  -->
+    </div>
+
+    <div id="panel_right">
+	  <div class="panel_head">MODEL SETTINGS</div>
+      <div class="panel_head" id="mask">
+        <div><input id="0" type="checkbox" checked="checked"/><label for="0">...</label></div>
+      </div>
+      <div>NAME: <input id="m_name" /></div>
+      <div>ROWS: <input id="m_nrow" /></div>
+      <div>COLS: <input id="m_ncol" /></div>
+	  <div>POINTS: <input id="m_points" /></div>
+	  <div>OFFSET: <input id="m_offset" /></div>
+	  <div>BARCODE: <input id="m_openprn" value="Load From File(.prn)..." readonly="readonly"/></div>
+	  <div><pre id="m_prn" wrap="off" ></pre></div>
+	  <div>
+		<input id="m_del" value="Del" type="button" disabled="disabled"/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+		<input id="m_add" value="New" type="button" />&nbsp;&nbsp;&nbsp;&nbsp;
+		<input id="m_apply" value="    Update    " type="button" />
+	  </div>
+    </div>
+
   </div>
+
 </body>
