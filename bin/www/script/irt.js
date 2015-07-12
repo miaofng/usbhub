@@ -14,7 +14,7 @@ exports.cfg_get = function(name, cb) {
 
 exports.cfg_set = function(name, value) {
 	db.run("UPDATE cfg SET value=? WHERE name = ?", value, name, function(err) {
-		if(err) {
+		if(err != null) {
 			console.log("cfg: "+name+"="+value+" "+err);
 		}
 	});
@@ -22,10 +22,63 @@ exports.cfg_set = function(name, value) {
 
 exports.model_get = function(model, cb) {
 	db.get("SELECT * FROM model WHERE name = ?", model, function(err, row) {
-		if(err) {
+		if(err != null) {
 		}
 		else {
-			cb(row);
+			if(cb != null) {
+				cb(row);
+			}
+		}
+	});
+};
+
+exports.model_set = function(model, cb) {
+	var sql = "UPDATE model SET name=$name, nrow=$nrow, \
+		ncol=$ncol, nsub=$nsub, points=$points, \
+		offset=$offset, barcode=$barcode \
+		WHERE id=$id \
+	";
+
+	if(isNaN(model.id) || (model.id == null)) {
+		sql = "INSERT INTO model(name, nrow, ncol, nsub, points, offset, barcode) \
+			VALUES($name, $nrow, $ncol, $nsub, $points, $offset, $barcode) \
+		";
+	}
+
+	para = {};
+	Object.keys(model).forEach(function(key){
+		para["$"+key] = model[key];
+	});
+	db.run(sql, para, function(err) {
+		if(cb != null) {
+			cb(err, this.lastID);
+		}
+	});
+};
+
+
+exports.model_get_by_id = function(model_id, cb) {
+	db.get("SELECT * FROM model WHERE id = ?", model_id, function(err, row) {
+		if(err != null) {
+			alert(err.message);
+		}
+		else {
+			if(cb != null) {
+				cb(row);
+			}
+		}
+	});
+};
+
+exports.model_del = function(model_id, cb) {
+	db.run("DELETE FROM model WHERE id = ?", model_id, function(err) {
+		if(err != null) {
+			alert(err.message);
+		}
+		else {
+			if(cb != null) {
+				cb();
+			}
 		}
 	});
 };
@@ -35,35 +88,64 @@ exports.test_get = function(id, cb) {
 		if(err) {
 		}
 		else {
-			cb(row);
+			if(cb != null) {
+				cb(row);
+			}
 		}
 	});
 };
 
 exports.test_enum = function(cnds, cb) {
-	var date_start = cnds.date_start.trim();
-	var date_end = cnds.date_end.trim();
-	var model = cnds.model.replace(/\*/g, "%");
-	var barcode = cnds.barcode.replace(/\*/g, "%");
-	var nrecords = cnds.max_records;
-	var scnd = ecnd = nlim = "";
+	var where = [];
+	var cnd;
 
-	if(date_start.length > 0) {
-		scnd = 'AND strftime("%s", time) > strftime("%s", "'+date_start+'")';
-	}
-	if(date_end.length > 0) {
-		ecnd = 'AND strftime("%s", time) < strftime("%s", "'+date_end+'", "+1 day")';
-	}
-	if(nrecords != null) {
-		nlim = 'LIMIT ' + nrecords;
+	if(!isNaN(cnds.date_start)) {
+		var sdate = cnds.date_start.trim();
+		if(sdate.length > 0) {
+			cnd = 'strftime("%s", time) > strftime("%s", "{date}")';
+			cnd = cnd.replace("{date}", sdate);
+			where.push(cnd);
+		}
 	}
 
-	model = (model.length == 0) ? "%" : model;
-	barcode = (barcode.length == 0) ? "%" : barcode;
-	var where = 'WHERE model LIKE "' +model+ '" AND barcode LIKE "' +barcode+ '"';
-	where = where + " " + scnd + " " + ecnd + " " + nlim;
-	var sql = "SELECT * FROM test " + where;
+	if(!isNaN(cnds.date_end)) {
+		var edate = cnds.date_end.trim();
+		if(edate.length > 0) {
+			cnd = 'strftime("%s", time) < strftime("%s", "{date}")';
+			cnd = cnd.replace("{date}", edate);
+			where.push(cnd);
+		}
+	}
 
+	if(!isNaN(cnds.model)) {
+		var model = cnds.model.trim();
+		if(model.length > 0) {
+			model = model.replace(/\*/g, "%");
+			cnd = 'model like "{name}"';
+			cnd = cnd.replace("{name}", model);
+			where.push(cnd);
+		}
+	}
+
+	if(!isNaN(cnds.barcode)) {
+		var barcode = cnds.barcode.trim();
+		if(barcode.length > 0) {
+			barcode = barcode.replace(/\*/g, "%");
+			cnd = 'barcode like "{name}"';
+			cnd = cnd.replace("{name}", barcode);
+			where.push(cnd);
+		}
+	}
+
+	if(where.length > 0) {
+		var WHERE = " WHERE " + where.join(" AND ");
+	}
+	if(!isNaN(cnds.max_records)) {
+		var LIMIT = ' LIMIT ' + cnds.max_records;
+	}
+
+	var sql = "SELECT * FROM test " + WHERE + LIMIT;
+	console.log(sql);
 	db.all(sql, function(err, rows) {
 		if(err) {
 		}
@@ -73,8 +155,11 @@ exports.test_enum = function(cnds, cb) {
 	});
 };
 
-exports.model_enum = function(name, cb) {
-	db.all('SELECT * FROM model WHERE name like "%'+name+'%" LIMIT 10', function(err, rows) {
+exports.model_enum = function(name) {
+	var max_records = (arguments.length > 2) ? arguments[1] : 10;
+	var cb = (arguments.length > 2) ? arguments[2] : arguments[1];
+	var model = name.replace(/\*/g, "%");
+	db.all('SELECT * FROM model WHERE name like ? LIMIT ?', [model, max_records], function(err, rows) {
 		if(err) {
 		}
 		else {

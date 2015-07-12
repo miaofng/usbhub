@@ -104,7 +104,7 @@ function irt_show_status(status, ecode, model) {
 
 	for(var i = 0; i < model.nsub; i ++) {
 		//border color?
-		var border_color = "gray";
+		var border_color = "#00ff00";
 		if((1 << i) & ecode) {
 			border_color = "red";
 		}
@@ -120,6 +120,7 @@ function test_list() {
 	cnds.date_end = records.s_end;
 	cnds.model = records.s_model.trim();
 	cnds.barcode = records.s_barcode.trim();
+	cnds.max_records = 128;
 
 	irt.test_enum(cnds, function(rows){
 		var html = [];
@@ -141,6 +142,7 @@ function test_list() {
 			var id = this.href.substr(this.href.search('#') + 1);
 			records.id = parseInt(id);
 			test_load(records.id);
+			return false;
 		});
 	});
 }
@@ -180,6 +182,21 @@ $(function() {
 		}
 	});
 
+	$( "#s_barcode" ).autocomplete({
+		source: function( request, response ) {
+			var cnds = {};
+			cnds.barcode = request.term.trim()+"%";
+			cnds.max_records = 64;
+			irt.test_enum(cnds, function(rows){
+				var values = [];
+				rows.forEach(function(row, index){
+					values.push(row.barcode);
+				});
+				response(values);
+			});
+		}
+	});
+
 	var date=new Date();
 	var sdate = date.toLocaleDateString().replace(/\//g, "-");
 	sdate = sdate.replace(/\d+/g, function(m){
@@ -197,6 +214,10 @@ $(function() {
 		$("#s_barcode").val(records.s_barcode);
 		test_list();
 	}
+	else {
+		test_list();
+	}
+
 	if(records.id != null) {
 		test_load(records.id);
 	}
