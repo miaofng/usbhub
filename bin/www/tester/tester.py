@@ -11,7 +11,7 @@ from test_self import Selfcheck
 import random
 
 class Tester:
-	status = 'INIT'
+	status = 'INIT' #'TESTING' 'PASS' 'FAIL' 'READY'
 	time_start = time.time()
 	time_test_start = 0
 	time_test = 0
