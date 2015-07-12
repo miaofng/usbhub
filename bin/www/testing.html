@@ -26,7 +26,7 @@
   </div>
   <div id="panel_bottom">
     <div id="panel_src">
-      <pre id="gft" wrap="off" readonly="readonly">
+      <pre id="gft" readonly="readonly">
 	  </pre>
     </div>
 
@@ -36,7 +36,7 @@
     </div>
 
     <div id="panel_ctrl">
-      <div id="mask">
+      <div id="mask"  style="display: none;" title="rect: pass/fail&#10;text: masked/enabled">
           <div><input id="0" type="checkbox" checked="checked"/><label for="0">...</label></div>
 		  <!--
 		  <div><input id="1" type="checkbox" checked="checked"/><label for="1">B</label></div>
@@ -50,12 +50,13 @@
 	  <div>DURATION: <span id="time_test">&nbsp;</span></div>
 	  <div>GOODNESS RATE: <span id="passrate">&nbsp;</span></div>
 	  <div>BADNESS RATE: <span id="failrate">&nbsp;</span></div>
-	   <div><input id="button_mode" type="button" value="AUTO MODE"/></div>
+	   <div><input class="idleinput" id="button_mode" type="button" value="AUTO MODE"/></div>
 	  <div>
-	    <input id="button_file" type="file" accept="*.gft"  nwworkingdir="C:\Windows" hidden="hidden"/>
-        <input id="button_model" type="button" value="MODEL"/>
+	    <input class="idleinput" id="button_file" type="file" accept="*.gft"  nwworkingdir="C:\Windows" hidden="hidden"/>
+        <input class="idleinput" id="button_model" type="button" value="MODEL"/>
       </div>
-      <div><input id="button_run" type="button" value="RUN"/></div>
+      <div><input id="button_run" type="button" value="RUN" disabled="disabled"/></div>
+	  <div>IMS: <input class="idleinput" type="checkbox">&nbsp;&nbsp;LABEL: <input class="idleinput" type="checkbox"></div>
     </div>
   </div>
 </body>

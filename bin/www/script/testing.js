@@ -9,12 +9,52 @@ var test = {
 	"mode":"AUTO",
 	"mask": 0,
 	"bplist":{},
-	"status": 'INIT', //irt-ui itself status
+
+	"ui_status": 'INIT', //'LOADING', 'READY', 'XXX ERROR'
+	//show irt server status only when ui_status = 'READY'
 };
 
-//for datafile modification monitoring
-var datafile = '';
-var datafile_size = 0;
+function model_sub_redraw(nrow, ncol, nsub) {
+		$("#mask").hide();
+
+		var html = [];
+		var nsubs = nrow * ncol;
+		for(var i = 0; i < nsubs; i ++) {
+			var subname = String.fromCharCode("A".charCodeAt()+i);
+			var masked = test.mask & (1 << i);
+			var checked = (masked) ? '' : 'checked = "checked"';
+
+			var div = '\
+				<div id = "mask$i"> \
+					<input id="$i" type="checkbox" $checked /> \
+					<label for="$i">$name</label> \
+				</div> \
+			';
+
+			div = div.replace(/\$i/g, i);
+			div = div.replace(/\$checked/g, checked);
+			div = div.replace(/\$name/g, subname);
+			//console.log(div);
+			html.push(div);
+		}
+
+		html = html.join("\n");
+		$("#mask").html(html);
+
+		$( "#mask input" ).button({
+			//disabled: true,
+		}).click(function(){
+			//alert(this.id + "=" + this.checked);
+			var sub = parseInt(this.id);
+			var checked = (this.checked) ? 0 : 1;
+			test.mask = (test.mask & ~(1 << sub)) | (checked << sub);
+		});
+
+		var w = 100/ncol + "%";
+		var h = 100/nrow + "%";
+		$("#mask div").removeAttr("width").removeAttr("height").css({"width":w, "height":h});
+		$("#mask").show();
+}
 
 function gft_load(gft) {
 	if(gft.length < 1) {
@@ -23,6 +63,8 @@ function gft_load(gft) {
 
 	fs.readFile(gft, "ascii", function (err, content) {
 		if(err) {
+			alert(err.message);
+			return;
 		}
 		else {
 			var i = 0;
@@ -56,46 +98,69 @@ function gft_load(gft) {
 
 			irt.model_get(model, function(model) {
 				$("#mask").hide();
-				//update sub board display for mask purpose
 				if(model == null) {
-					//alert("Model is Not Found in Database!!!");
-					test.status = 'MODEL NOT FOUND';
+					test.ui_status = 'MODEL UNSUPPORTED';
 					return;
 				}
 
 				test.model = model;
-				console.dir(model);
-				var html = [];
-				var nsubs = model.nrow * model.ncol;
-				for(var i = 0; i < nsubs; i ++) {
-					var subname = String.fromCharCode("A".charCodeAt()+i);
-					var checked = (test.mask & (1 << i)) ? "" : 'checked = "checked"';
-					html[i] = '<div id="mask'+i+'"><input id="'+i+'" type="checkbox" ' + checked + ' />' +
-					'<label for="'+i+'">'+subname+'</label></div>';
-				}
-				html = html.join("\n");
-				$("#mask").html(html);
-				$( "#mask input" ).button({
-					//disabled: true,
-				}).click(function(){
-					//alert(this.id + "=" + this.checked);
-					var sub = parseInt(this.id);
-					var checked = (this.checked) ? 0 : 1;
-					test.mask = (test.mask & ~(1 << sub)) | (checked << sub);
-				});
-
-				var w = 100/model.ncol + "%";
-				var h = 100/model.nrow + "%";
-				$("#mask div").removeAttr("width").removeAttr("height").css({"width":w, "height":h});
-				$("#mask").show();
-				test.status = "READY";
+				model_sub_redraw(model.nrow, model.ncol, model.nsub);
+				test.ui_status = "READY";
 			});
 		}
 	});
 }
 
-function result_load(datafile) {
-	//console.time("result_load");
+function update_state(status, ecode) {
+	var state = (test.ui_status != "READY") ? test.ui_status : status;
+	var bgcolor = "#ff0000";
+
+	switch(state) {
+	case "TESTING":
+		bgcolor = "#ffff00";
+		break;
+	case "READY":
+	case "PASS":
+		bgcolor = "#00ff00";
+		break;
+	case "INIT":
+	case "LOADING":
+		bgcolor = "#c0c0c0";
+		break;
+	case "ERROR":
+		$("#button_run").attr("disabled", true);
+	case "FAIL":
+	default:
+		break;
+	}
+
+	$("#panel_result").html(state);
+	$("#panel_result").css("background-color", bgcolor);
+
+	//subboard state display
+	if(test.model != null) {
+		for(var i = 0; i < test.model.nsub; i ++) {
+			//border color?
+			var border_color = "gray";
+			if(status == "PASS" || status == "FAIL") {
+				border_color = "#00ff00";
+			}
+
+			if((1 << i) & ecode) {
+				border_color = "red";
+			}
+
+			var target = "#mask" + i + " label";
+			$(target).css("border-color", border_color);
+		}
+	}
+}
+
+//for datafile modification monitoring
+var datafile_save = '';
+var datafile_size = 0;
+
+function load_report(datafile) {
 	fs.readFile(datafile, "ascii", function (err, content) {
 		if(err) {
 		}
@@ -112,133 +177,66 @@ function result_load(datafile) {
 	});
 }
 
-function irt_show_status(status) {
-	var ecode = arguments[1] ? arguments[1] : 0;
+function update_status(status) {
+	var date = new Date();
+	var sdate = date.toLocaleDateString();
+	$("#time_cur").html(date.toTimeString().substr(0, 8));
+	$("#date").html(sdate);
 
-	$("#panel_result").html(status);
-	switch(status) {
-	case "TESTING":
-		$("#panel_result").css("background-color", "#ffff00");
-		break;
-	case "READY":
-	case "PASS":
-		$("#panel_result").css("background-color", "#00ff00");
-		break;
+	if(status == null)
+		return;
 
-	case "INIT":
-	case "LOADING":
-		$("#panel_result").css("background-color", "#c0c0c0");
-		break;
-
-	case "ERROR":
-		$("#button_run").attr("disabled", true);
-	case "FAIL":
-	default:
-		$("#panel_result").css("background-color", "#ff0000");
-		break;
+	$("#num_pass").html(status.nr_ok);
+	$("#num_fail").html(status.nr_ng);
+	var total = parseInt(status.nr_ok) + parseInt(status.nr_ng);
+	$("#num_total").html(total);
+	var passrate = parseFloat(status.nr_ok)/total;
+	var failrate = 1 - passrate;
+	$("#passrate").html(passrate.toString().substr(0, 5));
+	$("#failrate").html(failrate.toString().substr(0, 5));
+	$("#time_run").html(status.runtime+"s");
+	$("#time_test").html(status.testtime+"s");
+	var barcode = status.barcode.trim();
+	if (barcode.length > 0) {
+		$("#barcode").val(barcode);
 	}
 
-	if(test.model != null) {
-		for(var i = 0; i < test.model.nsub; i ++) {
-			//border color?
-			var border_color = "gray";
-			if((1 << i) & ecode) {
-				border_color = "red";
-			}
+	//state update
+	$(".idleinput").attr("disabled", status.testing);
+	$("#button_run").val((status.testing) ? "STOP" : "RUN");
+	$("#button_run").attr("disabled", test.ui_status != "READY");
+	update_state(status.status, status.ecode);
 
-			var target = "#mask" + i + " label";
-			$(target).css("border-color", border_color);
+	//report update
+	var datafile = status.datafile;
+	if(datafile != null) {
+		if(datafile_save != datafile) {
+			datafile_save = datafile;
+			datafile_size = 0;
+			load_report(status.datafile);
 		}
+		else fs.stat(datafile, function(err, stats) {
+			if(stats.size != datafile_size) {
+				datafile_size = stats.size;
+				load_report(status.datafile);
+			}
+		});
 	}
 }
 
 function timer_tick_update() {
-	var date=new Date();
-	var sdate = date.toLocaleDateString();
-	$("#time_cur").html(date.toTimeString().substr(0, 8));
-	$("#date").html(sdate);
-	irt.query("status", function(data) {
-		var result = JSON.parse(data);
-		//console.dir(result);
-
-		if(result.testing) {
-			$("#button_run").val("STOP");
-			$("#button_mode").attr("disabled", true);
-			$("#button_model").attr("disabled", true);
-			$("#mask input").attr("disabled", true);
-		}
-		else {
-			$("#button_run").val("RUN");
-			$("#button_mode").attr("disabled", false);
-			$("#button_model").attr("disabled", false);
-			$("#mask input").attr("disabled", false);
-		}
-
-		if(test.status == 'READY') {
-			$("#button_run").attr("disabled", false);
-		}
-		else {
-			$("#button_run").attr("disabled", true);
-		}
-
-
-		if(test.status != "READY") {
-			irt_show_status(test.status);
-		}
-		else {
-			irt_show_status(result.status, result.ecode);
-		}
-
-		$("#num_pass").html(result["nr_ok"]);
-		$("#num_fail").html(result["nr_ng"]);
-		var total = parseInt(result["nr_ok"]) + parseInt(result["nr_ng"]);
-		$("#num_total").html(total);
-		var passrate = parseFloat(result["nr_ok"])/total;
-		var failrate = 1 - passrate;
-		$("#passrate").html(passrate.toString().substr(0, 5));
-		$("#failrate").html(failrate.toString().substr(0, 5));
-		$("#time_run").html(result["runtime"]+"s");
-		if(result.testtime != null) $("#time_test").html(result.testtime+"s");
-		var barcode = result["barcode"].trim();
-		if (barcode.length > 0) {
-			$("#barcode").val(barcode);
-		}
-
-		if(result.datafile != null) {
-			if(result.datafile != datafile) {
-				datafile = result.datafile;
-				datafile_size = 0;
-				result_load(result.datafile);
-			}
-			else fs.stat(datafile, function(err, stats) {
-				if(stats.size != datafile_size) {
-					datafile_size = stats.size;
-					result_load(result.datafile);
-				}
-			});
-		}
+	irt.query("status", function(status) {
+		status = JSON.parse(status);
+		update_status(status);
 	});
 }
 
 $(function() {
 	irt.init();
-	irt.cfg_get('gft_last', function(gft_file) {
-		gft_load(gft_file);
-	});
-
-	//load settings saved in session
 	var session = window.sessionStorage;
 	if(session.test != null) {
 		test = JSON.parse(session.test);
 	}
-
-	//init status display
-	$("#button_mode").val(test.mode+" MODE");
-	irt_show_status(test.status);
-
-	$( "#mask input" ).button({
-		//disabled: true,
-	});
 
 	$("#button_mode").click(function(){
 		if(test.mode == "AUTO") test.mode = "STEP";
@@ -254,7 +252,8 @@ $(function() {
 		});
 
 		Dialog.getFilePath(function (err, gft_file) {
-			test.status = 'LOADING';
+			test.ui_status = 'LOADING';
+			test.mask = 0;
 			irt.query("reset", function(data) {});
 			gft_load(gft_file);
 		});
@@ -277,6 +276,10 @@ $(function() {
 			irt.query("stop", function(data) {
 			});
 		}
+	});
+
+	irt.cfg_get('gft_last', function(gft_file) {
+		gft_load(gft_file);
 	});
 
 	var timer_tick = setInterval("timer_tick_update()", 100);
