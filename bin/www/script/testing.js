@@ -263,6 +263,7 @@ $(function() {
 		var run = $(this).val();
 		if(run == "RUN") {
 			irt.cfg_get('gft_last', function(gft_file) {
+				gft_file = path.resolve(process.cwd(), gft_file);
 				cmdline = [];
 				cmdline.push("test");
 				cmdline.push("--mode=" + test.mode);
