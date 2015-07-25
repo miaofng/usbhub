@@ -16,8 +16,6 @@ var records = {
 //for datafile modification monitoring
 var datafile = '';
 var datafile_size = 0;
-var dat_dir = "";
-
 function test_load(id) {
 	irt.test_get(id, function (test) {
 		$('#model').val(test.model);
@@ -62,22 +60,24 @@ function test_load(id) {
 
 function result_load(datafile) {
 	//console.time("result_load");
-	datafile = path.normalize(dat_dir + datafile);
-	datafile = path.resolve(process.cwd(), "www/script", datafile);
-	fs.readFile(datafile, "ascii", function (err, content) {
-		if(err) {
-			alert(err.message);
-		}
-		else {
-			content = content.replace(/\[(\w+)\]/gi, function(x) {
-				if(x == "[PASS]") return "<span class='record_pass'>[PASS]</span>";
-				else return "<span class='record_fail'>[FAIL]</span>";
-			});
-			var ctrl_table = $("#table");
-			ctrl_table.html(content+"\n");
-			//ctrl_table.scrollTop(ctrl_table[0].scrollHeight);
-			//console.timeEnd("result_load");
-		}
+	irt.cfg_get("dat_dir", function(dat_dir){
+		datafile = path.normalize(dat_dir + datafile);
+		datafile = path.resolve(process.cwd(), "www/script", datafile);
+		fs.readFile(datafile, "ascii", function (err, content) {
+			if(err) {
+				alert(err.message);
+			}
+			else {
+				content = content.replace(/\[(\w+)\]/gi, function(x) {
+					if(x == "[PASS]") return "<span class='record_pass'>[PASS]</span>";
+					else return "<span class='record_fail'>[FAIL]</span>";
+				});
+				var ctrl_table = $("#table");
+				ctrl_table.html(content+"\n");
+				//ctrl_table.scrollTop(ctrl_table[0].scrollHeight);
+				//console.timeEnd("result_load");
+			}
+		});
 	});
 }
 
@@ -157,10 +157,6 @@ $(function() {
 	if(session.records != null) {
 		records = JSON.parse(session.records);
 	}
-
-	irt.cfg_get("dat_dir", function(value){
-		dat_dir = value;
-	});
 
 	$("#search").click(function(){
 		records.s_start = $("#s_start").val();
