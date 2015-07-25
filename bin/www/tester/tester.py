@@ -76,7 +76,10 @@ class Tester:
 		record["runtime"] = self.runtime()
 		record["duration"] = self.testtime()
 		record["failed"] = self.ecode
-		record["datafile"] = self.datafile
+		#convert abs path to relative path
+		dat_dir = self.db.cfg_get("dat_dir")
+		dat_dir = os.path.abspath(dat_dir)
+		record["datafile"] = os.path.relpath(self.datafile, dat_dir)
 		self.db.test_add(record)
 
 	def passed(self):
