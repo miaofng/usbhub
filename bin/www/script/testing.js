@@ -61,7 +61,7 @@ function gft_load(gft) {
 		return;
 	}
 
-	fs.readFile(gft, "ascii", function (err, content) {
+	fs.readFile(path.resolve(process.cwd(), gft), "ascii", function (err, content) {
 		if(err) {
 			alert(err.message);
 			return;
@@ -79,7 +79,7 @@ function gft_load(gft) {
 			$('#gft').html(content+"\n\n");
 			var model = path.basename(gft, ".gft");
 			$('#fname').val(model);
-			irt.cfg_set("gft_last", gft);
+			irt.cfg_set("gft_last", path.relative(process.cwd(), gft));
 
 			//add event handle
 			$(".linenr").click(function(){
