@@ -1,114 +1,123 @@
 #!/usr/bin/env python
 #coding:utf8
-import sys
-from nbstreamreader import NonBlockingStreamReader
+
+import os, sys, signal
+# from nbstreamreader import NonBlockingStreamReader
 from server import Server
-import getopt #https://docs.python.org/2/library/getopt.html
-import time
 import json
-from test import Test
-from test_gft import GFTest
 import shlex
 
-class Shell:
-	def __init__(self, tester, saddr):
-		self.tester = tester
-		self._nbsr = NonBlockingStreamReader(sys.stdin)
+class Cmd:
+	def __init__(self):
+		self.cmd_list = {}
+		self.register("help", self.cmd_help, "list all commands")
+
+	def register(self, name, func, help=""):
+		if hasattr(self.cmd_list, name):
+			ref = self.cmd_list[name]["ref"]
+			self.cmd_list[name]["ref"] = ref + 1;
+			return
+
+		entry = {"func": func, "help": help, "ref": 1}
+		self.cmd_list[name] = entry
+
+	def unregister(self, name):
+		if hasattr(self.cmd_list, name):
+			ref = self.cmd_list[name]["ref"]
+			self.cmd_list[name]["ref"] = ref - 1
+			if ref < 1:
+				del(self.cmd_list[name])
+
+	def run(self, cmdline):
+		try:
+			argv = shlex.split(cmdline)
+		except ValueError as e:
+			print str(e)
+		else:
+			argc = len(argv)
+			if argc > 0:
+				name = argv[0]
+				if name in self.cmd_list:
+					func = self.cmd_list[name]["func"]
+					return func(argc, argv)
+
+	def cmd_help(self, argc, argv):
+		result = []
+		for name,cmd in self.cmd_list.items():
+			result.append("%s		%s\n\r"%(name, cmd["help"]))
+		result = ''.join(result)
+		return result
+
+class Shell(Cmd):
+	mode_auto = True
+	cmdline = {}
+	def __init__(self, saddr):
+		#self._nbsr = NonBlockingStreamReader(sys.stdin)
 		self._server = Server(saddr)
-		print "> ",
+		Cmd.__init__(self)
 
 	def update(self):
 		req = {}
-		line = self._nbsr.readline()
-		if line:
-			req["sock"] = 0
-			req["data"] = line
+		# line = self._nbsr.readline()
+		# if line:
+			# req["sock"] = 0
+			# req["data"] = line
+			# self.process(req)
+		# else:
+		req = self._server.recv()
+		if req:
 			self.process(req)
-		else:
-			req = self._server.recv()
-			if req:
-				self.process(req)
 
 	def process(self, req):
-		try:
-			cmdline = shlex.split(req["data"]);
-		except ValueError as e:
-			self.response(req, {"error": str(e), })
+		sock = req['sock']
+		if sock not in self.cmdline:
+			self.cmdline[sock] = req['data']
 		else:
-			req['cmdline'] = cmdline
-			if len(cmdline) > 0:
-				func = "cmd_%s"%cmdline[0]
-				if hasattr(self, func):
-					func = getattr(self, func)
-					data = func(req)
-					self.response(req, data)
+			self.cmdline[sock] = self.cmdline[sock] + req['data']
 
-		if req["sock"] == 0:
-			print "\r> ",
+		cmdline = self.cmdline[sock]
+		tail = cmdline[-1]
+		if (tail != '\n') and (tail != '\r'):
+			self.mode_auto = False
+			return
 
-	def response(self, req, data):
-		if req["sock"]:
-			req["data"] = json.dumps(data)
+		del(self.cmdline[sock])
+		result = self.run(cmdline)
+		self.response(sock, result)
+
+		if not self.mode_auto:
+			self.response(sock, "> ")
+
+	def response(self, sock, result):
+		if result is None:
+			return
+
+		if not isinstance(result, basestring):
+			if self.mode_auto:
+				data = json.dumps(result)
+			else:
+				data = []
+				for key, val in result.items():
+					data.append("%s\t\t: %s\n\r"%(key, str(val)))
+				data = ''.join(data)
+		else:
+			data = result
+
+		req = {"sock": sock, "data": data}
+		if sock != 0:
 			self._server.send(req)
 		else:
-			for key in data.keys():
-				print "%s	: %s"%(key, data[key])
+			print req["data"]
 
-	def cmd_status(self, req):
-		result = {}
-		result["status"] = self.tester.status
-		result["ecode"] = self.tester.ecode
-		result["runtime"] = int(self.tester.runtime())
-		result["nr_ok"] = str(self.tester.nr_ok)
-		result["nr_ng"] = str(self.tester.nr_ng)
-		result["barcode"] = self.tester.barcode
-		result["datafile"] = self.tester.datafile
-		result["testtime"] = int(self.tester.testtime())
-		result["testing"] = False
-		if hasattr(self.tester, "test"):
-			result["testing"] = True
-		return result
+def signal_handler(signal, frame):
+	print 'user abort'
+	sys.exit(0)
 
-	def cmd_reset(self, req):
-		result = {"error": "E_OK",}
-		if(self.tester.status == "PASS") or (self.tester.status == "FAIL"):
-			self.tester.status = "READY"
-		return result;
+#module self test
+if __name__ == '__main__':
+	signal.signal(signal.SIGINT, signal_handler)
+	saddr = ('localhost', 10003)
+	shell = Shell(saddr)
+	while True:
+		shell.update()
 
-	def cmd_test(self, req):
-		result = {"error": "E_OK",}
-		argvs = req["cmdline"]
-		del argvs[0]
-		try:
-			opts, args = getopt.getopt(argvs, "m:x:", ["mode=", "mask="])
-		except getopt.GetoptError as e:
-			result["error"] = str(e)
-			return result
-
-		if (len(args) > 0) and (args[0] == "help"):
-			result["usage"] = 'test --mode=AUTO --mask=0 xxxyy.gft'
-			return result
-
-		if hasattr(self.tester, "test"):
-			result["error"] = "another test is running"
-			return result
-
-		#try to execute the specified test
-		#print opts, args
-		para = {"mode":"AUTO", "mask":0}
-		for opt in opts:
-			if(opt[0] == "-m" or opt[0] == "--mode"):
-				para["mode"] = opt[1]
-			elif (opt[0] == "-x" or opt[0] == "--mask"):
-				para["mask"] = int(opt[1])
-
-		gft = args[0]
-		self.tester.test = GFTest(self.tester, gft, para)
-		return result
-
-	def cmd_stop(self, req):
-		result = {"error": "No Test is Running",}
-		if hasattr(self.tester, "test"):
-			result["error"] = "E_OK";
-			self.tester.test.stop()
-		return result;
