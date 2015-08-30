@@ -40,7 +40,11 @@ class Server:
 				self.omsg[conn] = Queue.Queue()
 			else:
 				#print 'recv ok...'
-				data = s.recv(1024)
+				try:
+					data = s.recv(1024)
+				except socket.error:
+					data = None
+
 				if data:
 					#print data
 					self.imsg[s].put(data)

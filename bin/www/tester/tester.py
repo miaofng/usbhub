@@ -9,6 +9,9 @@ from shell import Shell
 from db import Db
 from test_self import Selfcheck
 import random
+import functools #https://docs.python.org/2/library/functools.html
+import shlex #https://docs.python.org/2/library/shlex.html
+import getopt #https://docs.python.org/2/library/getopt.html
 
 class Tester:
 	status = 'INIT' #'TESTING' 'PASS' 'FAIL' 'READY'
@@ -22,16 +25,30 @@ class Tester:
 	ecode = 0
 
 	def __init__(self, saddr):
-		self._shell = Shell(self, saddr)
+		self.shell = Shell(saddr)
+		self.shell.register("status", self.cmd_status, "display tester status")
+		self.shell.register("reset", self.cmd_reset, "reset tester status to READY")
+		self.shell.register("test", self.cmd_test, "test start")
+		self.shell.register("stop", self.cmd_stop, "test stop")
 		self.db = Db();
 		self.nr_ok = int(self.db.cfg_get("nr_ok"))
 		self.nr_ng = int(self.db.cfg_get("nr_ng"))
 		self.test = Selfcheck(self)
 		self.test.run()
 
+	def __del__(self):
+		self.shell.unregister("status")
+		self.shell.unregister("reset")
+		self.shell.unregister("test")
+		self.shell.unregister("stop")
+
 	def update(self):
-		time.sleep(0.001) #to avoid cpu usage too high
-		self._shell.update()
+		try:
+			time.sleep(0.001) #to avoid cpu usage too high
+		except:
+			print 'sleep exception'
+			sys.exit(0)
+		self.shell.update()
 
 	def run(self):
 		if hasattr(self, "test"):
@@ -40,7 +57,7 @@ class Tester:
 		while True:
 			self.update()
 			if hasattr(self, "test"):
-				return self.test
+				self.test.run()
 
 	def runtime(self):
 		seconds = time.time() - self.time_start
@@ -100,17 +117,69 @@ class Tester:
 	def wait_fixture(self):
 		self.test.mdelay(500)
 
+	def cmd_status(self, argc, argv):
+		result = {}
+		result["status"] = self.status
+		result["ecode"] = self.ecode
+		result["runtime"] = int(self.runtime())
+		result["nr_ok"] = str(self.nr_ok)
+		result["nr_ng"] = str(self.nr_ng)
+		result["barcode"] = self.barcode
+		result["datafile"] = self.datafile
+		result["testtime"] = int(self.testtime())
+		result["testing"] = False
+		if hasattr(self, "test"):
+			result["testing"] = True
+		return result
+
+	def cmd_reset(self, argc, argv):
+		result = {"error": "E_OK",}
+		if(self.status == "PASS") or (self.status == "FAIL"):
+			self.status = "READY"
+		return result;
+
+	def cmd_test(self, argc, argv):
+		result = {"error": "E_OK",}
+		del argv[0]
+		try:
+			opts, args = getopt.getopt(argv, "m:x:", ["mode=", "mask="])
+		except getopt.GetoptError as e:
+			result["error"] = str(e)
+			return result
+
+		if (len(args) > 0) and (args[0] == "help"):
+			result["usage"] = 'test --mode=AUTO --mask=0 xxxyy.gft'
+			return result
+
+		if hasattr(self, "test"):
+			result["error"] = "another test is running"
+			return result
+
+		#try to execute the specified test
+		#print opts, args
+		para = {"mode":"AUTO", "mask":0}
+		for opt in opts:
+			if(opt[0] == "-m" or opt[0] == "--mode"):
+				para["mode"] = opt[1]
+			elif (opt[0] == "-x" or opt[0] == "--mask"):
+				para["mask"] = int(opt[1])
+
+		gft = args[0]
+		self.test = GFTest(self, gft, para)
+		return result
+
+	def cmd_stop(self, argc, argv):
+		result = {"error": "No Test is Running",}
+		if hasattr(self, "test"):
+			result["error"] = "E_OK";
+			self.test.stop()
+		return result;
+
 def signal_handler(signal, frame):
 	print 'user abort'
 	sys.exit(0)
 
 signal.signal(signal.SIGINT, signal_handler)
-
-#tester config
 saddr = ('localhost', 10003)
 tester = Tester(saddr)
-while True:
-	test = tester.run()
-	if test:
-		test.run()
-
+tester.run()
