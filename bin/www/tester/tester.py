@@ -8,6 +8,7 @@ import sys, signal
 from shell import Shell
 from db import Db
 from test_self import Selfcheck
+from test_gft import GFTest
 import random
 import functools #https://docs.python.org/2/library/functools.html
 import shlex #https://docs.python.org/2/library/shlex.html
@@ -35,6 +36,7 @@ class Tester:
 		self.nr_ng = int(self.db.cfg_get("nr_ng"))
 		self.test = Selfcheck(self)
 		self.test.run()
+		del(self.test)
 
 	def __del__(self):
 		self.shell.unregister("status")
@@ -51,13 +53,11 @@ class Tester:
 		self.shell.update()
 
 	def run(self):
-		if hasattr(self, "test"):
-			del self.test
-
 		while True:
 			self.update()
 			if hasattr(self, "test"):
 				self.test.run()
+				del(self.test)
 
 	def runtime(self):
 		seconds = time.time() - self.time_start

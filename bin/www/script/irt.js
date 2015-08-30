@@ -196,7 +196,7 @@ exports.stop = function() {
 exports.query = function(cmdline, callback) {
 	var tester = new net.Socket();
 	tester.connect(port, host, function() {
-		tester.write(cmdline);
+		tester.write(cmdline+"\n\r");
 	});
 
 	tester.on('data', function(data) {
