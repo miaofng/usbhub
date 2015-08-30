@@ -15,8 +15,12 @@
       <div>Model: <input id="fname" type="text" value="---" disabled="disabled"/></div>
       <div>Barcode: <input id="barcode" type="text" value=""></div>
     </div>
-
     <div id="panel_result">BOOTING...</div>
+	<div id="panel_info2">
+      <div>Model: <input id="fname2" type="text" value="---" disabled="disabled"/></div>
+      <div>Barcode: <input id="barcode2" type="text" value=""></div>
+    </div>
+	<div id="panel_result2">BOOTING...</div>
 
     <div id="panel_stat">
       <div>TOTAL: <span id="num_total">&nbsp;</span></div>
@@ -25,32 +29,35 @@
     </div>
   </div>
   <div id="panel_bottom">
-    <div id="panel_src">
+<!--     <div id="panel_src">
       <pre id="gft" readonly="readonly">
 	  </pre>
-    </div>
+    </div> -->
 
-    <div id="panel_detail">
+	<div id="panel_detail">
 	  <pre id="table">
+	  </pre>
+    </div>
+    <div id="panel_detail2">
+	  <pre id="table2">
 	  </pre>
     </div>
 
     <div id="panel_ctrl">
-      <div id="mask"  style="display: none;" title="rect: pass/fail&#10;text: masked/enabled">
+<!--  <div id="mask"  style="display: none;" title="rect: pass/fail&#10;text: masked/enabled">
           <div><input id="0" type="checkbox" checked="checked"/><label for="0">...</label></div>
-		  <!--
 		  <div><input id="1" type="checkbox" checked="checked"/><label for="1">B</label></div>
 		  <div><input id="2" type="checkbox" checked="checked"/><label for="2">C</label></div>
 		  <div><input id="3" type="checkbox" checked="checked"/><label for="3">D</label></div>
-		  -->
-      </div>
+
+      </div>  -->
       <div>DATE: <span id="date">2015/05/06</span></div>
       <div>TIME: <span id="time_cur">&nbsp;</span></div>
 	  <div>RUN TIME: <span id="time_run">&nbsp;</span></div>
-	  <div>DURATION: <span id="time_test">&nbsp;</span></div>
+<!-- 	  <div>DURATION: <span id="time_test">&nbsp;</span></div> -->
 	  <div>GOODNESS RATE: <span id="passrate">&nbsp;</span></div>
 	  <div>BADNESS RATE: <span id="failrate">&nbsp;</span></div>
-	   <div><input class="idleinput" id="button_mode" type="button" value="AUTO MODE"/></div>
+<!-- 	   <div><input class="idleinput" id="button_mode" type="button" value="AUTO MODE"/></div> -->
 	  <div>
 	    <input class="idleinput" id="button_file" type="file" accept="*.gft"  nwworkingdir="C:\Windows" hidden="hidden"/>
         <input class="idleinput" id="button_model" type="button" value="MODEL"/>

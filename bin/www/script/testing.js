@@ -79,6 +79,7 @@ function gft_load(gft) {
 			$('#gft').html(content+"\n\n");
 			var model = path.basename(gft, ".gft");
 			$('#fname').val(model);
+			$('#fname2').val(model);
 			irt.cfg_set("gft_last", path.relative(process.cwd(), gft));
 
 			//add event handle
@@ -136,6 +137,8 @@ function update_state(status, ecode) {
 
 	$("#panel_result").html(state);
 	$("#panel_result").css("background-color", bgcolor);
+	$("#panel_result2").html(state);
+	$("#panel_result2").css("background-color", bgcolor);
 
 	//subboard state display
 	if(test.model != null) {
@@ -170,8 +173,11 @@ function load_report(datafile) {
 				else return "<span class='record_fail'>[FAIL]</span>";
 			});
 			var ctrl_table = $("#table");
+			var ctrl_table2 = $("#table2");
 			ctrl_table.html(content+"\n");
 			ctrl_table.scrollTop(ctrl_table[0].scrollHeight);
+			ctrl_table2.html(content+"\n");
+			ctrl_table2.scrollTop(ctrl_table2[0].scrollHeight);
 			//console.timeEnd("result_load");
 		}
 	});
