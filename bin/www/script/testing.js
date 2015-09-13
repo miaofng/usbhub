@@ -14,48 +14,6 @@ var test = {
 	//show irt server status only when ui_status = 'READY'
 };
 
-function model_sub_redraw(nrow, ncol, nsub) {
-		$("#mask").hide();
-
-		var html = [];
-		var nsubs = nrow * ncol;
-		for(var i = 0; i < nsubs; i ++) {
-			var subname = String.fromCharCode("A".charCodeAt()+i);
-			var masked = test.mask & (1 << i);
-			var checked = (masked) ? '' : 'checked = "checked"';
-
-			var div = '\
-				<div id = "mask$i"> \
-					<input id="$i" type="checkbox" $checked /> \
-					<label for="$i">$name</label> \
-				</div> \
-			';
-
-			div = div.replace(/\$i/g, i);
-			div = div.replace(/\$checked/g, checked);
-			div = div.replace(/\$name/g, subname);
-			//console.log(div);
-			html.push(div);
-		}
-
-		html = html.join("\n");
-		$("#mask").html(html);
-
-		$( "#mask input" ).button({
-			//disabled: true,
-		}).click(function(){
-			//alert(this.id + "=" + this.checked);
-			var sub = parseInt(this.id);
-			var checked = (this.checked) ? 0 : 1;
-			test.mask = (test.mask & ~(1 << sub)) | (checked << sub);
-		});
-
-		var w = 100/ncol + "%";
-		var h = 100/nrow + "%";
-		$("#mask div").removeAttr("width").removeAttr("height").css({"width":w, "height":h});
-		$("#mask").show();
-}
-
 function gft_load(gft) {
 	if(gft.length < 1) {
 		return;
@@ -67,47 +25,12 @@ function gft_load(gft) {
 			return;
 		}
 		else {
-			var i = 0;
-			content = content.replace(/\r/g, '');
-			content = content.replace(/^/gm, function(x) {
-				var span = "<span class='linenr'>"+i+"</span>  "
-				var span_bp = "<span class='linenr linenr_bp'>"+i+"</span>  "
-				span = (test.bplist[i.toString()]) ? span_bp : span;
-				i ++;
-				return span;
-			});
-			$('#gft').html(content+"\n\n");
 			var model = path.basename(gft, ".gft");
-			$('#fname').val(model);
-			$('#fname2').val(model);
+			model = path.basename(model, ".py");
+			$('#model').html(model);
 			irt.cfg_set("gft_last", path.relative(process.cwd(), gft));
-
-			//add event handle
-			$(".linenr").click(function(){
-				var line = $(this).html();
-				if(test.bplist[line] == null) {
-					//add break point
-					$(this).addClass("linenr_bp");
-					test.bplist[line] = true;
-				}
-				else {
-					//remove break point
-					$(this).removeClass("linenr_bp");
-					test.bplist[line] = null;
-				}
-			});
-
-			irt.model_get(model, function(model) {
-				$("#mask").hide();
-				if(model == null) {
-					test.ui_status = 'MODEL UNSUPPORTED';
-					return;
-				}
-
-				test.model = model;
-				model_sub_redraw(model.nrow, model.ncol, model.nsub);
-				test.ui_status = "READY";
-			});
+			test.model = model;
+			test.ui_status = "READY";
 		}
 	});
 }
@@ -135,28 +58,10 @@ function update_state(status, ecode) {
 		break;
 	}
 
-	$("#panel_result").html(state);
-	$("#panel_result").css("background-color", bgcolor);
-	$("#panel_result2").html(state);
-	$("#panel_result2").css("background-color", bgcolor);
-
-	//subboard state display
-	if(test.model != null) {
-		for(var i = 0; i < test.model.nsub; i ++) {
-			//border color?
-			var border_color = "gray";
-			if(status == "PASS" || status == "FAIL") {
-				border_color = "#00ff00";
-			}
-
-			if((1 << i) & ecode) {
-				border_color = "red";
-			}
-
-			var target = "#mask" + i + " label";
-			$(target).css("border-color", border_color);
-		}
-	}
+	$("#result").html(state);
+	$("#result").css("background-color", bgcolor);
+	$("#result2").html(state);
+	$("#result2").css("background-color", bgcolor);
 }
 
 //for datafile modification monitoring
@@ -204,7 +109,7 @@ function update_status(status) {
 	$("#time_test").html(status.testtime+"s");
 	var barcode = status.barcode.trim();
 	if (barcode.length > 0) {
-		$("#barcode").val(barcode);
+		$("#barcode").html(barcode);
 	}
 
 	//state update
@@ -244,37 +149,31 @@ $(function() {
 		test = JSON.parse(session.test);
 	}
 
-	$("#button_mode").click(function(){
-		if(test.mode == "AUTO") test.mode = "STEP";
-		else test.mode = "AUTO";
-		$(this).val(test.mode + " MODE");
-	});
-
 	$("#button_model").click(function(){
 		var Dialog = new fdialogs.FDialog({
 			type: 'open',
-			accept: ['.gft'],
+			accept: ['.py'],
 			path: './gft'
 		});
 
-		Dialog.getFilePath(function (err, gft_file) {
+		Dialog.getFilePath(function (err, fname) {
 			test.ui_status = 'LOADING';
 			test.mask = 0;
 			irt.query("reset", function(data) {});
-			gft_load(gft_file);
+			gft_load(fname);
 		});
 	});
 
 	$("#button_run").click(function(){
 		var run = $(this).val();
 		if(run == "RUN") {
-			irt.cfg_get('gft_last', function(gft_file) {
-				gft_file = path.resolve(process.cwd(), gft_file);
+			irt.cfg_get('gft_last', function(fname) {
+				fname = path.resolve(process.cwd(), fname);
 				cmdline = [];
 				cmdline.push("test");
 				cmdline.push("--mode=" + test.mode);
 				cmdline.push("--mask=" + test.mask);
-				cmdline.push('"'+gft_file+'"');
+				cmdline.push('"'+fname+'"');
 				cmdline = cmdline.join(" ");
 				irt.query(cmdline, function(data) {});
 			});
@@ -285,8 +184,8 @@ $(function() {
 		}
 	});
 
-	irt.cfg_get('gft_last', function(gft_file) {
-		gft_load(gft_file);
+	irt.cfg_get('gft_last', function(fname) {
+		gft_load(fname);
 	});
 
 	var timer_tick = setInterval("timer_tick_update()", 100);
