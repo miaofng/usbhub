@@ -1,7 +1,9 @@
-var irt = window.parent.require('./script/irt.js');
-var fs = window.parent.require('fs');
-var path = window.parent.require('path');
-var fdialogs = window.parent.require('node-webkit-fdialogs')
+var require = window.parent.require
+var irt = require('./script/irt.js');
+var fs = require('fs');
+var path = require('path');
+var fdialogs = require('node-webkit-fdialogs')
+var crc32 = require('crc-32')
 
 //to be stored in browser's session
 var test = {
@@ -65,14 +67,17 @@ function update_state(status, ecode) {
 }
 
 //for datafile modification monitoring
-var datafile_save = '';
-var datafile_size = 0;
+var datafile_crc = 0;
 
 function load_report(datafile) {
 	fs.readFile(datafile, "ascii", function (err, content) {
 		if(err) {
 		}
 		else {
+			crc = crc32.str(content);
+			if(crc == datafile_crc) return;
+			else datafile_crc = crc;
+
 			content = content.replace(/\[(\w+)\]/gi, function(x) {
 				if(x == "[PASS]") return "<span class='record_pass'>[PASS]</span>";
 				else return "<span class='record_fail'>[FAIL]</span>";
@@ -121,17 +126,7 @@ function update_status(status) {
 	//report update
 	var datafile = status.datafile;
 	if(datafile != null) {
-		if(datafile_save != datafile) {
-			datafile_save = datafile;
-			datafile_size = 0;
-			load_report(status.datafile);
-		}
-		else fs.stat(datafile, function(err, stats) {
-			if(stats.size != datafile_size) {
-				datafile_size = stats.size;
-				load_report(status.datafile);
-			}
-		});
+		load_report(datafile);
 	}
 }
 
