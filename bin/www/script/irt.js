@@ -155,6 +155,24 @@ exports.test_enum = function(cnds, cb) {
 	});
 };
 
+exports.test_stat = function(model, cb) {
+	var sql = 'SELECT fixture, failed, count(*) AS count FROM test \
+		WHERE date(time)=date("now", "localtime") AND model=? \
+		GROUP BY fixture,failed \
+	';
+
+	db.all(sql, model, function(err, rows) {
+		if(err) {
+			console.log("irt.test_stat(): "+err.message);
+		}
+		else {
+			if(cb) {
+				cb(rows);
+			}
+		}
+	});
+};
+
 exports.model_enum = function(name) {
 	var max_records = (arguments.length > 2) ? arguments[1] : 10;
 	var cb = (arguments.length > 2) ? arguments[2] : arguments[1];
@@ -168,7 +186,7 @@ exports.model_enum = function(name) {
 	});
 };
 
-exports.start = function() {
+exports.start = function(cb) {
 	var server = net.createServer();
 	server.once('error', function(err) {
 		if (err.code === 'EADDRINUSE') {
@@ -184,7 +202,7 @@ exports.start = function() {
 			console.log(data.toString());
 		});
 		tester.stderr.on('data', function (data) {
-			console.error(data.toString());
+			cb(data.toString());
 		});
 	});
 };

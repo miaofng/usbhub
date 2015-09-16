@@ -11,6 +11,9 @@ storage = window.sessionStorage;
 storage.testing_status = "BOOTING";
 
 $(function() {
+	var session = window.sessionStorage;
+	delete(session.test);
+
 	var win = gui.Window.get();
 	win.show();
 	win.on('close', function() {
@@ -19,7 +22,11 @@ $(function() {
 		this.close(true);
 	});
 
-	irt.start();
+	irt.start(function(err){
+		session.server_error = err;
+		window.mainFrame.location.href = "about.html";
+	});
+
 	$(window).unload(function(){
 		irt.stop();
 	});

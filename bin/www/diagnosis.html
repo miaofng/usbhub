@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>INSULATION RESISTOR TESTER - E2XX</title>
+<link rel="stylesheet" href="jquery-ui/jquery-ui.min.css">
+<link rel="stylesheet" href="jquery-ui/jquery-ui.theme.min.css">
+<link rel="stylesheet" href="css/diagnosis.css">
+<script src="jquery-ui/external/jquery/jquery.js"></script>
+<script src="jquery-ui/jquery-ui.min.js"></script>
+<script src="ace-builds/src-noconflict/ace.js" type="text/javascript" charset="utf-8"></script>
+<script src="script/setting.js"></script>
+</head>
+<body>
+	<div id="panel">
+		<div id="panel_fixture0">
+			<div class="panel_head">FIXTURE - LEFT </div>
+			<div class="panel_head"><img src="img/fixture.png" height="240px"/> </div>
+			<div>
+				<span class="indicators" title="Fixture ID">ID</span>
+				<span class="indicators" title="UUT Present Sensor">SU</span>
+				<span class="indicators" title="Rotate Cylinder Sensor">SR</span>
+				<span class="indicators" title="Front Cylinder Sensor">F+</span>
+				<span class="indicators" title="Front Cylinder Sensor">F-</span>
+				<span class="indicators" title="Back Cylinder Sensor">B+</span>
+				<span class="indicators" title="Back Cylinder Sensor">B-</span>
+			</div>
+			<div><input class="buttons" id="g_dat_dir" type="button" value="ROTATE CYLINDER"/></div>
+			<div><input class="buttons" id="g_dat_dir" type="button" value="CYLINDER F"/></div>
+			<div><input class="buttons" id="g_dat_dir" type="button" value="CYLINDER B"/></div>
+		</div>
+
+		<div id="panel_fixture1">
+			<div class="panel_head">FIXTURE - RIGHT </div>
+			<div class="panel_head"><img src="img/fixture.png" height="240px"/> </div>
+			<div>
+				<span class="indicators" title="Fixture ID">ID</span>
+				<span class="indicators" title="UUT Present Sensor">SU</span>
+				<span class="indicators" title="Rotate Cylinder Sensor">SR</span>
+				<span class="indicators" title="Front Cylinder Sensor">F+</span>
+				<span class="indicators" title="Front Cylinder Sensor">F-</span>
+				<span class="indicators" title="Back Cylinder Sensor">B+</span>
+				<span class="indicators" title="Back Cylinder Sensor">B-</span>
+			</div>
+			<div><input class="buttons" id="g_dat_dir" type="button" value="ROTATE CYLINDER"/></div>
+			<div><input class="buttons" id="g_dat_dir" type="button" value="CYLINDER F"/></div>
+			<div><input class="buttons" id="g_dat_dir" type="button" value="CYLINDER B"/></div>
+		</div>
+
+		<div id="panel_tester">
+			<div class="panel_head">TESTER</div>
+			<div class="panel_head"><img src="img/tester.png" height="240px"/> </div>
+			<div>
+				<span class="indicators" title="Start Button">SB</span>
+				<span class="indicators" title="Left Window Cylinder Sensor">L+</span>
+				<span class="indicators" title="Left Window Cylinder Sensor">L-</span>
+				<span class="indicators" title="Right Window Cylinder Sensor">R+</span>
+				<span class="indicators" title="Right Window Cylinder Sensor">R-</span>
+			</div>
+			<div><input class="buttons" id="g_dat_dir" type="button" value="WASTE BOX"/></div>
+			<div><input class="buttons" id="g_dat_dir" type="button" value="TOP COVER"/></div>
+			<div><input class="buttons" id="g_dat_dir" type="button" value="LEFT WINDOW"/></div>
+			<div><input class="buttons" id="g_dat_dir" type="button" value="RIGHT WINDOW"/></div>
+			<div><input class="buttons" id="g_dat_dir" type="button" value="LEFT LAMP"/></div>
+			<div><input class="buttons" id="g_dat_dir" type="button" value="RIGHT LAMP"/></div>
+		</div>
+	</div>
+
+</body>

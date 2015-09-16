@@ -20,10 +20,10 @@ class Tester:
 	time_test_start = 0
 	time_test = 0
 	barcode = ''
-	nr_ok = 0
-	nr_ng = 0
 	datafile = ''
 	ecode = 0
+	fixture_id = "Invalid"
+	fixture_pressed = "Invalid"
 
 	def __init__(self, saddr):
 		self.shell = Shell(saddr)
@@ -31,9 +31,7 @@ class Tester:
 		self.shell.register("reset", self.cmd_reset, "reset tester status to READY")
 		self.shell.register("test", self.cmd_test, "test start")
 		self.shell.register("stop", self.cmd_stop, "test stop")
-		self.db = Db();
-		self.nr_ok = int(self.db.cfg_get("nr_ok"))
-		self.nr_ng = int(self.db.cfg_get("nr_ng"))
+		self.db = Db()
 		self.test = Selfcheck(self)
 		self.test.run()
 		del(self.test)
@@ -100,13 +98,11 @@ class Tester:
 		self.db.test_add(record)
 
 	def passed(self):
-		self.nr_ok = self.nr_ok + 1
 		self.finish("PASS")
 
 	def failed(self, ecode = -1):
 		if ecode != 0:
 			self.ecode = ecode
-		self.nr_ng = self.nr_ng + 1
 		self.finish("FAIL")
 
 	def barcode_get(self):
@@ -119,14 +115,14 @@ class Tester:
 
 	def cmd_status(self, argc, argv):
 		result = {}
-		result["status"] = self.status
-		result["ecode"] = self.ecode
+		result["fixture_id"] = self.fixture_id
+		result["pressed"] = self.fixture_pressed
 		result["runtime"] = int(self.runtime())
-		result["nr_ok"] = str(self.nr_ok)
-		result["nr_ng"] = str(self.nr_ng)
-		result["barcode"] = self.barcode
-		result["datafile"] = self.datafile
-		result["testtime"] = int(self.testtime())
+		result["ecode"] = (self.ecode, self.ecode)
+		result["status"] = (self.status, self.status)
+		result["barcode"] = (self.barcode, self.barcode)
+		result["datafile"] = (self.datafile, self.datafile)
+		#result["testtime"] = int(self.testtime())
 		result["testing"] = False
 		if hasattr(self, "test"):
 			result["testing"] = True

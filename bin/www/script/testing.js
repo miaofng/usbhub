@@ -8,8 +8,6 @@ var crc32 = require('crc-32')
 //to be stored in browser's session
 var test = {
 	"model": null,
-	"mode":"AUTO",
-	"mask": 0,
 	"bplist":{},
 
 	"ui_status": 'INIT', //'LOADING', 'READY', 'XXX ERROR'
@@ -37,7 +35,7 @@ function gft_load(gft) {
 	});
 }
 
-function update_state(status, ecode) {
+function update_state(id, status, ecode) {
 	var state = (test.ui_status != "READY") ? test.ui_status : status;
 	var bgcolor = "#ff0000";
 
@@ -60,35 +58,30 @@ function update_state(status, ecode) {
 		break;
 	}
 
-	$("#result").html(state);
-	$("#result").css("background-color", bgcolor);
-	$("#result2").html(state);
-	$("#result2").css("background-color", bgcolor);
+	$(id).html(state);
+	$(id).css("background-color", bgcolor);
 }
 
 //for datafile modification monitoring
-var datafile_crc = 0;
+var datafile_crc = [];
 
-function load_report(datafile) {
+function load_report(id, datafile) {
 	fs.readFile(datafile, "ascii", function (err, content) {
 		if(err) {
 		}
 		else {
 			crc = crc32.str(content);
-			if(crc == datafile_crc) return;
-			else datafile_crc = crc;
+			if(crc == datafile_crc[id]) return;
+			else datafile_crc[id] = crc;
 
 			content = content.replace(/\[(\w+)\]/gi, function(x) {
 				if(x == "[PASS]") return "<span class='record_pass'>[PASS]</span>";
 				else return "<span class='record_fail'>[FAIL]</span>";
 			});
-			var ctrl_table = $("#table");
-			var ctrl_table2 = $("#table2");
-			ctrl_table.html(content+"\n");
-			ctrl_table.scrollTop(ctrl_table[0].scrollHeight);
-			ctrl_table2.html(content+"\n");
-			ctrl_table2.scrollTop(ctrl_table2[0].scrollHeight);
-			//console.timeEnd("result_load");
+
+			var obj = $(id);
+			obj.html(content+"\n");
+			obj.scrollTop(obj[0].scrollHeight);
 		}
 	});
 }
@@ -99,35 +92,30 @@ function update_status(status) {
 	$("#time_cur").html(date.toTimeString().substr(0, 8));
 	$("#date").html(sdate);
 
-	if(status == null)
+	if(!status)
 		return;
 
-	$("#num_pass").html(status.nr_ok);
-	$("#num_fail").html(status.nr_ng);
-	var total = parseInt(status.nr_ok) + parseInt(status.nr_ng);
-	$("#num_total").html(total);
-	var passrate = parseFloat(status.nr_ok)/total;
-	var failrate = 1 - passrate;
-	$("#passrate").html(passrate.toString().substr(0, 5));
-	$("#failrate").html(failrate.toString().substr(0, 5));
-	$("#time_run").html(status.runtime+"s");
-	$("#time_test").html(status.testtime+"s");
-	var barcode = status.barcode.trim();
-	if (barcode.length > 0) {
-		$("#barcode").html(barcode);
-	}
+	//fixture
+	$("#fixture_id").html(status.fixture_id);
+	$("#fixture_pressed").html(status.pressed);
 
-	//state update
+	//run stm update
+	$("#time_run").html(status.runtime+"s");
 	$(".idleinput").attr("disabled", status.testing);
 	$("#button_run").val((status.testing) ? "STOP" : "RUN");
 	$("#button_run").attr("disabled", test.ui_status != "READY");
-	update_state(status.status, status.ecode);
+
+	//barcode
+	$("#barcode0").html(status.barcode[0]);
+	$("#barcode1").html(status.barcode[1]);
+
+	//status update
+	update_state("#status0", status.status[0], status.ecode[0]);
+	update_state("#status1", status.status[1], status.ecode[1]);
 
 	//report update
-	var datafile = status.datafile;
-	if(datafile != null) {
-		load_report(datafile);
-	}
+	load_report("#result0", status.datafile[0]);
+	load_report("#result1", status.datafile[1]);
 }
 
 function timer_tick_update() {
@@ -137,12 +125,102 @@ function timer_tick_update() {
 	});
 }
 
+function timer_statistics_update() {
+	if (!test.model)
+		return;
+
+	var nr_ok = [0, 0];
+	var nr_ng = [0, 0];
+	irt.test_stat(test.model, function(rows){
+		rows.forEach(function(row, index){
+			if(row.fixture == 1) {
+				if(row.failed == 0) {
+					nr_ok[1] += row.count;
+				}
+				else {
+					nr_ng[1] += row.count;
+				}
+			}
+			else {
+				if(row.failed == 0) {
+					nr_ok[0] += row.count;
+				}
+				else {
+					nr_ng[0] += row.count;
+				}
+			}
+		});
+
+		$("#num_pass0").html(nr_ok[0]);
+		$("#num_pass1").html(nr_ok[1]);
+
+		$("#num_fail0").html(nr_ng[0]);
+		$("#num_fail1").html(nr_ng[1]);
+
+		var total0 = parseInt(nr_ok[0]) + parseInt(nr_ng[0]);
+		var total1 = parseInt(nr_ok[1]) + parseInt(nr_ng[1]);
+		$("#num_total0").html(total0);
+		$("#num_total1").html(total1);
+
+		var passrate0 = parseFloat(nr_ok[0])/total0 + 0.000001;
+		var failrate0 = 1.00001 - passrate0;
+		var passrate1 = parseFloat(nr_ok[1])/total1 + 0.000001;
+		var failrate1 = 1.00001 - passrate1;
+		$("#passrate0").html(passrate0.toString().substr(0, 5));
+		$("#failrate0").html(failrate0.toString().substr(0, 5));
+		$("#passrate1").html(passrate1.toString().substr(0, 5));
+		$("#failrate1").html(failrate1.toString().substr(0, 5));
+	});
+}
+
 $(function() {
 	irt.init();
 	var session = window.sessionStorage;
-	if(session.test != null) {
+	if(session.test) {
 		test = JSON.parse(session.test);
 	}
+
+	$( "#panel_dialog" ).dialog({
+		autoOpen: !test.jid,
+		closeOnEscape: false,
+		dialogClass: "no-close",
+		height: 250,
+		width: 500,
+		modal: true,
+		hide: {
+			effect: "explode",
+			duration: 500
+		}
+	});
+
+	$("#jid_input").bind('keydown', function(event){
+		var key = event.which;
+		if (key == 13) {
+			var jid = $("#jid_input").val();
+			if(jid.length > 3) {
+				test.jid = jid;
+				$("#jid").html(test.jid);
+				$("#panel_dialog").dialog("close");
+			}
+		}
+	});
+
+	$("#jid").dblclick(function(){
+		$("#jid_input").val("");
+		$( "#panel_dialog" ).dialog("open");
+	})
+
+	$("#button_login").click(function(){
+		var jid = $("#jid_input").val();
+		if(jid.length > 3) {
+			test.jid = jid;
+			$("#jid").html(test.jid);
+			$("#panel_dialog").dialog("close");
+		}
+	});
+
+	//$("#jid_input").val(test.jid);
+	$("#jid").html(test.jid);
 
 	$("#button_model").click(function(){
 		var Dialog = new fdialogs.FDialog({
@@ -153,7 +231,6 @@ $(function() {
 
 		Dialog.getFilePath(function (err, fname) {
 			test.ui_status = 'LOADING';
-			test.mask = 0;
 			irt.query("reset", function(data) {});
 			gft_load(fname);
 		});
@@ -166,8 +243,6 @@ $(function() {
 				fname = path.resolve(process.cwd(), fname);
 				cmdline = [];
 				cmdline.push("test");
-				cmdline.push("--mode=" + test.mode);
-				cmdline.push("--mask=" + test.mask);
 				cmdline.push('"'+fname+'"');
 				cmdline = cmdline.join(" ");
 				irt.query(cmdline, function(data) {});
@@ -184,8 +259,11 @@ $(function() {
 	});
 
 	var timer_tick = setInterval("timer_tick_update()", 100);
+	var stimer = setInterval("timer_statistics_update()", 1000);
+
 	$(window).unload(function(){
 		clearInterval(timer_tick);
+		clearInterval(stimer);
 		irt.exit();
 		session.test = JSON.stringify(test);
 	});

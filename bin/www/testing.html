@@ -10,60 +10,61 @@
 <script src="script/testing.js"></script>
 </head>
 <body>
-  <div id="panel_top">
-    <div id="panel_info">
-      <div>Model: <input id="fname" type="text" value="---" disabled="disabled"/></div>
-      <div>Barcode: <input id="barcode" type="text" value=""></div>
-    </div>
-    <div id="panel_result">BOOTING...</div>
-	<div id="panel_info2">
-      <div>Model: <input id="fname2" type="text" value="---" disabled="disabled"/></div>
-      <div>Barcode: <input id="barcode2" type="text" value=""></div>
-    </div>
-	<div id="panel_result2">BOOTING...</div>
+<div id="panel_dialog" title="Login">
+		<div><img src="img/lock.png" height="150px"/></div>
+		<div>
+			<div>Please Enter your Job ID Before Testing</div>
+			<div><input id="jid_input" type="text" /></div>
+			<div><input id="button_login" type="button" value="OK"/></div>
+		</div>
+</div>
 
-    <div id="panel_stat">
-      <div>TOTAL: <span id="num_total">&nbsp;</span></div>
-      <div>OK: <span id="num_pass">&nbsp;</span></div>
-      <div>NG: <span id="num_fail">&nbsp;</span></div>
-    </div>
-  </div>
-  <div id="panel_bottom">
-<!--     <div id="panel_src">
-      <pre id="gft" readonly="readonly">
-	  </pre>
-    </div> -->
-
-	<div id="panel_detail">
-	  <pre id="table">
-	  </pre>
-    </div>
-    <div id="panel_detail2">
-	  <pre id="table2">
-	  </pre>
-    </div>
-
-    <div id="panel_ctrl">
-<!--  <div id="mask"  style="display: none;" title="rect: pass/fail&#10;text: masked/enabled">
-          <div><input id="0" type="checkbox" checked="checked"/><label for="0">...</label></div>
-		  <div><input id="1" type="checkbox" checked="checked"/><label for="1">B</label></div>
-		  <div><input id="2" type="checkbox" checked="checked"/><label for="2">C</label></div>
-		  <div><input id="3" type="checkbox" checked="checked"/><label for="3">D</label></div>
-
-      </div>  -->
-      <div>DATE: <span id="date">2015/05/06</span></div>
-      <div>TIME: <span id="time_cur">&nbsp;</span></div>
-	  <div>RUN TIME: <span id="time_run">&nbsp;</span></div>
-<!-- 	  <div>DURATION: <span id="time_test">&nbsp;</span></div> -->
-	  <div>GOODNESS RATE: <span id="passrate">&nbsp;</span></div>
-	  <div>BADNESS RATE: <span id="failrate">&nbsp;</span></div>
-<!-- 	   <div><input class="idleinput" id="button_mode" type="button" value="AUTO MODE"/></div> -->
-	  <div>
-	    <input class="idleinput" id="button_file" type="file" accept="*.gft"  nwworkingdir="C:\Windows" hidden="hidden"/>
-        <input class="idleinput" id="button_model" type="button" value="MODEL"/>
-      </div>
-      <div><input id="button_run" type="button" value="RUN" disabled="disabled"/></div>
-	  <div>IMS: <input class="idleinput" type="checkbox">&nbsp;&nbsp;LABEL: <input class="idleinput" type="checkbox"></div>
-    </div>
-  </div>
+	<div id="panel">
+		<div id="panel_uut0">
+			<div id="status0">BOOTING...</div>
+				<div id="barcode0"> --- </div>
+			<div id="div_result0">
+				<pre id="result0"></pre>
+			</div>
+		</div>
+		<div id="panel_uut1">
+			<div id="status1">BOOTING...</div>
+			<div id="barcode1"> --- </div>
+			<div id="div_result1">
+				<pre id="result1"></pre>
+			</div>
+		</div>
+		<div id="panel_ctrl">
+			<div>Operator ID: <span id="jid">&nbsp;</span></div>
+			<div>Today:
+				<span class="stat" id="num_total0">&nbsp;</span>
+				<span class="stat" id="num_total1">&nbsp;</span>
+			</div>
+			<div>OK:
+				<span class="stat" id="num_pass0">&nbsp;</span>
+				<span class="stat" id="num_pass1">&nbsp;</span>
+			</div>
+			<div>NG:
+				<span class="stat" id="num_fail0">&nbsp;</span>
+				<span class="stat" id="num_fail1">&nbsp;</span>
+			</div>
+			<div>OK Rate:
+				<span class="stat" id="passrate0">&nbsp;</span>
+				<span class="stat" id="passrate1">&nbsp;</span>
+			</div>
+			<div>NG Rate:
+				<span class="stat" id="failrate0">&nbsp;</span>
+				<span class="stat" id="failrate1">&nbsp;</span>
+			</div>
+			<div>Date: <span id="date">2015/05/06</span></div>
+			<div>Time: <span id="time_cur">&nbsp;</span></div>
+			<div>Run: <span id="time_run">&nbsp;</span></div>
+			<div>Fixture: <span id="fixture_id">&nbsp;</span></div>
+			<div>Pressed: <span id="fixture_pressed">&nbsp;</span></div>
+			<div><input class="idleinput" id="button_file" type="file" accept="*.py"	nwworkingdir="C:\Windows" hidden="hidden"/></div>
+			<div id="model">&nbsp;</div>
+			<div><input class="idleinput" id="button_model" type="button" value="MODEL"/></div>
+			<div><input id="button_run" type="button" value="RUN" disabled="disabled"/></div>
+		</div>
+	</div>
 </body>

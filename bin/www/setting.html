@@ -8,49 +8,68 @@
 <link rel="stylesheet" href="css/setting.css">
 <script src="jquery-ui/external/jquery/jquery.js"></script>
 <script src="jquery-ui/jquery-ui.min.js"></script>
+<script src="ace-builds/src-noconflict/ace.js" type="text/javascript" charset="utf-8"></script>
 <script src="script/setting.js"></script>
 </head>
 <body>
-  <div id="panel_bottom">
+  <div id="panel">
 	<div id="panel_left">
-      <div class="panel_head">GLOBAL SETTINGS</div>
-	  <div>Data DIR: <input id="g_dat_dir" value="../../../data/"/></div>
-	  <div>nr_ok: <input id="g_nr_ng" value=""/></div>
-	  <div>nr_ng: <input id="g_nr_ok" value=""/></div>
+		<div class="panel_head">GLOBAL SETTINGS</div>
+	  <div>Mode:
+			<select>
+				<option value ="volvo">Dual Fixture</option>
+				<option value ="saab">Left Only</option>
+				<option value="opel">Right Only</option>
+			</select>
+		</div>
+		<div>IMS:
+			<select>
+				<option value ="volvo">Enable</option>
+				<option value ="saab">Disable</option>
+			</select>
+		</div>
+		<div>Label:
+			<select>
+				<option value ="volvo">Enable</option>
+				<option value ="saab">Disable</option>
+			</select>
+		</div>
+		<div>Data: <input id="g_dat_dir" value="../../../data/"/></div>
 	  <div>Old Passwd: <input id="g_oldpasswd" type="PASSWORD" value="admin"/></div>
       <div>New Passwd: <input id="g_newpasswd" type="PASSWORD"/></div>
 	  <div>Confirm: <input id="g_confirm" type="PASSWORD"/></div>
     </div>
 
-    <div id="panel_detail">
-	  <div class="panel_head">MODEL LIST</div>
-      <div id="list">
-		<div id="s_result"></div>
-	  </div>
-	  <div>SEARCH: <input id="s_model" value=""/></div>
-	  <!-- <div>
-        <a href="">PREV</a>&nbsp;&nbsp;&nbsp;&nbsp;<a href="">NEXT</a>
-      </div>
-      <div>&nbsp;</div>
-	  -->
-    </div>
-
     <div id="panel_right">
-	  <div class="panel_head">MODEL SETTINGS</div>
-      <div class="panel_head" id="mask">
-        <div><input id="0" type="checkbox" checked="checked"/><label for="0">...</label></div>
-      </div>
-      <div>NAME: <input id="m_name" /></div>
-      <div>ROWS: <input id="m_nrow" /></div>
-      <div>COLS: <input id="m_ncol" /></div>
-	  <div>POINTS: <input id="m_points" /></div>
-	  <div>OFFSET: <input id="m_offset" /></div>
-	  <div>BARCODE: <input id="m_openprn" value="Load From File(.prn)..." readonly="readonly"/></div>
-	  <div><pre id="m_prn" wrap="off" ></pre></div>
-	  <div>
-		<input id="m_del" value="Del" type="button" disabled="disabled"/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-		<input id="m_add" value="New" type="button" />&nbsp;&nbsp;&nbsp;&nbsp;
-		<input id="m_apply" value="    Update    " type="button" />
+	  <div class="panel_head">MODEL SETTINGS - xxxx </div>
+      <div id="editor">
+fixture = 5
+
+#usb0 usb1 usb2 sd apx0 apx1 aux
+port_list = ("usb0", "usb1", "usb2")
+
+#passmark
+test_passmark["default"] = ("write_mbps_min": 50, "read_mbps_min": 50)
+test_passmark["usb2"] = False
+
+#charge device port
+test_cdp["default"] = ("min": 4.6)
+
+#short circuit protection
+test_scp["default"] = ("time": 3.0, "min": 4.7, "vmax": 5.1)
+
+#usb passthrough support
+test_passthrough["default"] = False
+test_passthrough["usb0"] = True
+
+#usb carplay support
+test_carplay["default"] = False
+test_carplay["usb0"] = True
+	  </div>
+	  <div id="model_buttons">
+		<input type="button" value="NEW">
+		<input type="button" value="RELOAD">
+		<input type="button" value="SAVE">
 	  </div>
     </div>
 

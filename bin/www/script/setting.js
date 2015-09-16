@@ -132,6 +132,12 @@ $(function() {
 		settings = JSON.parse(session.settings);
 	}
 
+	var editor = ace.edit("editor");
+	editor.setTheme("ace/theme/chrome");
+	editor.getSession().setMode("ace/mode/python");
+	editor.setAutoScrollEditorIntoView(true);
+	editor.setOption("showPrintMargin", false);
+
 	$("#s_model").keydown(function(e){
 		if(e.keyCode == 13) {
 			settings.s_model = $("#s_model").val();

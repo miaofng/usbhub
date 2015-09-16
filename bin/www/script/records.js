@@ -19,7 +19,7 @@ var datafile_size = 0;
 function test_load(id) {
 	irt.test_get(id, function (test) {
 		$('#model').val(test.model);
-		$('#barcode').val(test.barcode);
+		$('#barcode').html(test.barcode);
 		$('#date').html(test.time.substr(0,10));
 		$('#time_cur').html(test.time.substr(10));
 		$('#time_run').html(parseInt(test.runtime));
@@ -72,7 +72,7 @@ function result_load(datafile) {
 					if(x == "[PASS]") return "<span class='record_pass'>[PASS]</span>";
 					else return "<span class='record_fail'>[FAIL]</span>";
 				});
-				var ctrl_table = $("#table");
+				var ctrl_table = $("#result");
 				ctrl_table.html(content+"\n");
 				//ctrl_table.scrollTop(ctrl_table[0].scrollHeight);
 				//console.timeEnd("result_load");
@@ -83,26 +83,26 @@ function result_load(datafile) {
 
 function irt_show_status(status, ecode, model) {
 
-	$("#panel_result").html(status);
+	$("#status").html(status);
 	switch(status) {
 	case "TESTING":
-		$("#panel_result").css("background-color", "#ffff00");
+		$("#status").css("background-color", "#ffff00");
 		break;
 	case "READY":
 	case "PASS":
-		$("#panel_result").css("background-color", "#00ff00");
+		$("#status").css("background-color", "#00ff00");
 		break;
 
 	case "INIT":
 	case "LOADING":
-		$("#panel_result").css("background-color", "#c0c0c0");
+		$("#status").css("background-color", "#c0c0c0");
 		break;
 
 	case "ERROR":
 		$("#button_run").attr("disabled", true);
 	case "FAIL":
 	default:
-		$("#panel_result").css("background-color", "#ff0000");
+		$("#status").css("background-color", "#ff0000");
 		break;
 	}
 
@@ -128,6 +128,13 @@ function test_list() {
 
 	irt.test_enum(cnds, function(rows){
 		var html = [];
+		html.push('\
+			<ul class="list_head">\
+				<li>DATE</li>\
+				<li>MODEL</li>\
+				<li>BARCODE</li>\
+			</ul>\
+		');
 		rows.forEach(function(row, index){
 			var ul = [];
 			ul.push('<ul title="'+row.datafile+'">');
@@ -167,8 +174,7 @@ $(function() {
 		test_list();
 	});
 
-	$( "#mask input" ).button({ disabled: true,});
-		$( "#s_start, #s_end" ).datepicker({
+	$( "#s_start, #s_end" ).datepicker({
 		dateFormat: 'yy-mm-dd',
 		showWeek: true,
 		firstDay: 1
@@ -190,7 +196,7 @@ $(function() {
 		source: function( request, response ) {
 			var cnds = {};
 			cnds.barcode = request.term.trim()+"%";
-			cnds.max_records = 64;
+			cnds.max_records = 10;
 			irt.test_enum(cnds, function(rows){
 				var values = [];
 				rows.forEach(function(row, index){
