@@ -133,7 +133,7 @@ function timer_statistics_update() {
 	var nr_ng = [0, 0];
 	irt.test_stat(test.model, function(rows){
 		rows.forEach(function(row, index){
-			if(row.fixture == 1) {
+			if(row.station == 1) {
 				if(row.failed == 0) {
 					nr_ok[1] += row.count;
 				}

@@ -156,9 +156,9 @@ exports.test_enum = function(cnds, cb) {
 };
 
 exports.test_stat = function(model, cb) {
-	var sql = 'SELECT fixture, failed, count(*) AS count FROM test \
+	var sql = 'SELECT station, failed, count(*) AS count FROM test \
 		WHERE date(time)=date("now", "localtime") AND model=? \
-		GROUP BY fixture,failed \
+		GROUP BY station,failed \
 	';
 
 	db.all(sql, model, function(err, rows) {
