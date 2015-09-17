@@ -8,14 +8,15 @@ from test import Test
 import random
 
 class Selfcheck(Test):
-	path = "selfcheck.txt"
+	path = ""
 
-	def __init__(self, tester):
-		Test.__init__(self, tester)
+	def __init__(self, tester, station = 0):
+		Test.__init__(self, tester, station)
+		self.path = "selfcheck_%d"%station
 		self.log_start(self.path)
 
 	def run(self):
-		self.tester.start(self.path)
+		self.tester.start(self.path, self.station)
 		self.log("===system self check report====")
 		self.mdelay(500)
 		self.log("1. dmm checking ...", True)
@@ -26,11 +27,14 @@ class Selfcheck(Test):
 		self.mdelay(500)
 		self.log("4. irt check")
 		for i in range(0, 30):
-			self.mdelay(5)
+			ms = 5
+			if(self.station > 0):
+				ms = 100
+			self.mdelay(ms)
 			err = random.random()
 			line = "setting output to %.2fv, measured ... %.2fv"%(i/100.0, i/100.0+err)
 			self.log(line, err<0.6)
-		self.tester.finish("READY")
+		self.tester.finish("READY", self.station)
 
 
 

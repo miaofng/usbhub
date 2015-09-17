@@ -5,20 +5,25 @@ import io
 import os
 import time
 import sys, signal
+import threading
+from Queue import Queue, Empty
 
-class Test:
+class Test(threading.Thread):
+	lock = threading.Lock()
 	log_file = None
+	flag_stop = False
 
-	def __init__(self, tester):
-		self.flag_stop = False
+	def __init__(self, tester, station = 0):
+		threading.Thread.__init__(self)
 		self.tester = tester
+		self.station = station
 
 	def __del__(self):
 		if self.log_file != None:
 			self.log_file.close()
 
 	def update(self):
-		self.tester.update()
+		pass
 
 	def log_start(self, path):
 		if self.log_file != None:
@@ -47,8 +52,11 @@ class Test:
 		while time.time() < now:
 			self.update()
 
+###########method could be called by main thread ########
 	def stop(self):
+		self.lock.acquire()
 		self.flag_stop = True
+		self.lock.release()
 
 
 

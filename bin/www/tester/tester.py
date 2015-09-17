@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 #coding:utf8
+#1, shell command should be registered in main thread
+#2, tester's method is thread safe
+#3, instrument's lock must be acquired before calling instrument's method
 
 import io
 import time
@@ -13,28 +16,36 @@ import random
 import functools #https://docs.python.org/2/library/functools.html
 import shlex #https://docs.python.org/2/library/shlex.html
 import getopt #https://docs.python.org/2/library/getopt.html
+import threading
+
+class TesterException(Exception): pass
 
 class Tester:
-	status = 'INIT' #'TESTING' 'PASS' 'FAIL' 'READY'
+	lock = threading.Lock()
+	db_lock = threading.Lock()
 	time_start = time.time()
-	time_test_start = 0
-	time_test = 0
-	barcode = ''
-	datafile = ''
-	ecode = 0
 	fixture_id = "Invalid"
 	fixture_pressed = "Invalid"
+	status = ['INIT', 'INIT'] #'TESTING' 'PASS' 'FAIL' 'READY'
+	barcode = ["", ""]
+	datafile = ["", ""]
+	ecode = [0, 0]
+	tests = []
 
 	def __init__(self, saddr):
+		self.db = Db()
 		self.shell = Shell(saddr)
 		self.shell.register("status", self.cmd_status, "display tester status")
 		self.shell.register("reset", self.cmd_reset, "reset tester status to READY")
 		self.shell.register("test", self.cmd_test, "test start")
 		self.shell.register("stop", self.cmd_stop, "test stop")
-		self.db = Db()
-		self.test = Selfcheck(self)
-		self.test.run()
-		del(self.test)
+		if True:
+			station0 = Selfcheck(self, 0)
+			station1 = Selfcheck(self, 1)
+			station0.start()
+			station1.start()
+			self.tests.append(station0)
+			self.tests.append(station1)
 
 	def __del__(self):
 		self.shell.unregister("status")
@@ -53,85 +64,42 @@ class Tester:
 	def run(self):
 		while True:
 			self.update()
-			if hasattr(self, "test"):
-				self.test.run()
-				del(self.test)
+			self.lock.acquire()
+			tests = self.tests
+			self.lock.release()
+			for idx, test in enumerate(tests):
+				if not test.isAlive():
+					del tests[idx]
+			self.lock.acquire()
+			self.tests = tests
+			self.lock.release()
 
-	def runtime(self):
+	def __runtime__(self):
 		seconds = time.time() - self.time_start
 		return seconds;
 
-	def testtime(self):
-		seconds = self.time_test
-		if self.time_test_start != 0:
-			seconds = time.time() - self.time_test_start
-		return seconds
-
-	#to be called by test routine
-	def start(self, datafile):
-		self.ecode = 0
-		self.time_test_start = time.time()
-		self.status = "TESTING"
-		self.datafile = os.path.abspath(datafile)
-
-	def finish(self, status):
-		self.time_test = self.testtime()
-		self.time_test_start = 0
-		self.status = status
-		self.save()
-
-	def save(self):
-		if self.status != "PASS" and self.status != "FAIL":
-			return
-
-		record = {}
-		record["model"] = self.test.model["name"]
-		record["mask"] = self.test.mask
-		record["barcode"] = self.barcode
-		record["runtime"] = self.runtime()
-		record["duration"] = self.testtime()
-		record["failed"] = self.ecode
-		#convert abs path to relative path
-		dat_dir = self.db.cfg_get("dat_dir")
-		dat_dir = os.path.abspath(dat_dir)
-		record["datafile"] = os.path.relpath(self.datafile, dat_dir)
-		self.db.test_add(record)
-
-	def passed(self):
-		self.finish("PASS")
-
-	def failed(self, ecode = -1):
-		if ecode != 0:
-			self.ecode = ecode
-		self.finish("FAIL")
-
-	def barcode_get(self):
-		self.test.mdelay(1000)
-		self.barcode = str(random.randint(15200,99000))
-		return self.barcode
-
-	def wait_fixture(self):
-		self.test.mdelay(500)
-
 	def cmd_status(self, argc, argv):
 		result = {}
+		self.lock.acquire()
 		result["fixture_id"] = self.fixture_id
 		result["pressed"] = self.fixture_pressed
-		result["runtime"] = int(self.runtime())
-		result["ecode"] = (self.ecode, self.ecode)
-		result["status"] = (self.status, self.status)
-		result["barcode"] = (self.barcode, self.barcode)
-		result["datafile"] = (self.datafile, self.datafile)
-		#result["testtime"] = int(self.testtime())
+		result["runtime"] = int(self.__runtime__())
+		result["ecode"] = self.ecode
+		result["status"] = self.status
+		result["barcode"] = self.barcode
+		result["datafile"] = self.datafile
 		result["testing"] = False
-		if hasattr(self, "test"):
+		if len(self.tests) > 0:
 			result["testing"] = True
+		self.lock.release()
 		return result
 
 	def cmd_reset(self, argc, argv):
 		result = {"error": "E_OK",}
+		self.lock.acquire()
 		if(self.status == "PASS") or (self.status == "FAIL"):
 			self.status = "READY"
+		self.lock.release()
 		return result;
 
 	def cmd_test(self, argc, argv):
@@ -170,6 +138,70 @@ class Tester:
 			result["error"] = "E_OK";
 			self.test.stop()
 		return result;
+
+###########thread safe method##########
+	def getDB(self):
+		self.db_lock.acquire()
+		db = self.db
+		self.db_lock.release()
+		return db
+
+	#to be called by test routine
+	def start(self, datafile, station = 0):
+		self.lock.acquire()
+		self.ecode[station] = 0
+		self.status[station] = "TESTING"
+		self.datafile[station] = os.path.abspath(datafile)
+		self.lock.release()
+
+	def finish(self, status, station = 0):
+		self.lock.acquire()
+		self.status[station] = status
+		self.lock.release()
+		self.save(station)
+
+	def save(self, station = 0):
+		#convert abs path to relative path
+		dat_dir = self.getDB().cfg_get("dat_dir")
+		dat_dir = os.path.abspath(dat_dir)
+
+		self.lock.acquire()
+		if self.status[station] != "PASS" and self.status[station] != "FAIL":
+			#only test pass or fail are recorded in database
+			self.lock.release()
+			return
+
+		record = {}
+		record["model"] = self.test.model["name"]
+		record["runtime"] = self.__runtime__()
+		record["station"] = station;
+		record["barcode"] = self.barcode[station]
+		record["failed"] = self.ecode[station]
+		record["datafile"] = os.path.relpath(self.datafile[station], dat_dir)
+		self.lock.release()
+		self.getDB().test_add(record)
+
+	def passed(self):
+		self.finish("PASS")
+
+	def failed(self, ecode = -1):
+		if ecode != 0:
+			self.lock.acquire()
+			self.ecode = ecode
+			self.lock.release()
+		self.finish("FAIL")
+
+	def barcode_get(self, station=0):
+		#self.test.mdelay(1000)
+		barcode = str(random.randint(15200,99000))
+		self.lock.acquire()
+		self.barcode = barcode;
+		self.lock.release()
+		return barcode
+
+	def wait_fixture(self):
+		#self.test.mdelay(500)
+		pass
 
 def signal_handler(signal, frame):
 	print 'user abort'
