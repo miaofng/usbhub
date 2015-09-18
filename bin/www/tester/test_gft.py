@@ -6,74 +6,69 @@ import time
 import sys, signal
 from test import Test
 import random
-from db import Db
 import os
 import json
 
 class GFTest(Test):
-	def __init__(self, tester, gft, para):
-		Test.__init__(self, tester)
-		self.gft = gft
-		self.mask = para["mask"]
-		self.mode = para["mode"]
+	dat_dir = ""
+	station = 0
+	spec = ""
 
-		self.db = Db();
-		dat_dir = self.db.cfg_get("dat_dir")
+	def __init__(self, tester, config):
+		Test.__init__(self, tester)
+		self.spec = config["file"]
+		self.station = config["station"]
+
+		dat_dir = self.tester.getDB().cfg_get("dat_dir")
 		self.dat_dir = os.path.join(dat_dir, time.strftime("%Y-%m-%d"))
-		self.path = os.path.join(self.dat_dir, time.strftime("%H_%M.dat"))
+		fname = "%d_%s"%(self.station, time.strftime("%H_%M.dat"))
+		self.path = os.path.join(self.dat_dir, fname)
 		self.log_start(self.path)
 
 	def update(self):
 		Test.update(self)
-		#add gft specified update here
+		#add specified update here
 		#...
 
 	def precheck(self):
 		#file format check
-		tail = os.path.split(self.gft)[1]
-		[head,ext] = os.path.splitext(self.gft)
-		ok_ext = (ext == ".gft")
-		self.log(self.gft)
+		tail = os.path.split(self.spec)[1]
+		[head, ext] = os.path.splitext(self.spec)
+		ok_ext = (ext == ".py")
+		self.log(self.spec)
 		self.log("Checking File EXT Name ...", ok_ext)
-
-		ok_gft = os.path.isfile(self.gft)
-		self.log("Checking File Existence ...", ok_gft)
 
 		#query the model config in sqlite
 		model = os.path.basename(head)
-		self.model = self.db.model_get(model)
-		ok_model = self.model != None
-		self.log(model)
-		self.log("Searching Model Configuration ...", ok_model)
-		self.log(str(self.model))
+		self.log("model: %s"%model)
+		self.model = model
 
-		#checking the barcode configuration
-		self.barcode_config = json.loads(self.model["barcode"])
-		self.log(str(self.barcode_config))
-		ok = ok_ext and ok_gft and ok_model
-		return ok
+		ok_gft = os.path.isfile(self.spec)
+		self.log("Checking File Existence ...", ok_gft)
+		return ok_ext
 
 	def run(self):
 		if self.precheck() == False:
-			self.tester.start(self.path)
+			self.tester.start(self.path, self.station)
 			self.log("Test Abort!!!")
-			self.tester.failed()
+			self.tester.failed(self.station)
 			return
 
 		while True:
 			#1, wait for barcode ready
-			barcode = self.tester.barcode_get()
+			barcode = self.tester.barcode_get(self.station)
+			self.mdelay(500*self.station)
 			if self.flag_stop:
 				self.log("Test Abort by usr!!!")
-				self.tester.failed(0)
+				self.tester.failed(self.station)
 				return
 
 			self.path = os.path.join(self.dat_dir, time.strftime("%H_%M_")+barcode+".dat")
-			self.tester.start(self.path)
+			self.tester.start(self.path, self.station)
 			self.log_start(self.path)
 
 			#2, wait for fixture ready
-			self.tester.wait_fixture()
+			self.tester.wait_fixture(self.station)
 
 			#3, test start
 			for i in range(0, 1000):
@@ -83,10 +78,12 @@ class GFTest(Test):
 				self.log(line, err<0.6)
 				if self.flag_stop:
 					self.log("Test Abort by usr!!!")
-					self.tester.failed()
+					self.tester.failed(self.station)
 					return
 
-			self.tester.failed(1)
+			self.tester.failed(self.station)
+			self.tester.save({"model":self.model,}, self.station)
+			self.mdelay(2000)
 
 
 #module self test

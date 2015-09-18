@@ -8,7 +8,7 @@ import sqlite3
 
 class Db:
 	def __init__(self):
-		self.conn = sqlite3.connect('irt.db')
+		self.conn = sqlite3.connect('irt.db', check_same_thread = False)
 		def dict_factory(cursor, row):
 			d = {}
 			for idx, col in enumerate(cursor.description):

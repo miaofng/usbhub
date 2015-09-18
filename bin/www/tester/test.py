@@ -13,17 +13,16 @@ class Test(threading.Thread):
 	log_file = None
 	flag_stop = False
 
-	def __init__(self, tester, station = 0):
+	def __init__(self, tester):
 		threading.Thread.__init__(self)
 		self.tester = tester
-		self.station = station
 
 	def __del__(self):
 		if self.log_file != None:
 			self.log_file.close()
 
 	def update(self):
-		pass
+		time.sleep(0.001) #to avoid cpu usage too high
 
 	def log_start(self, path):
 		if self.log_file != None:

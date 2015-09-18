@@ -9,10 +9,12 @@ import random
 
 class Selfcheck(Test):
 	path = ""
+	station = 0
 
-	def __init__(self, tester, station = 0):
-		Test.__init__(self, tester, station)
-		self.path = "selfcheck_%d"%station
+	def __init__(self, tester, config):
+		Test.__init__(self, tester)
+		self.station = config["station"]
+		self.path = "selfcheck_%d"%self.station
 		self.log_start(self.path)
 
 	def run(self):

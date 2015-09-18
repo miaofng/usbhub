@@ -40,8 +40,8 @@ class Tester:
 		self.shell.register("test", self.cmd_test, "test start")
 		self.shell.register("stop", self.cmd_stop, "test stop")
 		if True:
-			station0 = Selfcheck(self, 0)
-			station1 = Selfcheck(self, 1)
+			station0 = Selfcheck(self, {"station": 0})
+			station1 = Selfcheck(self, {"station": 1})
 			station0.start()
 			station1.start()
 			self.tests.append(station0)
@@ -115,8 +115,8 @@ class Tester:
 			result["usage"] = 'test --mode=AUTO --mask=0 xxxyy.gft'
 			return result
 
-		if hasattr(self, "test"):
-			result["error"] = "another test is running"
+		if len(self.tests) > 0:
+			result["error"] = "test is runing"
 			return result
 
 		#try to execute the specified test
@@ -128,15 +128,21 @@ class Tester:
 			elif (opt[0] == "-x" or opt[0] == "--mask"):
 				para["mask"] = int(opt[1])
 
-		gft = args[0]
-		self.test = GFTest(self, gft, para)
+		para["file"] = args[0]
+		para["station"] = 0
+		station0 = GFTest(self, para)
+		para["station"] = 1
+		station1 = GFTest(self, para)
+		station0.start()
+		station1.start()
+		self.tests = [station0, station1]
 		return result
 
 	def cmd_stop(self, argc, argv):
-		result = {"error": "No Test is Running",}
-		if hasattr(self, "test"):
+		result = {"error": "OK",}
+		for test in self.tests:
 			result["error"] = "E_OK";
-			self.test.stop()
+			test.stop()
 		return result;
 
 ###########thread safe method##########
@@ -158,9 +164,8 @@ class Tester:
 		self.lock.acquire()
 		self.status[station] = status
 		self.lock.release()
-		self.save(station)
 
-	def save(self, station = 0):
+	def save(self, record, station = 0):
 		#convert abs path to relative path
 		dat_dir = self.getDB().cfg_get("dat_dir")
 		dat_dir = os.path.abspath(dat_dir)
@@ -171,35 +176,33 @@ class Tester:
 			self.lock.release()
 			return
 
-		record = {}
-		record["model"] = self.test.model["name"]
-		record["runtime"] = self.__runtime__()
-		record["station"] = station;
 		record["barcode"] = self.barcode[station]
+		record["runtime"] = self.__runtime__()
 		record["failed"] = self.ecode[station]
 		record["datafile"] = os.path.relpath(self.datafile[station], dat_dir)
+		record["station"] = station;
 		self.lock.release()
 		self.getDB().test_add(record)
 
-	def passed(self):
-		self.finish("PASS")
+	def passed(self, station=0):
+		self.finish("PASS", station)
 
-	def failed(self, ecode = -1):
+	def failed(self, station=0, ecode = -1):
 		if ecode != 0:
 			self.lock.acquire()
-			self.ecode = ecode
+			self.ecode[station] = ecode
 			self.lock.release()
-		self.finish("FAIL")
+		self.finish("FAIL", station)
 
 	def barcode_get(self, station=0):
 		#self.test.mdelay(1000)
 		barcode = str(random.randint(15200,99000))
 		self.lock.acquire()
-		self.barcode = barcode;
+		self.barcode[station] = barcode;
 		self.lock.release()
 		return barcode
 
-	def wait_fixture(self):
+	def wait_fixture(self, station=0):
 		#self.test.mdelay(500)
 		pass
 
