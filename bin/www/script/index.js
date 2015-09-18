@@ -13,6 +13,7 @@ storage.testing_status = "BOOTING";
 $(function() {
 	var session = window.sessionStorage;
 	delete(session.test);
+	delete(session.server_error);
 
 	var win = gui.Window.get();
 	win.show();
