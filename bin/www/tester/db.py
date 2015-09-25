@@ -29,6 +29,18 @@ class Db:
 		cursor.execute('UPDATE cfg SET value=? WHERE name=?', (str(value), name, ))
 		self.conn.commit()
 
+	def fixture_get(self, id, col):
+		cursor = self.conn.cursor()
+		cursor.execute('SELECT * FROM fixture WHERE id=?', (id,))
+		fixture = cursor.fetchone()
+		return fixture[col]
+
+	def fixture_set(self, id, col, val):
+		cursor = self.conn.cursor()
+		sql = 'UPDATE fixture SET %s=%d WHERE id=%d'%(col, val, id)
+		cursor.execute(sql)
+		self.conn.commit()
+
 	def model_get(self, name):
 		cursor = self.conn.cursor()
 		cursor.execute('SELECT * FROM model WHERE name=?', (name,))

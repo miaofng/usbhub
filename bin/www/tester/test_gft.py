@@ -8,83 +8,92 @@ from test import Test
 import random
 import os
 import json
+import imp
 
 class GFTest(Test):
-	dat_dir = ""
-	station = 0
-	spec = ""
+	model = None
 
-	def __init__(self, tester, config):
-		Test.__init__(self, tester)
-		self.spec = config["file"]
-		self.station = config["station"]
-
-		dat_dir = self.tester.getDB().cfg_get("dat_dir")
-		self.dat_dir = os.path.join(dat_dir, time.strftime("%Y-%m-%d"))
-		fname = "%d_%s"%(self.station, time.strftime("%H_%M.dat"))
-		self.path = os.path.join(self.dat_dir, fname)
-		self.log_start(self.path)
+	def __init__(self, tester, model, station = 0):
+		Test.__init__(self, tester, station)
+		self.model = model
+		#self.fpath = config["file"]
+		#self.config = imp.load_source("config", self.fpath)
+		# subdir = time.strftime("%Y-%m-%d")
+		# fname = "%d_%s"%(self.station, time.strftime("%H_%M.dat"))
+		# dataFile = self.tester.getPath(subdir, fname)
+		# self.log_start(dataFile)
 
 	def update(self):
 		Test.update(self)
 		#add specified update here
 		#...
 
-	def precheck(self):
-		#file format check
-		tail = os.path.split(self.spec)[1]
-		[head, ext] = os.path.splitext(self.spec)
-		ok_ext = (ext == ".py")
-		self.log(self.spec)
-		self.log("Checking File EXT Name ...", ok_ext)
+	# def precheck(self):
+		# # #file format check
+		# # tail = os.path.split(self.fpath)[1]
+		# # [head, ext] = os.path.splitext(self.fpath)
+		# # ok_ext = (ext == ".py")
+		# # self.log(self.fpath)
+		# # self.log("Checking File EXT Name ...", ok_ext)
 
-		#query the model config in sqlite
-		model = os.path.basename(head)
-		self.log("model: %s"%model)
-		self.model = model
+		# # self.log("fixture_id = %d"%self.config.fixture)
 
-		ok_gft = os.path.isfile(self.spec)
-		self.log("Checking File Existence ...", ok_gft)
-		return ok_ext
+		# # #query the model config in sqlite
+		# # model = os.path.basename(head)
+		# # self.log("model: %s"%model)
+		# # self.model = model
 
-	def run(self):
-		if self.precheck() == False:
-			self.tester.start(self.path, self.station)
-			self.log("Test Abort!!!")
-			self.tester.failed(self.station)
-			return
+		# # ok_gft = os.path.isfile(self.fpath)
+		# # self.log("Checking File Existence ...", ok_gft)
+		# return True
+
+	def Record(self):
+		dat_dir = self.getPath()
+		dat_dir = os.path.abspath(dat_dir)
+		self.lock.acquire()
+		record = {}
+		record["model"] = self.model["name"]
+		record["barcode"] = self.barcode
+		record["failed"] = self.ecode
+		record["datafile"] = os.path.relpath(self.dfpath, dat_dir)
+		record["station"] = self.station
+		self.lock.release()
+		self.tester.getDB().test_add(record)
+
+	def Test(self):
+		# if self.precheck() == False:
+			# self.tester.start(self.path, self.station)
+			# self.log("Test Abort!!!")
+			# self.tester.failed(self.station)
+			# return
 
 		while True:
-			#1, wait for barcode ready
-			barcode = self.tester.barcode_get(self.station)
-			self.mdelay(500*self.station)
-			if self.flag_stop:
-				self.log("Test Abort by usr!!!")
-				self.tester.failed(self.station)
-				return
+			stop = self.tester.RequestTest(self)
+			if stop:
+				break
 
-			self.path = os.path.join(self.dat_dir, time.strftime("%H_%M_")+barcode+".dat")
-			self.tester.start(self.path, self.station)
-			self.log_start(self.path)
+			subdir = time.strftime("%Y-%m-%d")
+			fname = time.strftime("%H_%M_")+self.getBarcode()+".dat"
+			fpath = self.getPath(subdir, fname)
+			self.Start(fpath)
 
-			#2, wait for fixture ready
-			self.tester.wait_fixture(self.station)
-
-			#3, test start
-			for i in range(0, 1000):
+			self.mdelay(random.randint(0,500))
+			for i in range(0, 500):
 				self.mdelay(5)
 				err = random.random()
 				line = "R%04d = %.3fohm"%(i, err*10)
 				self.log(line, err<0.6)
 				if self.flag_stop:
 					self.log("Test Abort by usr!!!")
-					self.tester.failed(self.station)
+					self.Fail()
 					return
 
-			self.tester.failed(self.station)
-			self.tester.save({"model":self.model,}, self.station)
+			if random.randint(0,1):
+				self.Pass()
+			else:
+				self.Fail()
+			self.Record()
 			self.mdelay(2000)
-
 
 #module self test
 if __name__ == '__main__':

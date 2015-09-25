@@ -12,40 +12,73 @@ from shell import Shell
 from db import Db
 from test_self import Selfcheck
 from test_gft import GFTest
+from scanner import Scanner
+from fixture import Fixture
+import settings
 import random
 import functools #https://docs.python.org/2/library/functools.html
 import shlex #https://docs.python.org/2/library/shlex.html
 import getopt #https://docs.python.org/2/library/getopt.html
 import threading
 
+swdebug = True
+if hasattr(settings, "swdebug"):
+	swdebug = settings.swdebug
+
+swdebug_estop = False
+if hasattr(settings, "swdebug"):
+	swdebug_estop = settings.swdebug_estop
+
 class TesterException(Exception): pass
+class ThreadException(Exception):
+	def __init__(self, thread):
+		sys.stderr.write('%s Exception'%thread.getName())
+		sys.stderr.write(thread.stack)
 
 class Tester:
 	lock = threading.Lock()
 	db_lock = threading.Lock()
+	fixture_lock = threading.Lock()
+	test_lock = threading.Lock()
+	waste_lock = threading.Lock()
+
 	time_start = time.time()
 	fixture_id = "Invalid"
 	fixture_pressed = "Invalid"
-	status = ['INIT', 'INIT'] #'TESTING' 'PASS' 'FAIL' 'READY'
-	barcode = ["", ""]
-	datafile = ["", ""]
-	ecode = [0, 0]
-	tests = []
+	stop = False
+	estop = False
+	threads = {0: None, 1: None}
 
 	def __init__(self, saddr):
 		self.db = Db()
+		self.mode = self.db.cfg_get("Mode")
 		self.shell = Shell(saddr)
 		self.shell.register("status", self.cmd_status, "display tester status")
-		self.shell.register("reset", self.cmd_reset, "reset tester status to READY")
+		#self.shell.register("reset", self.cmd_reset, "reset tester status to READY")
 		self.shell.register("test", self.cmd_test, "test start")
 		self.shell.register("stop", self.cmd_stop, "test stop")
+
+		if swdebug:
+			self.RequestTest = self.vRequestTest
+			self.RequestWaste = self.vRequestWaste
+			self.fixture_id = id = 1
+		else:
+			self.scanner = Scanner(settings.scanner_port)
+			self.fixture = Fixture(settings.plc_port)
+			id = self.fixture.GetID(0)
+			id1 = self.fixture.GetID(1)
+			assert id1 == id
+			self.fixture_id = id
+
+		self.fixture_pressed = self.db.fixture_get(id, "pressed")
+
 		if True:
-			station0 = Selfcheck(self, {"station": 0})
-			station1 = Selfcheck(self, {"station": 1})
+			station0 = Selfcheck(self, 0)
+			station1 = Selfcheck(self, 1)
 			station0.start()
 			station1.start()
-			self.tests.append(station0)
-			self.tests.append(station1)
+			self.threads[0] = station0
+			self.threads[1] = station1
 
 	def __del__(self):
 		self.shell.unregister("status")
@@ -54,25 +87,29 @@ class Tester:
 		self.shell.unregister("stop")
 
 	def update(self):
-		try:
-			time.sleep(0.001) #to avoid cpu usage too high
-		except:
-			print 'sleep exception'
-			sys.exit(0)
+		time.sleep(0.001) #to avoid cpu usage too high
 		self.shell.update()
+
+		#thread exit?
+		for key in self.threads:
+			thread = self.threads[key]
+			if thread:
+				if thread.exception:
+					raise ThreadException(thread)
+
+		#estop
+		if not swdebug:
+			self.estop = self.getFixture().IsEstop()
+		elif swdebug_estop:
+			ms = self.__runtime__()*1000
+			if int(ms) % 3000 == 0:
+				self.estop = random.randint(0,1)
+		if self.estop:
+			self.__stop__()
 
 	def run(self):
 		while True:
 			self.update()
-			self.lock.acquire()
-			tests = self.tests
-			self.lock.release()
-			for idx, test in enumerate(tests):
-				if not test.isAlive():
-					del tests[idx]
-			self.lock.acquire()
-			self.tests = tests
-			self.lock.release()
 
 	def __runtime__(self):
 		seconds = time.time() - self.time_start
@@ -84,23 +121,47 @@ class Tester:
 		result["fixture_id"] = self.fixture_id
 		result["pressed"] = self.fixture_pressed
 		result["runtime"] = int(self.__runtime__())
-		result["ecode"] = self.ecode
-		result["status"] = self.status
-		result["barcode"] = self.barcode
-		result["datafile"] = self.datafile
-		result["testing"] = False
-		if len(self.tests) > 0:
-			result["testing"] = True
+		result["estop"] = self.estop
 		self.lock.release()
+
+		ecode = [0, 0]
+		barcode = ['', '']
+		status = ['READY', 'READY']
+		datafile = ['', '']
+		result["testing"] = self.IsTesting()
+
+		for key in self.threads:
+			test = self.threads[key]
+			if test:
+				test.lock.acquire()
+				ecode[key] = test.ecode
+				status[key] = test.status
+				barcode[key] = test.barcode
+				datafile[key] = test.dfpath
+				test.lock.release()
+
+		result["ecode"] = ecode
+		result["status"] = status
+		result["barcode"] = barcode
+		result["datafile"] = datafile
 		return result
 
-	def cmd_reset(self, argc, argv):
-		result = {"error": "E_OK",}
-		self.lock.acquire()
-		if(self.status == "PASS") or (self.status == "FAIL"):
-			self.status = "READY"
-		self.lock.release()
-		return result;
+#	def cmd_reset(self, argc, argv):
+#		result = {"error": "E_OK",}
+#		self.lock.acquire()
+#		if(self.status == "PASS") or (self.status == "FAIL"):
+#			self.status = "READY"
+#		self.lock.release()
+#		return result;
+
+	def IsTesting(self):
+		testing = False
+		for key in self.threads:
+			thread = self.threads[key]
+			if thread:
+				if thread.isAlive():
+					testing = True
+		return testing
 
 	def cmd_test(self, argc, argv):
 		result = {"error": "E_OK",}
@@ -115,9 +176,11 @@ class Tester:
 			result["usage"] = 'test --mode=AUTO --mask=0 xxxyy.gft'
 			return result
 
-		if len(self.tests) > 0:
+		if self.IsTesting():
 			result["error"] = "test is runing"
 			return result
+
+		self.stop = False
 
 		#try to execute the specified test
 		#print opts, args
@@ -128,22 +191,29 @@ class Tester:
 			elif (opt[0] == "-x" or opt[0] == "--mask"):
 				para["mask"] = int(opt[1])
 
-		para["file"] = args[0]
-		para["station"] = 0
-		station0 = GFTest(self, para)
-		para["station"] = 1
-		station1 = GFTest(self, para)
+		fpath = args[0]
+		fname = os.path.split(fpath)[1]
+		[title, ext] = os.path.splitext(fname)
+		model = {"name": title}
+		station0 = GFTest(self, model, 0)
+		station1 = GFTest(self, model, 1)
 		station0.start()
 		station1.start()
-		self.tests = [station0, station1]
+		self.threads[0] = station0
+		self.threads[1] = station1
 		return result
 
 	def cmd_stop(self, argc, argv):
 		result = {"error": "OK",}
-		for test in self.tests:
-			result["error"] = "E_OK";
-			test.stop()
+		self.__stop__()
 		return result;
+
+	def __stop__(self):
+		self.stop = True
+		for key in self.threads:
+			thread = self.threads[key]
+			if thread:
+				thread.stop()
 
 ###########thread safe method##########
 	def getDB(self):
@@ -152,58 +222,72 @@ class Tester:
 		self.db_lock.release()
 		return db
 
-	#to be called by test routine
-	def start(self, datafile, station = 0):
-		self.lock.acquire()
-		self.ecode[station] = 0
-		self.status[station] = "TESTING"
-		self.datafile[station] = os.path.abspath(datafile)
-		self.lock.release()
+	def getFixture(self):
+		self.fixture_lock.acquire()
+		fixture = self.fixture
+		self.fixture_lock.release()
+		return fixture
 
-	def finish(self, status, station = 0):
-		self.lock.acquire()
-		self.status[station] = status
-		self.lock.release()
+	def RequestWaste(self, station):
+		#to avoid WasteBox Competion
+		#blocked if request fail
+		pass
 
-	def save(self, record, station = 0):
-		#convert abs path to relative path
-		dat_dir = self.getDB().cfg_get("dat_dir")
-		dat_dir = os.path.abspath(dat_dir)
+	def RequestTest(self, test):
+		#to protect scan-PutUUT-start process integrity
+		#blocked if request fail
+		station = test.station
+		self.test_lock.acquire()
+		while not self.stop:
+			#yellow flash
+			self.getFixture().signal(station, "OFF")
+			time.sleep(0.010)
+			self.getFixture().signal(station, "BUSY")
+			time.sleep(0.010)
 
-		self.lock.acquire()
-		if self.status[station] != "PASS" and self.status[station] != "FAIL":
-			#only test pass or fail are recorded in database
-			self.lock.release()
-			return
+			#uut present?
+			#not self.IsUutPresent(station):
 
-		record["barcode"] = self.barcode[station]
-		record["runtime"] = self.__runtime__()
-		record["failed"] = self.ecode[station]
-		record["datafile"] = os.path.relpath(self.datafile[station], dat_dir)
-		record["station"] = station;
-		self.lock.release()
-		self.getDB().test_add(record)
+			#fixture motion enable
+			barcode = self.scanner.read()
+			if barcode:
+				test.setBarcode(barcode)
+				self.getFixture().Start(station)
 
-	def passed(self, station=0):
-		self.finish("PASS", station)
+			#fixture ready?
+			ready = self.getFixture().IsReady(station)
+			if ready:
+				self.lock.acquire()
+				self.fixture_pressed = self.fixture_pressed + 1
+				self.lock.release()
+				break
 
-	def failed(self, station=0, ecode = -1):
-		if ecode != 0:
-			self.lock.acquire()
-			self.ecode[station] = ecode
-			self.lock.release()
-		self.finish("FAIL", station)
+		self.test_lock.release()
+		return self.stop
 
-	def barcode_get(self, station=0):
-		#self.test.mdelay(1000)
-		barcode = str(random.randint(15200,99000))
-		self.lock.acquire()
-		self.barcode[station] = barcode;
-		self.lock.release()
-		return barcode
+	def vRequestTest(self, test):
+		station = test.station
+		self.test_lock.acquire()
+		while not self.stop:
+			time.sleep(0.020)
+			guess = random.randint(0,99)
+			if guess > 90:
+				barcode = str(random.randint(1000,9999))
+				test.setBarcode(barcode)
+			if guess > 98:
+				self.lock.acquire()
+				pressed = self.fixture_pressed + 1
+				self.fixture_pressed = pressed
+				self.lock.release()
+				self.getDB().fixture_set(self.fixture_id, "pressed", pressed)
+				break
 
-	def wait_fixture(self, station=0):
-		#self.test.mdelay(500)
+		self.test_lock.release()
+		return self.stop
+
+	def vRequestWaste(self, station):
+		#to avoid WasteBox Competion
+		#blocked if request fail
 		pass
 
 def signal_handler(signal, frame):
