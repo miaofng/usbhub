@@ -8,6 +8,11 @@ import sys, signal
 import threading
 import traceback
 from Queue import Queue, Empty
+import settings
+
+swdebug = True
+if hasattr(settings, "swdebug"):
+	swdebug = settings.swdebug
 
 class Test(threading.Thread):
 	station = 0
@@ -17,6 +22,7 @@ class Test(threading.Thread):
 	stack = ''
 
 	lock = threading.Lock()
+	lock_exception = threading.Lock()
 	ecode = 0
 	status = 'READY'
 	barcode = ''
@@ -38,8 +44,10 @@ class Test(threading.Thread):
 		try:
 			self.Test()
 		except Exception as e:
+			self.lock_exception.acquire()
 			self.exception = e
 			self.stack = ''.join(traceback.format_exception(*sys.exc_info()))
+			self.lock_exception.release()
 
 	def update(self):
 		time.sleep(0.001) #to avoid cpu usage too high
@@ -100,6 +108,8 @@ class Test(threading.Thread):
 			self.log_start(dfpath)
 
 	def Pass(self):
+		if not swdebug:
+			self.tester.getFixture().Signal(self.station, "PASS")
 		self.lock.acquire()
 		self.status = "PASS"
 		self.lock.release()
@@ -110,6 +120,8 @@ class Test(threading.Thread):
 		self.ecode = ecode
 		self.status = "FAIL"
 		self.lock.release()
+		self.tester.RequestWaste(self)
+
 
 	def Prompt(self, status):
 		self.lock.acquire()

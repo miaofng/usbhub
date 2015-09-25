@@ -32,8 +32,12 @@ if hasattr(settings, "swdebug"):
 class TesterException(Exception): pass
 class ThreadException(Exception):
 	def __init__(self, thread):
-		sys.stderr.write('%s Exception'%thread.getName())
-		sys.stderr.write(thread.stack)
+		name = thread.getName()
+		e = thread.exception
+		msg = '%s Exception: %s\n\r'%(name, e.args[0])
+		print >> sys.stderr, msg
+		print >> sys.stderr, thread.stack
+		sys.stderr.flush()
 
 class Tester:
 	lock = threading.Lock()
@@ -45,6 +49,7 @@ class Tester:
 	time_start = time.time()
 	fixture_id = "Invalid"
 	fixture_pressed = "Invalid"
+	wastes = 0 #nr of uut inside wastebox
 	stop = False
 	estop = False
 	threads = {0: None, 1: None}
@@ -94,12 +99,15 @@ class Tester:
 		for key in self.threads:
 			thread = self.threads[key]
 			if thread:
+				thread.lock_exception.acquire()
 				if thread.exception:
 					raise ThreadException(thread)
+				thread.lock_exception.release()
 
 		#estop
 		if not swdebug:
 			self.estop = self.getFixture().IsEstop()
+			self.wastes = self.getFixture().ReadWasteCount()
 		elif swdebug_estop:
 			ms = self.__runtime__()*1000
 			if int(ms) % 3000 == 0:
@@ -120,6 +128,7 @@ class Tester:
 		self.lock.acquire()
 		result["fixture_id"] = self.fixture_id
 		result["pressed"] = self.fixture_pressed
+		result["wastes"] = self.wastes
 		result["runtime"] = int(self.__runtime__())
 		result["estop"] = self.estop
 		self.lock.release()
@@ -228,11 +237,6 @@ class Tester:
 		self.fixture_lock.release()
 		return fixture
 
-	def RequestWaste(self, station):
-		#to avoid WasteBox Competion
-		#blocked if request fail
-		pass
-
 	def RequestTest(self, test):
 		#to protect scan-PutUUT-start process integrity
 		#blocked if request fail
@@ -240,9 +244,9 @@ class Tester:
 		self.test_lock.acquire()
 		while not self.stop:
 			#yellow flash
-			self.getFixture().signal(station, "OFF")
+			self.getFixture().Signal(station, "OFF")
 			time.sleep(0.010)
-			self.getFixture().signal(station, "BUSY")
+			self.getFixture().Signal(station, "BUSY")
 			time.sleep(0.010)
 
 			#uut present?
@@ -285,10 +289,31 @@ class Tester:
 		self.test_lock.release()
 		return self.stop
 
-	def vRequestWaste(self, station):
+	def RequestWaste(self, test):
 		#to avoid WasteBox Competion
 		#blocked if request fail
-		pass
+		station = test.station
+		self.waste_lock.acquire()
+		wastes = self.getFixture().ReadWasteCount()
+		self.getFixture().Signal(self.station, "FAIL")
+		while True:
+			time.sleep(0.001)
+			n = self.getFixture().ReadWasteCount()
+			if n > wastes:
+				assert n - wastes == 1
+				break
+		self.waste_lock.release()
+
+	def vRequestWaste(self, test):
+		#to avoid WasteBox Competion
+		#blocked if request fail
+		station = test.station
+		self.waste_lock.acquire()
+		time.sleep(3)
+		self.lock.acquire()
+		self.wastes = self.wastes + 1
+		self.lock.release()
+		self.waste_lock.release()
 
 def signal_handler(signal, frame):
 	print 'user abort'
