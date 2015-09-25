@@ -10,14 +10,21 @@
 <script src="script/testing.js"></script>
 </head>
 <body>
-<div id="panel_dialog" title="Login">
-		<div><img src="img/lock.png" height="150px"/></div>
-		<div>
-			<div>Please Enter your Job ID Before Testing</div>
-			<div><input id="jid_input" type="text" /></div>
-			<div><input id="button_login" type="button" value="OK"/></div>
-		</div>
-</div>
+	<div id="dialog_jid" title="Login">
+			<div><img src="img/lock.png" height="150px"/></div>
+			<div>
+				<div>Please Enter your Job ID Before Testing</div>
+				<div><input id="jid_input" type="text" /></div>
+				<div><input id="button_login" type="button" value="OK"/></div>
+			</div>
+	</div>
+
+	<div id="dialog_estop" title="WARNING">
+			<div><img src="img/estop.gif" height="150px"/></div>
+			<div>
+				<div>Emergency Stop!!! Release it, Then Press Reset Button to Continue..</div>
+			</div>
+	</div>
 
 	<div id="panel">
 		<div id="panel_uut0">

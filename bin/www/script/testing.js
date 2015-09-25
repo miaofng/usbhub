@@ -7,6 +7,7 @@ var crc32 = require('crc-32')
 
 //to be stored in browser's session
 var test = {
+	"jid": null, //operator job id
 	"model": null,
 	"bplist":{},
 
@@ -68,6 +69,7 @@ var datafile_crc = [];
 function load_report(id, datafile) {
 	fs.readFile(datafile, "ascii", function (err, content) {
 		if(err) {
+			content = 'Nothing to Report'
 		}
 		else {
 			crc = crc32.str(content);
@@ -78,13 +80,15 @@ function load_report(id, datafile) {
 				if(x == "[PASS]") return "<span class='record_pass'>[PASS]</span>";
 				else return "<span class='record_fail'>[FAIL]</span>";
 			});
-
-			var obj = $(id);
-			obj.html(content+"\n");
-			obj.scrollTop(obj[0].scrollHeight);
 		}
+
+		var obj = $(id);
+		obj.html(content+"\n");
+		obj.scrollTop(obj[0].scrollHeight);
 	});
 }
+
+var estop = false
 
 function update_status(status) {
 	var date = new Date();
@@ -116,6 +120,22 @@ function update_status(status) {
 	//report update
 	load_report("#result0", status.datafile[0]);
 	load_report("#result1", status.datafile[1]);
+
+	//estop?
+	if(test.jid) {
+		if(status.estop) {
+			if(!estop) {
+				estop = true;
+				$( "#dialog_estop" ).dialog("open");
+			}
+		}
+		else {
+			if(estop) {
+				estop = false;
+				$( "#dialog_estop" ).dialog("close");
+			}
+		}
+	}
 }
 
 function timer_tick_update() {
@@ -180,7 +200,24 @@ $(function() {
 		test = JSON.parse(session.test);
 	}
 
-	$( "#panel_dialog" ).dialog({
+	$( "#dialog_estop" ).dialog({
+		autoOpen: false,
+		closeOnEscape: false,
+		dialogClass: "no-close",
+		height: 250,
+		width: 500,
+		modal: true,
+		show: {
+			effect: "bounce",
+			duration: 500
+		},
+		hide: {
+			effect: "explode",
+			duration: 500
+		}
+	});
+
+	$( "#dialog_jid" ).dialog({
 		autoOpen: !test.jid,
 		closeOnEscape: false,
 		dialogClass: "no-close",
@@ -188,7 +225,7 @@ $(function() {
 		width: 500,
 		modal: true,
 		hide: {
-			effect: "explode",
+			effect: "puff",
 			duration: 500
 		}
 	});
@@ -200,14 +237,14 @@ $(function() {
 			if(jid.length > 3) {
 				test.jid = jid;
 				$("#jid").html(test.jid);
-				$("#panel_dialog").dialog("close");
+				$("#dialog_jid").dialog("close");
 			}
 		}
 	});
 
 	$("#jid").dblclick(function(){
 		$("#jid_input").val("");
-		$( "#panel_dialog" ).dialog("open");
+		$( "#dialog_jid" ).dialog("open");
 	})
 
 	$("#button_login").click(function(){
@@ -215,7 +252,7 @@ $(function() {
 		if(jid.length > 3) {
 			test.jid = jid;
 			$("#jid").html(test.jid);
-			$("#panel_dialog").dialog("close");
+			$("#dialog_jid").dialog("close");
 		}
 	});
 

@@ -24,7 +24,7 @@ body{
 	height: 100%;
 }
 
-#panel_dialog {
+#dialog_jid, #dialog_estop {
 	margin-left: 2px;
 	margin-right: 0px;
 	margin-bottom: 20px;
@@ -42,20 +42,35 @@ body{
 	align-items: center;
 }
 
-#panel_dialog>div {
+#dialog_estop>div:first-child {
+	width: 40%;
+}
+
+#dialog_estop>div:nth-child(2) {
+	width: 60%;
+}
+
+#dialog_estop>div, #dialog_jid>div {
 	display: flex;
 	flex-direction: column;
 	justify-content: flex-start;
 	align-items: flex-start;
+	box-sizing: border-box;
 }
 
-#panel_dialog>div>div {
+#dialog_estop>div>div, #dialog_jid>div>div {
 	margin-left: 10px;
 	margin-bottom: 10px;
 	display: flex;
 	flex-direction: row;
 	justify-content: center;
 	align-items: center;
+	-webkit-user-select: none;
+
+	font-family: Helvetica, Arial, sans-serif;
+	font-size: 20px;
+	//font-weight: bold;
+	text-shadow: 2px 2px 2px rgba(0,0,0,.6);
 }
 
 /*to hide dialog close button*/
@@ -63,7 +78,7 @@ body{
   display: none;
 }
 
-#panel_dialog>div>div>input {
+#dialog_jid>div>div>input {
 	margin-left: 10px;
 	width: 250px;
 	box-sizing: border-box;
