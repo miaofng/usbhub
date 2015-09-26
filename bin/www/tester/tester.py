@@ -3,6 +3,14 @@
 #1, shell command should be registered in main thread
 #2, tester's method is thread safe
 #3, instrument's lock must be acquired before calling instrument's method
+#4, UUT Status:
+#	IDLE			(BARCODE GOT)> 			YELLOW
+#	LOADING			(FIXTURE READY)>		YELLOW FLASH + GIF ANIMATION
+#	TESTING			(TEST OVER)>			YELLOW
+#	PASS/FAIL		(BARCODE GOT)>LOADING	GREEN/RED
+#5, show gui waring dialog when:
+#	a) press start button, but uut not exist
+#	b) scan barcode but no test request received
 
 import io
 import time

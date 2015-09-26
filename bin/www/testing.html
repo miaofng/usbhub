@@ -19,6 +19,18 @@
 			</div>
 	</div>
 
+	<div id="dialog_wcl" title="WasteBox">
+			<div><img id="wcl_image" src="img/box_lock.png" height="128px"/></div>
+			<div>
+				<div>WasteBox Password:</div>
+				<div><input id="wcl_passwd" type="password" /></div>
+				<div>
+					<input id="wcl_unlock" type="button" value="Unlock" disabled/>
+					<input id="wcl_lock" type="button" value="Lock" disabled/>
+				</div>
+			</div>
+	</div>
+
 	<div id="dialog_estop" title="WARNING">
 			<div><img src="img/estop.gif" height="150px"/></div>
 			<div>
@@ -28,21 +40,22 @@
 
 	<div id="panel">
 		<div id="panel_uut0">
-			<div id="status0">BOOTING...</div>
-				<div id="barcode0"> --- </div>
+			<div id="status0">&nbsp;</div>
+				<div id="barcode0">&nbsp;</div>
 			<div id="div_result0">
-				<pre id="result0"></pre>
+				<pre id="result0">Test Server Died???</pre>
 			</div>
 		</div>
 		<div id="panel_uut1">
-			<div id="status1">BOOTING...</div>
-			<div id="barcode1"> --- </div>
+			<div id="status1">&nbsp;</div>
+			<div id="barcode1">&nbsp;</div>
 			<div id="div_result1">
-				<pre id="result1"></pre>
+				<pre id="result1">Test Server Died???</pre>
 			</div>
 		</div>
 		<div id="panel_ctrl">
-			<div>Operator ID: <span id="jid">&nbsp;</span></div>
+			<div title="双击换人">Operator ID: <span id="jid">&nbsp;</span></div>
+			<div title="双击清零">Waste Count: <span id="wastes">&nbsp;</span></div>
 			<div>Today:
 				<span class="stat" id="num_total0">&nbsp;</span>
 				<span class="stat" id="num_total1">&nbsp;</span>

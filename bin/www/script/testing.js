@@ -11,7 +11,7 @@ var test = {
 	"model": null,
 	"bplist":{},
 
-	"ui_status": 'INIT', //'LOADING', 'READY', 'XXX ERROR'
+	"ui_status": 'ERROR', //'LOADING', 'READY', 'XXX ERROR'
 	//show irt server status only when ui_status = 'READY'
 };
 
@@ -36,12 +36,14 @@ function gft_load(gft) {
 	});
 }
 
-function update_state(id, status, ecode) {
+function update_state(station, status, ecode) {
 	var state = (test.ui_status != "READY") ? test.ui_status : status;
 	var bgcolor = "#ff0000";
 
 	switch(state) {
+	case "LOADING":
 	case "TESTING":
+	case "IDLE":
 		bgcolor = "#ffff00";
 		break;
 	case "READY":
@@ -49,18 +51,30 @@ function update_state(id, status, ecode) {
 		bgcolor = "#00ff00";
 		break;
 	case "INIT":
-	case "LOADING":
 		bgcolor = "#c0c0c0";
 		break;
 	case "ERROR":
+	case "FAULT":
 		$("#button_run").attr("disabled", true);
 	case "FAIL":
 	default:
 		break;
 	}
 
-	$(id).html(state);
-	$(id).css("background-color", bgcolor);
+	id_status = "#status"+station
+	id_result = "#result"+station
+
+	$(id_status).html(state);
+	$(id_status).css("background-color", bgcolor);
+	if(state == "LOADING") {
+		$(id_result).css("background-image", "url(img/up.gif)");
+		$(id_result).css("background-size", "200px 150px");
+		$(id_result).css("background-repeat", "no-repeat");
+		$(id_result).css("background-position", "center top");
+	}
+	else {
+		$(id_result).css('background', 'transparent');
+	}
 }
 
 //for datafile modification monitoring
@@ -69,7 +83,7 @@ var datafile_crc = [];
 function load_report(id, datafile) {
 	fs.readFile(datafile, "ascii", function (err, content) {
 		if(err) {
-			content = 'Nothing to Report'
+			content = '...'
 		}
 		else {
 			crc = crc32.str(content);
@@ -102,6 +116,7 @@ function update_status(status) {
 	//fixture
 	$("#fixture_id").html(status.fixture_id);
 	$("#fixture_pressed").html(status.pressed);
+	$("#wastes").html(status.wastes);
 
 	//run stm update
 	$("#time_run").html(status.runtime+"s");
@@ -114,8 +129,8 @@ function update_status(status) {
 	$("#barcode1").html(status.barcode[1]);
 
 	//status update
-	update_state("#status0", status.status[0], status.ecode[0]);
-	update_state("#status1", status.status[1], status.ecode[1]);
+	update_state(0, status.status[0], status.ecode[0]);
+	update_state(1, status.status[1], status.ecode[1]);
 
 	//report update
 	load_report("#result0", status.datafile[0]);
@@ -230,6 +245,11 @@ $(function() {
 		}
 	});
 
+	$("#jid").dblclick(function(){
+		$("#jid_input").val("");
+		$( "#dialog_jid" ).dialog("open");
+	})
+
 	$("#jid_input").bind('keydown', function(event){
 		var key = event.which;
 		if (key == 13) {
@@ -242,11 +262,6 @@ $(function() {
 		}
 	});
 
-	$("#jid").dblclick(function(){
-		$("#jid_input").val("");
-		$( "#dialog_jid" ).dialog("open");
-	})
-
 	$("#button_login").click(function(){
 		var jid = $("#jid_input").val();
 		if(jid.length > 3) {
@@ -255,6 +270,39 @@ $(function() {
 			$("#dialog_jid").dialog("close");
 		}
 	});
+
+	$( "#dialog_wcl" ).dialog({
+		autoOpen: false,
+		height: 250,
+		width: 500,
+		modal: true,
+		hide: {
+			effect: "explode",
+			duration: 500
+		}
+	});
+
+	$("#wastes").dblclick(function(){
+		$( "#dialog_wcl" ).dialog("open");
+	})
+
+	$("#wcl_passwd").bind('keydown', function(event){
+		var key = event.which;
+		if (key == 13) {
+			var passwd = $("#wcl_passwd").val();
+			if(passwd.length > 3) {
+				$("#wcl_lock").attr("disabled", false);
+				$("#wcl_unlock").attr("disabled", false);
+			}
+		}
+	});
+
+	$("#wcl_unlock").click(function(){
+		$("#wcl_image").attr("src","img/box_unlock.png");
+	})
+	$("#wcl_lock").click(function(){
+		$("#wcl_image").attr("src","img/box_lock.png");
+	})
 
 	//$("#jid_input").val(test.jid);
 	$("#jid").html(test.jid);
@@ -294,6 +342,9 @@ $(function() {
 	irt.cfg_get('gft_last', function(fname) {
 		gft_load(fname);
 	});
+
+	update_state(0, "ERROR", 0);
+	update_state(1, "ERROR", 0);
 
 	var timer_tick = setInterval("timer_tick_update()", 100);
 	var stimer = setInterval("timer_statistics_update()", 1000);

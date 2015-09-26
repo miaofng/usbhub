@@ -89,7 +89,13 @@ class Test(threading.Thread):
 
 	def setBarcode(self, barcode):
 		self.lock.acquire()
-		self.barcode = barcode
+		self.dfpath = ''
+		if barcode:
+			self.barcode = barcode
+			self.status = "LOADING"
+		else:
+			self.barcode = ''
+			self.status = "IDLE"
 		self.lock.release()
 
 	def getBarcode(self):
