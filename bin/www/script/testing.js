@@ -273,7 +273,7 @@ $(function() {
 
 	$( "#dialog_wcl" ).dialog({
 		autoOpen: false,
-		height: 250,
+		height: 290,
 		width: 500,
 		modal: true,
 		hide: {

@@ -93,7 +93,7 @@ body{
 
 	border-width: 2px;
 	border-style: solid;
-	border-color: red;
+	border-color: #00FF00;
 	background-color: white;
 	box-sizing: border-box;
 	overflow: auto;

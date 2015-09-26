@@ -144,7 +144,8 @@ exports.test_enum = function(cnds, cb) {
 		var LIMIT = ' LIMIT ' + cnds.max_records;
 	}
 
-	var sql = "SELECT * FROM test " + WHERE + LIMIT;
+	var ORDER = " ORDER BY time DESC";
+	var sql = "SELECT * FROM test " + WHERE + ORDER + LIMIT;
 	//console.log(sql);
 	db.all(sql, function(err, rows) {
 		if(err) {

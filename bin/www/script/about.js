@@ -7,5 +7,9 @@ var crc32 = require('crc-32')
 
 $(function() {
 	var session = window.sessionStorage;
-	$("#error").html(session.server_error);
+	if (session.server_error) {
+		$("#error").html(session.server_error);
+		$("#error").css("border-color", "red");
+		$("#photo").attr("src","img/ohno.jpg");
+	}
 });
