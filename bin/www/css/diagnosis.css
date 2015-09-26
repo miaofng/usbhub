@@ -111,7 +111,7 @@
 	border-radius: 10px;
 	padding: 10px;
 	border: solid 2px #FFF;
-	background-color: #fff;
+	background-color: white;
 	box-shadow: inset 1px 1px 2px 0 #707070;
 	transition: box-shadow 0.3s;
 	-webkit-user-select: none;
@@ -126,8 +126,11 @@
 	font-size: 16px;
 	//font-weight: bold;
 	text-shadow: 1px 1px 1px rgba(0,0,0,.6);
-	//background-image: url("../img/bubble.png");
-	background-repeat: no-repeat;
+	background-color: #ccc;
+	//background-image: url("../img/fan.gif");
+	//background-repeat: no-repeat;
+	//background-size: 32px 32px;
+	//background-position: center left;
 }
 
 .buttons:active {

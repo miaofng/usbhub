@@ -52,7 +52,7 @@ class GFTest(Test):
 		dat_dir = os.path.abspath(dat_dir)
 		self.lock.acquire()
 		record = {}
-		record["model"] = self.model["name"]
+		record["model"] = self.model.name
 		record["barcode"] = self.barcode
 		record["failed"] = self.ecode
 		record["datafile"] = os.path.relpath(self.dfpath, dat_dir)

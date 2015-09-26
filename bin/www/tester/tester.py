@@ -22,6 +22,7 @@ from test_self import Selfcheck
 from test_gft import GFTest
 from scanner import Scanner
 from fixture import Fixture
+from model import Model
 import settings
 import random
 import functools #https://docs.python.org/2/library/functools.html
@@ -65,15 +66,12 @@ class Tester:
 	def __init__(self, saddr):
 		self.db = Db()
 		self.mode = self.db.cfg_get("Mode")
-		self.shell = Shell(saddr)
-		self.shell.register("status", self.cmd_status, "display tester status")
-		#self.shell.register("reset", self.cmd_reset, "reset tester status to READY")
-		self.shell.register("test", self.cmd_test, "test start")
-		self.shell.register("stop", self.cmd_stop, "test stop")
 
 		if swdebug:
 			self.RequestTest = self.vRequestTest
 			self.RequestWaste = self.vRequestWaste
+			self.cmd_plc = self.cmd_vplc
+			self.plc_regs_ctrl = [0, 0, 0, 0]
 			self.fixture_id = id = 1
 		else:
 			self.scanner = Scanner(settings.scanner_port)
@@ -92,6 +90,13 @@ class Tester:
 			station1.start()
 			self.threads[0] = station0
 			self.threads[1] = station1
+
+		self.shell = Shell(saddr)
+		self.shell.register("status", self.cmd_status, "display tester status")
+		#self.shell.register("reset", self.cmd_reset, "reset tester status to READY")
+		self.shell.register("test", self.cmd_test, "test start")
+		self.shell.register("stop", self.cmd_stop, "test stop")
+		self.shell.register("plc", self.cmd_plc, "plc status&query")
 
 	def __del__(self):
 		self.shell.unregister("status")
@@ -208,16 +213,15 @@ class Tester:
 			elif (opt[0] == "-x" or opt[0] == "--mask"):
 				para["mask"] = int(opt[1])
 
-		fpath = args[0]
-		fname = os.path.split(fpath)[1]
-		[title, ext] = os.path.splitext(fname)
-		model = {"name": title}
-		station0 = GFTest(self, model, 0)
-		station1 = GFTest(self, model, 1)
-		station0.start()
-		station1.start()
-		self.threads[0] = station0
-		self.threads[1] = station1
+		model = Model()
+		model = model.Parse(args[0])
+		if model:
+			station0 = GFTest(self, model, 0)
+			station1 = GFTest(self, model, 1)
+			station0.start()
+			station1.start()
+			self.threads[0] = station0
+			self.threads[1] = station1
 		return result
 
 	def cmd_stop(self, argc, argv):
@@ -231,6 +235,92 @@ class Tester:
 			thread = self.threads[key]
 			if thread:
 				thread.stop()
+
+	def cmd_plc(self, argc, argv):
+		if argc > 1:
+			inv = 0
+			if argv[1] == "TLDOOR":
+				#100.00(open) 100.01(close) 100.05(lamp)
+				reg = 300
+				msk = (1 << 0) | (1 << 5)
+				inv = (1 << 1)
+			elif argv[1] == "TRDOOR":
+				#100.02(open) 100.03(close) 100.04(lamp)
+				reg = 300
+				msk = (1 << 2) | (1 << 4)
+				inv = (1 << 3)
+			elif argv[1] == "TLPSFL":
+				#103.02(R) 103.03(G)
+				reg = 303
+				msk = (1 << 2) | (1 << 3)
+			elif argv[1] == "TRPSFL":
+				#103.00(R) 103.01(G)
+				reg = 303
+				msk = (1 << 0) | (1 << 1)
+			else:
+				val = float(argv[1])
+				reg = int(val)
+				bit = int(val * 100) % 100
+				msk = 1 << bit
+
+			val = self.getFixture().cio_read(reg)
+			if val & (msk | inv) == msk:
+				val = val ^ (msk | inv)
+			else:
+				val = val & ~(msk | inv)
+				val = val | msk
+			self.getFixture().cio_write(reg, val)
+			return {"error": "OK",}
+		else:
+			sensors = self.getFixture().cio_read(  0, 4)
+			control = self.getFixture().cio_read(300, 4)
+			result = {sensors, control}
+		return result
+
+	def cmd_vplc(self, argc, argv):
+		if argc > 1:
+			inv = 0
+			if argv[1] == "TLDOOR":
+				#100.00(open) 100.01(close) 100.05(lamp)
+				reg = 300
+				msk = (1 << 0) | (1 << 5)
+				inv = (1 << 1)
+			elif argv[1] == "TRDOOR":
+				#100.02(open) 100.03(close) 100.04(lamp)
+				reg = 300
+				msk = (1 << 2) | (1 << 4)
+				inv = (1 << 3)
+			elif argv[1] == "TLPSFL":
+				#103.02(R) 103.03(G)
+				reg = 303
+				msk = (1 << 2) | (1 << 3)
+			elif argv[1] == "TRPSFL":
+				#103.00(R) 103.01(G)
+				reg = 303
+				msk = (1 << 0) | (1 << 1)
+			else:
+				val = float(argv[1])
+				reg = int(val)
+				bit = int(val * 100) % 100
+				msk = 1 << bit
+
+			reg = reg % 100
+			val = self.plc_regs_ctrl[reg]
+			if val & (msk | inv) == msk:
+				val = val ^ (msk | inv)
+			else:
+				val = val & ~(msk | inv)
+				val = val | msk
+			self.plc_regs_ctrl[reg] = val
+			return {"error": "OK",}
+		else:
+			sensors = []
+			for i in range(0, 4):
+				sensors.append(random.randint(0, 4095))
+			result = {}
+			result["sensors"] = sensors
+			result["control"] = self.plc_regs_ctrl
+		return result
 
 ###########thread safe method##########
 	def getDB(self):

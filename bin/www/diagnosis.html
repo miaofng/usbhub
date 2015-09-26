@@ -8,8 +8,7 @@
 <link rel="stylesheet" href="css/diagnosis.css">
 <script src="jquery-ui/external/jquery/jquery.js"></script>
 <script src="jquery-ui/jquery-ui.min.js"></script>
-<script src="ace-builds/src-noconflict/ace.js" type="text/javascript" charset="utf-8"></script>
-<script src="script/setting.js"></script>
+<script src="script/diagnosis.js"></script>
 </head>
 <body>
 	<div id="panel">
@@ -17,52 +16,53 @@
 			<div class="panel_head">FIXTURE - LEFT </div>
 			<div class="panel_head"><img src="img/fixture.png" height="240px"/> </div>
 			<div>
-				<span class="indicators" title="Fixture ID">ID</span>
-				<span class="indicators" title="UUT Present Sensor">SU</span>
-				<span class="indicators" title="Rotate Cylinder Sensor">SR</span>
-				<span class="indicators" title="Front Cylinder Sensor">F+</span>
-				<span class="indicators" title="Front Cylinder Sensor">F-</span>
-				<span class="indicators" title="Back Cylinder Sensor">B+</span>
-				<span class="indicators" title="Back Cylinder Sensor">B-</span>
+				<span class="indicators" id="LID" title="Fixture ID">00</span>
+				<span class="indicators" id="2.09" title="UUT Exist">UE</span>
+				<span class="indicators" id="2.07" title="Rotate Cylinder UP LIMIT">R+</span>
+				<span class="indicators" id="0.05" title="Front Cylinder UP LIMIT">F+</span>
+				<span class="indicators" id="0.06" title="Back Cylinder UP LIMIT">B+</span>
 			</div>
-			<div><input class="buttons" id="g_dat_dir" type="button" value="ROTATE CYLINDER"/></div>
-			<div><input class="buttons" id="g_dat_dir" type="button" value="CYLINDER F"/></div>
-			<div><input class="buttons" id="g_dat_dir" type="button" value="CYLINDER B"/></div>
+			<div><input class="buttons" id="301.00" type="button" value="CYLINDER R"/></div>
+			<div><input class="buttons" id="300.06" type="button" value="CYLINDER F"/></div>
+			<div><input class="buttons" id="300.07" type="button" value="CYLINDER B"/></div>
 		</div>
 
 		<div id="panel_fixture1">
 			<div class="panel_head">FIXTURE - RIGHT </div>
 			<div class="panel_head"><img src="img/fixture.png" height="240px"/> </div>
 			<div>
-				<span class="indicators" title="Fixture ID">ID</span>
-				<span class="indicators" title="UUT Present Sensor">SU</span>
-				<span class="indicators" title="Rotate Cylinder Sensor">SR</span>
-				<span class="indicators" title="Front Cylinder Sensor">F+</span>
-				<span class="indicators" title="Front Cylinder Sensor">F-</span>
-				<span class="indicators" title="Back Cylinder Sensor">B+</span>
-				<span class="indicators" title="Back Cylinder Sensor">B-</span>
+				<span class="indicators" id="RID" title="Fixture ID">00</span>
+				<span class="indicators" id="2.01" title="UUT Exist">UE</span>
+				<span class="indicators" id="2.08" title="Rotate Cylinder UP LIMIT">R+</span>
+				<span class="indicators" id="0.07" title="Front Cylinder UP LIMIT">F+</span>
+				<span class="indicators" id="0.08" title="Back Cylinder UP LIMIT">B+</span>
 			</div>
-			<div><input class="buttons" id="g_dat_dir" type="button" value="ROTATE CYLINDER"/></div>
-			<div><input class="buttons" id="g_dat_dir" type="button" value="CYLINDER F"/></div>
-			<div><input class="buttons" id="g_dat_dir" type="button" value="CYLINDER B"/></div>
+			<div><input class="buttons" id="301.05" type="button" value="CYLINDER R"/></div>
+			<div><input class="buttons" id="301.03" type="button" value="CYLINDER F"/></div>
+			<div><input class="buttons" id="301.04" type="button" value="CYLINDER B"/></div>
 		</div>
 
 		<div id="panel_tester">
 			<div class="panel_head">TESTER</div>
 			<div class="panel_head"><img src="img/tester.png" height="240px"/> </div>
 			<div>
-				<span class="indicators" title="Start Button">SB</span>
-				<span class="indicators" title="Left Window Cylinder Sensor">L+</span>
-				<span class="indicators" title="Left Window Cylinder Sensor">L-</span>
-				<span class="indicators" title="Right Window Cylinder Sensor">R+</span>
-				<span class="indicators" title="Right Window Cylinder Sensor">R-</span>
+				<span class="indicators" id="0.00" title="Start Button">SB</span>
+				<span class="indicators" id="0.04" title="Cover Close">CC</span>
+				<span class="indicators" id="2.01" title="Left DOOR SAFE LIMIT">LL</span>
+				<span class="indicators" id="2.04" title="Left DOOR UP LIMIT">L+</span>
+				<span class="indicators" id="2.05" title="Left DOOR DN LIMIT">L-</span>
 			</div>
-			<div><input class="buttons" id="g_dat_dir" type="button" value="WASTE BOX"/></div>
-			<div><input class="buttons" id="g_dat_dir" type="button" value="TOP COVER"/></div>
-			<div><input class="buttons" id="g_dat_dir" type="button" value="LEFT WINDOW"/></div>
-			<div><input class="buttons" id="g_dat_dir" type="button" value="RIGHT WINDOW"/></div>
-			<div><input class="buttons" id="g_dat_dir" type="button" value="LEFT LAMP"/></div>
-			<div><input class="buttons" id="g_dat_dir" type="button" value="RIGHT LAMP"/></div>
+			<div>
+				<span class="indicators" id="0.02" title="EStop Button">EB</span>
+				<span class="indicators" id="0.03" title="Reset Button">RB</span>
+				<span class="indicators" id="2.00" title="Right DOOR SAFE LIMIT">RL</span>
+				<span class="indicators" id="2.02" title="Right DOOR UP LIMIT">R+</span>
+				<span class="indicators" id="2.03" title="Right DOOR DN LIMIT">R-</span>
+			</div>
+			<div><input class="buttons" id="TLDOOR" type="button" value="L DOOR + LAMP"/></div>
+			<div><input class="buttons" id="TRDOOR" type="button" value="R DOOR + LAMP"/></div>
+			<div><input class="buttons" id="TLPSFL" type="button" value="L PASS + FAIL"/></div>
+			<div><input class="buttons" id="TRPSFL" type="button" value="R PASS + FAIL"/></div>
 		</div>
 	</div>
 
