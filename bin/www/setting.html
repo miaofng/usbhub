@@ -16,60 +16,39 @@
 	<div id="panel_left">
 		<div class="panel_head">GLOBAL SETTINGS</div>
 	  <div>Mode:
-			<select>
-				<option value ="volvo">Dual Fixture</option>
-				<option value ="saab">Left Only</option>
-				<option value="opel">Right Only</option>
+			<select class="gcfg" id="Mode">
+				<option value ="dual">Dual Fixture</option>
+				<option value ="left">Left Only</option>
+				<option value="right">Right Only</option>
 			</select>
 		</div>
 		<div>IMS:
-			<select>
-				<option value ="volvo">Enable</option>
-				<option value ="saab">Disable</option>
+			<select class="gcfg" id="IMS">
+				<option value ="1">Enable</option>
+				<option value ="0">Disable</option>
 			</select>
 		</div>
 		<div>Label:
-			<select>
-				<option value ="volvo">Enable</option>
-				<option value ="saab">Disable</option>
+			<select class="gcfg" id="Label">
+				<option value ="1">Enable</option>
+				<option value ="0">Disable</option>
 			</select>
 		</div>
-		<div>Data: <input id="g_dat_dir" value="../../../data/"/></div>
-	  <div>Old Passwd: <input id="g_oldpasswd" type="PASSWORD" value="admin"/></div>
-      <div>New Passwd: <input id="g_newpasswd" type="PASSWORD"/></div>
-	  <div>Confirm: <input id="g_confirm" type="PASSWORD"/></div>
+		<div>Data: <input class="gcfg" id="dat_dir" value="../../../data/"/></div>
+		<div>Admin Passwd: <input class="passwd" id="g_admin_passwd" type="PASSWORD"/></div>
+	  <div>Confirm: <input title="回车即录入" class="passwd" id="g_admin_confirm" type="PASSWORD"/></div>
+		<div>Waste Passwd: <input class="passwd" id="g_waste_passwd" type="PASSWORD"/></div>
+	  <div>Confirm: <input title="回车即录入" class="passwd" id="g_waste_confirm" type="PASSWORD"/></div>
+		<div><input id="gcfg_save" type="button" value="SAVE"></div>
     </div>
 
     <div id="panel_right">
-	  <div class="panel_head">MODEL SETTINGS - xxxx </div>
-      <div id="editor">
-fixture = 5
-
-#usb0 usb1 usb2 sd apx0 apx1 aux
-port_list = ("usb0", "usb1", "usb2")
-
-#passmark
-test_passmark["default"] = ("write_mbps_min": 50, "read_mbps_min": 50)
-test_passmark["usb2"] = False
-
-#charge device port
-test_cdp["default"] = ("min": 4.6)
-
-#short circuit protection
-test_scp["default"] = ("time": 3.0, "min": 4.7, "vmax": 5.1)
-
-#usb passthrough support
-test_passthrough["default"] = False
-test_passthrough["usb0"] = True
-
-#usb carplay support
-test_carplay["default"] = False
-test_carplay["usb0"] = True
-	  </div>
+	  <div class="panel_head">MODEL SETTINGS<span id="m_model">&nbsp;</span> </div>
+    <div id="editor"></div>
 	  <div id="model_buttons">
-		<input type="button" value="NEW">
-		<input type="button" value="RELOAD">
-		<input type="button" value="SAVE">
+		<input type="button" id="m_open" value="Open"/>
+		<input type="button" id="m_save" value="Save" disabled />
+		<input type="button" id="m_saveas" value="SaveAs" disabled />
 	  </div>
     </div>
 

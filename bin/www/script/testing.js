@@ -160,6 +160,16 @@ function timer_tick_update() {
 	});
 }
 
+function wcl_update() {
+	irt.query("plc", function(data) {
+		data = JSON.parse(data);
+		control = data.control;
+		locked = control[1]&(1 << 2); //101.02
+		if(locked) $("#wcl_image").attr("src","img/box_lock.png");
+		else $("#wcl_image").attr("src","img/box_unlock.png");
+	});
+}
+
 function timer_statistics_update() {
 	if (!test.model)
 		return;
@@ -271,6 +281,12 @@ $(function() {
 		}
 	});
 
+	var wcl_timer;
+	$("#wastes").dblclick(function(){
+		$( "#dialog_wcl" ).dialog("open");
+		wcl_timer = setInterval("wcl_update()", 100);
+	})
+
 	$( "#dialog_wcl" ).dialog({
 		autoOpen: false,
 		height: 290,
@@ -279,29 +295,38 @@ $(function() {
 		hide: {
 			effect: "explode",
 			duration: 500
+		},
+		close: function(){
+			clearInterval(wcl_timer);
+			$("#wcl_passwd").val("");
+			$("#wcl_lock").attr("disabled", true);
+			$("#wcl_unlock").attr("disabled", true);
 		}
 	});
-
-	$("#wastes").dblclick(function(){
-		$( "#dialog_wcl" ).dialog("open");
-	})
 
 	$("#wcl_passwd").bind('keydown', function(event){
 		var key = event.which;
 		if (key == 13) {
 			var passwd = $("#wcl_passwd").val();
-			if(passwd.length > 3) {
-				$("#wcl_lock").attr("disabled", false);
-				$("#wcl_unlock").attr("disabled", false);
-			}
+			irt.cfg_get('waste_passwd', function(data) {
+				if(passwd == data) {
+					$("#wcl_lock").attr("disabled", false);
+					$("#wcl_unlock").attr("disabled", false);
+				}
+				else {
+					alert("Password Error, Please Retry");
+				}
+			});
 		}
 	});
 
 	$("#wcl_unlock").click(function(){
-		$("#wcl_image").attr("src","img/box_unlock.png");
+		irt.query("plc 301.02 0", function(data) {
+		});
 	})
 	$("#wcl_lock").click(function(){
-		$("#wcl_image").attr("src","img/box_lock.png");
+		irt.query("plc 301.02 1", function(data) {
+		});
 	})
 
 	//$("#jid_input").val(test.jid);

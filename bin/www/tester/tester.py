@@ -264,11 +264,17 @@ class Tester:
 				msk = 1 << bit
 
 			val = self.getFixture().cio_read(reg)
-			if val & (msk | inv) == msk:
-				val = val ^ (msk | inv)
+			if argc > 2:
+				lvl = int(argv[2])
+				val = val & ~msk
+				if lvl:
+					val = val | msk
 			else:
-				val = val & ~(msk | inv)
-				val = val | msk
+				if val & (msk | inv) == msk:
+					val = val ^ (msk | inv)
+				else:
+					val = val & ~(msk | inv)
+					val = val | msk
 			self.getFixture().cio_write(reg, val)
 			return {"error": "OK",}
 		else:
@@ -306,11 +312,17 @@ class Tester:
 
 			reg = reg % 100
 			val = self.plc_regs_ctrl[reg]
-			if val & (msk | inv) == msk:
-				val = val ^ (msk | inv)
+			if argc > 2:
+				lvl = int(argv[2])
+				val = val & ~msk
+				if lvl:
+					val = val | msk
 			else:
-				val = val & ~(msk | inv)
-				val = val | msk
+				if val & (msk | inv) == msk:
+					val = val ^ (msk | inv)
+				else:
+					val = val & ~(msk | inv)
+					val = val | msk
 			self.plc_regs_ctrl[reg] = val
 			return {"error": "OK",}
 		else:
