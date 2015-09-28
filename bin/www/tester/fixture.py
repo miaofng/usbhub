@@ -203,7 +203,7 @@ class Fixture(Plc):
 		#tester handle this signal as test stop
 		status = self.cio_read(0)
 		estop = status & (1 << 2)
-		return estop
+		return not estop
 
 	def Start(self, station):
 		#cleared by pc until 'READY' received
