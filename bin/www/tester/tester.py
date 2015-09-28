@@ -11,6 +11,7 @@
 #5, show gui waring dialog when:
 #	a) press start button, but uut not exist
 #	b) scan barcode but no test request received
+#6, It's very dangeous to acquire a lock in side a lock!!!!!!!
 
 import io
 import time
@@ -104,6 +105,17 @@ class Tester:
 		self.shell.unregister("test")
 		self.shell.unregister("stop")
 
+	def get(self, attr_name, val_def = None):
+		self.lock.acquire()
+		value = getattr(self, attr_name, val_def)
+		self.lock.release()
+		return value
+
+	def set(self, attr_name, value):
+		self.lock.acquire()
+		setattr(self, attr_name, value)
+		self.lock.release()
+
 	def update(self):
 		time.sleep(0.001) #to avoid cpu usage too high
 		self.shell.update()
@@ -117,10 +129,21 @@ class Tester:
 					raise ThreadException(thread)
 				thread.lock_exception.release()
 
+		#barcode
+		if not swdebug:
+			barcode = self.scanner.read()
+			if barcode:
+				self.set("barcode", barcode)
+		else:
+			guess = random.randint(0,999)
+			if guess > 990:
+				barcode = str(random.randint(100000,199999))
+				self.set("barcode", barcode)
+
 		#estop
 		if not swdebug:
-			self.estop = self.getFixture().IsEstop()
-			self.wastes = self.getFixture().ReadWasteCount()
+			self.estop = self.get("fixture").IsEstop()
+			self.wastes = self.get("fixture").ReadWasteCount()
 		elif swdebug_estop:
 			ms = self.__runtime__()*1000
 			if int(ms) % 3000 == 0:
@@ -138,13 +161,12 @@ class Tester:
 
 	def cmd_status(self, argc, argv):
 		result = {}
-		self.lock.acquire()
-		result["fixture_id"] = self.fixture_id
-		result["pressed"] = self.fixture_pressed
-		result["wastes"] = self.wastes
+		result["fixture_id"] = self.get('fixture_id')
+		result["pressed"] = self.get('fixture_pressed')
+		result["wastes"] = self.get('wastes')
 		result["runtime"] = int(self.__runtime__())
-		result["estop"] = self.estop
-		self.lock.release()
+		result["estop"] = self.get('estop')
+		result["emsg"] = self.get("emsg")
 
 		ecode = [0, 0]
 		barcode = ['', '']
@@ -155,26 +177,16 @@ class Tester:
 		for key in self.threads:
 			test = self.threads[key]
 			if test:
-				test.lock.acquire()
-				ecode[key] = test.ecode
-				status[key] = test.status
-				barcode[key] = test.barcode
-				datafile[key] = test.dfpath
-				test.lock.release()
+				ecode[key] = test.get("ecode")
+				status[key] = test.get("status")
+				barcode[key] = test.get("barcode")
+				datafile[key] = test.get("dfpath")
 
 		result["ecode"] = ecode
 		result["status"] = status
 		result["barcode"] = barcode
 		result["datafile"] = datafile
 		return result
-
-#	def cmd_reset(self, argc, argv):
-#		result = {"error": "E_OK",}
-#		self.lock.acquire()
-#		if(self.status == "PASS") or (self.status == "FAIL"):
-#			self.status = "READY"
-#		self.lock.release()
-#		return result;
 
 	def IsTesting(self):
 		testing = False
@@ -263,7 +275,7 @@ class Tester:
 				bit = int(val * 100) % 100
 				msk = 1 << bit
 
-			val = self.getFixture().cio_read(reg)
+			val = self.get("fixture").cio_read(reg)
 			if argc > 2:
 				lvl = int(argv[2])
 				val = val & ~msk
@@ -275,11 +287,11 @@ class Tester:
 				else:
 					val = val & ~(msk | inv)
 					val = val | msk
-			self.getFixture().cio_write(reg, val)
+			self.get("fixture").cio_write(reg, val)
 			return {"error": "OK",}
 		else:
-			sensors = self.getFixture().cio_read(  0, 4)
-			control = self.getFixture().cio_read(300, 4)
+			sensors = self.get("fixture").cio_read(  0, 4)
+			control = self.get("fixture").cio_read(300, 4)
 			result = {sensors, control}
 		return result
 
@@ -335,45 +347,35 @@ class Tester:
 		return result
 
 ###########thread safe method##########
-	def getDB(self):
-		self.db_lock.acquire()
-		db = self.db
-		self.db_lock.release()
-		return db
-
-	def getFixture(self):
-		self.fixture_lock.acquire()
-		fixture = self.fixture
-		self.fixture_lock.release()
-		return fixture
-
 	def RequestTest(self, test):
 		#to protect scan-PutUUT-start process integrity
 		#blocked if request fail
 		station = test.station
 		self.test_lock.acquire()
+		self.set("barcode", None)
 		while not self.stop:
+			#barcode
+			barcode = self.get("barcode")
+			if barcode:
+				self.set("barcode", None)
+				emsg = test.setBarcode(barcode)
+				self.set("emsg", emsg)
+				self.get("fixture").Start(station)
+
 			#yellow flash
-			self.getFixture().Signal(station, "OFF")
+			self.get("fixture").Signal(station, "OFF")
 			time.sleep(0.010)
-			self.getFixture().Signal(station, "BUSY")
+			self.get("fixture").Signal(station, "BUSY")
 			time.sleep(0.010)
 
 			#uut present?
 			#not self.IsUutPresent(station):
 
-			#fixture motion enable
-			barcode = self.scanner.read()
-			if barcode:
-				test.setBarcode(barcode)
-				self.getFixture().Start(station)
-
 			#fixture ready?
-			ready = self.getFixture().IsReady(station)
+			ready = self.get("fixture").IsReady(station)
 			if ready:
-				self.lock.acquire()
-				self.fixture_pressed = self.fixture_pressed + 1
-				self.lock.release()
+				pressed = self.get("fixture_pressed") + 1
+				self.set("fixture_pressed", pressed)
 				break
 
 		self.test_lock.release()
@@ -382,18 +384,21 @@ class Tester:
 	def vRequestTest(self, test):
 		station = test.station
 		self.test_lock.acquire()
+		self.set("barcode", None)
 		while not self.stop:
 			time.sleep(0.020)
+			#barcode
+			barcode = self.get("barcode")
+			if barcode:
+				self.set("barcode", None)
+				emsg = test.setBarcode(barcode)
+				self.set("emsg", emsg)
+
 			guess = random.randint(0,99)
-			if guess > 90:
-				barcode = str(random.randint(1000,9999))
-				test.setBarcode(barcode)
 			if guess > 98:
-				self.lock.acquire()
-				pressed = self.fixture_pressed + 1
-				self.fixture_pressed = pressed
-				self.lock.release()
-				self.getDB().fixture_set(self.fixture_id, "pressed", pressed)
+				pressed = self.get("fixture_pressed") + 1
+				self.set('fixture_pressed', pressed)
+				self.get("db").fixture_set(self.fixture_id, "pressed", pressed)
 				break
 
 		self.test_lock.release()
@@ -404,13 +409,14 @@ class Tester:
 		#blocked if request fail
 		station = test.station
 		self.waste_lock.acquire()
-		wastes = self.getFixture().ReadWasteCount()
-		self.getFixture().Signal(self.station, "FAIL")
+		wastes = self.get("fixture").ReadWasteCount()
+		self.get("fixture").Signal(self.station, "FAIL")
 		while True:
 			time.sleep(0.001)
-			n = self.getFixture().ReadWasteCount()
+			n = self.get("fixture").ReadWasteCount()
 			if n > wastes:
 				assert n - wastes == 1
+				self.set("wastes", n)
 				break
 		self.waste_lock.release()
 
@@ -420,9 +426,8 @@ class Tester:
 		station = test.station
 		self.waste_lock.acquire()
 		time.sleep(3)
-		self.lock.acquire()
-		self.wastes = self.wastes + 1
-		self.lock.release()
+		wastes = self.get("wastes") + 1
+		self.set("wastes", wastes)
 		self.waste_lock.release()
 
 def signal_handler(signal, frame):

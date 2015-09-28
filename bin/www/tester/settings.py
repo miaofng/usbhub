@@ -3,5 +3,6 @@
 
 swdebug = True
 swdebug_estop = False
-scanner_port = None
+scanner_port = "COM14"
+barcode_verify = False
 plc_port = None

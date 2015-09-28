@@ -9,6 +9,7 @@ import random
 import os
 import json
 import imp
+import fnmatch
 
 class GFTest(Test):
 	model = None
@@ -28,24 +29,15 @@ class GFTest(Test):
 		#add specified update here
 		#...
 
-	# def precheck(self):
-		# # #file format check
-		# # tail = os.path.split(self.fpath)[1]
-		# # [head, ext] = os.path.splitext(self.fpath)
-		# # ok_ext = (ext == ".py")
-		# # self.log(self.fpath)
-		# # self.log("Checking File EXT Name ...", ok_ext)
-
-		# # self.log("fixture_id = %d"%self.config.fixture)
-
-		# # #query the model config in sqlite
-		# # model = os.path.basename(head)
-		# # self.log("model: %s"%model)
-		# # self.model = model
-
-		# # ok_gft = os.path.isfile(self.fpath)
-		# # self.log("Checking File Existence ...", ok_gft)
-		# return True
+	def verifyBarcode(self, barcode):
+		template = model.barcode
+		if not fnmatch.fnmatchcase(barcode, template):
+			emsg = []
+			emsg.append("Barcode Error")
+			emsg.append("expect: %s", template)
+			emsg.append("scaned: %s", barcode)
+			emsg = '\n\r'.join(emsg)
+			return emsg
 
 	def Record(self):
 		dat_dir = self.getPath()
@@ -58,7 +50,7 @@ class GFTest(Test):
 		record["datafile"] = os.path.relpath(self.dfpath, dat_dir)
 		record["station"] = self.station
 		self.lock.release()
-		self.tester.getDB().test_add(record)
+		self.tester.get("db").test_add(record)
 
 	def Test(self):
 		# if self.precheck() == False:

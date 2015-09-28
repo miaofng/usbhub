@@ -5,8 +5,6 @@ import io
 import time
 import os
 import sys, signal
-from shell import Shell
-from db import Db
 import serial
 
 class ScannerException(Exception): pass
@@ -16,8 +14,7 @@ class Scanner:
 	data = ''
 
 	def __init__(self, port, baud = 115200):
-		if not swdebug:
-			self.uart = serial.Serial(port, baud)
+		self.uart = serial.Serial(port, baud)
 
 	def read(self):
 		nbytes = self.uart.inWaiting()
@@ -31,5 +28,21 @@ class Scanner:
 
 		data = self.data[0:idx]
 		idx = idx + 1
-		self.data = self.data[x:]
+		self.data = self.data[idx:]
 		return data
+
+if __name__ == '__main__':
+	from shell import Shell
+	from db import Db
+	import settings
+
+	def signal_handler(signal, frame):
+		sys.exit(0)
+
+	scanner = Scanner(settings.scanner_port)
+	while True:
+		barcode = scanner.read()
+		if barcode:
+			print barcode
+
+

@@ -9,6 +9,7 @@ import threading
 import traceback
 from Queue import Queue, Empty
 import settings
+import fnmatch
 
 swdebug = True
 if hasattr(settings, "swdebug"):
@@ -40,6 +41,17 @@ class Test(threading.Thread):
 		if self.file != None:
 			self.file.close()
 
+	def get(self, attr_name, val_def = None):
+		self.lock.acquire()
+		value = getattr(self, attr_name, val_def)
+		self.lock.release()
+		return value
+
+	def set(self, attr_name, value):
+		self.lock.acquire()
+		setattr(self, attr_name, value)
+		self.lock.release()
+
 	def run(self):
 		try:
 			self.Test()
@@ -59,7 +71,8 @@ class Test(threading.Thread):
 			self.update()
 
 	def getPath(self, subdir=None, fname=None):
-		path = self.tester.getDB().cfg_get("dat_dir")
+		#return full data file path according to specified fname
+		path = self.tester.get("db").cfg_get("dat_dir")
 		if subdir:
 			path = os.path.join(path, subdir)
 		if fname:
@@ -88,57 +101,47 @@ class Test(threading.Thread):
 		self.file.flush()
 
 	def setBarcode(self, barcode):
-		self.lock.acquire()
-		self.dfpath = ''
+		emsg = None
+		self.set("dfpath", '')
 		if barcode:
-			self.barcode = barcode
-			self.status = "LOADING"
+			if settings.barcode_verify:
+				emsg = self.verifyBarcode(barcode)
+			if not emsg:
+				self.set("barcode", barcode)
+				self.set("status", "LOADING")
 		else:
-			self.barcode = ''
-			self.status = "IDLE"
-		self.lock.release()
+			self.set("barcode", '')
+			self.set("status", "IDLE")
+		return emsg
 
 	def getBarcode(self):
-		self.lock.acquire()
-		barcode = self.barcode
-		self.lock.release()
-		return barcode
+		return self.get("barcode")
 
 	def Start(self, dfpath=None):
-		self.lock.acquire()
-		self.ecode = 0
-		self.status = "TESTING"
-		self.dfpath = os.path.abspath(dfpath)
-		self.lock.release()
+		self.set("ecode", 0)
+		self.set("status", "TESTING")
+		self.set("dfpath", os.path.abspath(dfpath))
 		if dfpath:
 			self.log_start(dfpath)
 
 	def Pass(self):
 		if not swdebug:
-			self.tester.getFixture().Signal(self.station, "PASS")
-		self.lock.acquire()
-		self.status = "PASS"
-		self.lock.release()
+			self.tester.get("fixture").Signal(self.station, "PASS")
+		self.set("status", "PASS")
 
 	def Fail(self, ecode = -1):
 		assert ecode != 0
-		self.lock.acquire()
-		self.ecode = ecode
-		self.status = "FAIL"
-		self.lock.release()
+		self.set("ecode", ecode)
+		self.set("status", "FAIL")
 		self.tester.RequestWaste(self)
 
 
 	def Prompt(self, status):
-		self.lock.acquire()
-		self.status = status
-		self.lock.release()
+		self.set("status", status)
 
 ###########method could be called by main thread ########
 	def stop(self):
-		self.lock.acquire()
-		self.flag_stop = True
-		self.lock.release()
+		self.set("flag_stop", True)
 
 
 
