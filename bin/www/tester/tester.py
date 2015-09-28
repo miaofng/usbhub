@@ -60,6 +60,7 @@ class Tester:
 	fixture_id = "Invalid"
 	fixture_pressed = "Invalid"
 	wastes = 0 #nr of uut inside wastebox
+	mode = None #"dual" "left" "right"
 	stop = False
 	estop = False
 	threads = {0: None, 1: None}
@@ -77,20 +78,25 @@ class Tester:
 		else:
 			self.scanner = Scanner(settings.scanner_port)
 			self.fixture = Fixture(settings.plc_port)
-			id = self.fixture.GetID(0)
-			id1 = self.fixture.GetID(1)
-			assert id1 == id
+			if self.mode == "dual" or self.mode == "left":
+				id = id0 = self.fixture.GetID(0)
+			if self.mode == "dual" or self.mode == "right":
+				id = id1 = self.fixture.GetID(1)
+			if self.mode == "dual":
+				assert id0 == id1
 			self.fixture_id = id
 
 		self.fixture_pressed = self.db.fixture_get(id, "pressed")
 
-		if True:
-			station0 = Selfcheck(self, 0)
-			station1 = Selfcheck(self, 1)
-			station0.start()
-			station1.start()
-			self.threads[0] = station0
-			self.threads[1] = station1
+		if settings.enable_selfcheck:
+			if self.mode == "dual" or self.mode == "left":
+				station0 = Selfcheck(self, 0)
+				station0.start()
+				self.threads[0] = station0
+			if self.mode == "dual" or self.mode == "right":
+				station1 = Selfcheck(self, 1)
+				station1.start()
+				self.threads[1] = station1
 
 		self.shell = Shell(saddr)
 		self.shell.register("status", self.cmd_status, "display tester status")
@@ -228,12 +234,14 @@ class Tester:
 		model = Model()
 		model = model.Parse(args[0])
 		if model:
-			station0 = GFTest(self, model, 0)
-			station1 = GFTest(self, model, 1)
-			station0.start()
-			station1.start()
-			self.threads[0] = station0
-			self.threads[1] = station1
+			if self.mode == "dual" or self.mode == "left":
+				station0 = GFTest(self, model, 0)
+				station0.start()
+				self.threads[0] = station0
+			if self.mode == "dual" or self.mode == "right":
+				station1 = GFTest(self, model, 1)
+				station1.start()
+				self.threads[1] = station1
 		return result
 
 	def cmd_stop(self, argc, argv):
