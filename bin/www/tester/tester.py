@@ -292,7 +292,9 @@ class Tester:
 		else:
 			sensors = self.get("fixture").cio_read(  0, 4)
 			control = self.get("fixture").cio_read(300, 4)
-			result = {sensors, control}
+			result = {}
+			result["sensors"] = sensors
+			result["control"] = control
 		return result
 
 	def cmd_vplc(self, argc, argv):
