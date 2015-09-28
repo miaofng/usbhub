@@ -29,8 +29,8 @@ function update_status(status)
 			$(this).html(sprintf("%02d", regv));
 			break;
 		default:
-			idx = parseInt(this.id);
-			bit = parseInt(this.id * 100) % 100;
+			idx = Math.round(this.id);
+			bit = Math.round(this.id * 100) % 100;
 			regv = (sensors[idx] >> bit) & 0x01;
 			if(regv) $(this).css("backgroundColor", "#00ff00");
 			else $(this).css("backgroundColor", "white");
@@ -52,8 +52,8 @@ function update_status(status)
 			regv = (control[3] >> 0) & 0x01;
 			break;
 		default:
-			idx = parseInt(this.id) % 100;
-			bit = parseInt(this.id * 100) % 100;
+			idx = Math.round(this.id) % 100;
+			bit = Math.round(this.id * 100) % 100;
 			regv = (control[idx] >> bit) & 0x01;
 		}
 
@@ -97,7 +97,7 @@ $(function() {
 		irt.query(cmdline, function(data) {});
 	});
 
-	var tick = setInterval("tick_update()", 100);
+	var tick = setInterval("tick_update()", 500);
 	$(window).unload(function(){
 		clearInterval(tick);
 		irt.exit();
