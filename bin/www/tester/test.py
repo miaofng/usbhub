@@ -128,7 +128,6 @@ class Test(threading.Thread):
 		#:( who can notice me when uut is removed
 		self.mdelay(2000)
 		#now, uut is removed
-		self.set("status", "LOADING")
 		self.set("barcode", '')
 		self.set("dfpath", '')
 
@@ -138,7 +137,6 @@ class Test(threading.Thread):
 		self.set("status", "FAIL")
 		self.Record()
 		self.tester.RequestWaste(self)
-		self.set("status", "LOADING")
 		self.set("barcode", '')
 		self.set("dfpath", '')
 

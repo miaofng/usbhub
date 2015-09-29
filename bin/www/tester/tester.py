@@ -5,6 +5,7 @@
 #3, instrument's lock must be acquired before calling instrument's method
 #4, UUT Status: easy operator action should has a feedback!!!
 #	READY			DEFAULT STATE			GREEN
+#	SCANING
 #	LOADING			(UUT PRESENT)>			YELLOW FLASH + GIF ANIMATION
 #	LOADED			(FIXTURE MOV FINISH)> 	YELLOW
 #	TESTING			(TEST OVER)>			YELLOW
@@ -387,7 +388,7 @@ class Tester:
 		vuut_present_deadline = None
 
 		#loading ...
-		test.Prompt("LOADING")
+		test.Prompt("SCANING")
 		while not self.stop:
 			#yellow flash
 			self.fixture.get("Signal")(station, "OFF")
@@ -405,6 +406,7 @@ class Tester:
 				if emsg:
 					self.set("emsg", emsg)
 				else:
+					test.Prompt("LOADING")
 					vuut_present_deadline = time.time() + 3
 
 			#uut present???

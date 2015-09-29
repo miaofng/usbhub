@@ -41,6 +41,7 @@ function update_state(station, status, ecode) {
 	var bgcolor = "#ff0000";
 
 	switch(state) {
+	case "SCANING":
 	case "LOADING":
 	case "LOADED":
 	case "TESTING":
