@@ -10,6 +10,7 @@ import functools
 import time
 import io
 import random
+import threading
 
 class PlcIoError(Exception):
 	emsg = {
@@ -43,7 +44,27 @@ class PlcIoError(Exception):
 		Exception.__init__(self)
 
 class Plc:
+	lock = threading.Lock()
 	timeout = 1 #unit: S
+
+	def get(self, attr_name, val_def = None):
+		if hasattr(self, attr_name):
+			self.lock.acquire()
+			obj = getattr(self, attr_name, val_def)
+			self.lock.release()
+			if hasattr(obj, "__call__"):
+				def deco(*args, **kwargs):
+					self.lock.acquire()
+					retval = obj(*args, **kwargs)
+					self.lock.release()
+					return retval
+				return deco
+		return obj
+
+	def set(self, attr_name, value):
+		self.lock.acquire()
+		setattr(self, attr_name, value)
+		self.lock.release()
 
 	def __del__(self):
 		if self.uart:

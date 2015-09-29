@@ -5,8 +5,11 @@ import io
 import time
 import sys, signal
 import sqlite3
+import threading
 
 class Db:
+	lock = threading.Lock()
+
 	def __init__(self):
 		self.conn = sqlite3.connect('irt.db', check_same_thread = False)
 		def dict_factory(cursor, row):
@@ -17,6 +20,25 @@ class Db:
 		self.conn.row_factory = dict_factory
 	def __del__(self):
 		self.conn.close()
+
+	def get(self, attr_name, val_def = None):
+		if hasattr(self, attr_name):
+			self.lock.acquire()
+			obj = getattr(self, attr_name, val_def)
+			self.lock.release()
+			if hasattr(obj, "__call__"):
+				def deco(*args, **kwargs):
+					self.lock.acquire()
+					retval = obj(*args, **kwargs)
+					self.lock.release()
+					return retval
+				return deco
+		return obj
+
+	def set(self, attr_name, value):
+		self.lock.acquire()
+		setattr(self, attr_name, value)
+		self.lock.release()
 
 	def cfg_get(self, name):
 		cursor = self.conn.cursor()

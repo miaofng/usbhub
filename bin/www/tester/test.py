@@ -72,7 +72,7 @@ class Test(threading.Thread):
 
 	def getPath(self, subdir=None, fname=None):
 		#return full data file path according to specified fname
-		path = self.tester.get("db").cfg_get("dat_dir")
+		path = self.tester.db.get('cfg_get')("dat_dir")
 		if subdir:
 			path = os.path.join(path, subdir)
 		if fname:

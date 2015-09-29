@@ -50,7 +50,7 @@ class GFTest(Test):
 		record["datafile"] = os.path.relpath(self.dfpath, dat_dir)
 		record["station"] = self.station
 		self.lock.release()
-		self.tester.get("db").test_add(record)
+		self.tester.db.get('test_add')(record)
 
 	def Test(self):
 		# if self.precheck() == False:

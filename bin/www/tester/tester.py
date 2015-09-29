@@ -59,6 +59,7 @@ class Tester:
 	time_start = time.time()
 	fixture_id = "Invalid"
 	fixture_pressed = "Invalid"
+	emsg = ''
 	wastes = 0 #nr of uut inside wastebox
 	mode = None #"dual" "left" "right"
 	stop = False
@@ -112,10 +113,18 @@ class Tester:
 		self.shell.unregister("stop")
 
 	def get(self, attr_name, val_def = None):
-		self.lock.acquire()
-		value = getattr(self, attr_name, val_def)
-		self.lock.release()
-		return value
+		if hasattr(self, attr_name):
+			self.lock.acquire()
+			obj = getattr(self, attr_name, val_def)
+			self.lock.release()
+			if hasattr(obj, "__call__"):
+				def deco(*args, **kwargs):
+					self.lock.acquire()
+					retval = obj(*args, **kwargs)
+					self.lock.release()
+					return retval
+				return deco
+		return obj
 
 	def set(self, attr_name, value):
 		self.lock.acquire()
@@ -148,8 +157,8 @@ class Tester:
 
 		#estop
 		if not swdebug:
-			self.estop = self.get("fixture").IsEstop()
-			self.wastes = self.get("fixture").ReadWasteCount()
+			self.estop = self.fixture.get("IsEstop")()
+			self.wastes = self.fixture.get('ReadWasteCount')()
 		elif swdebug_estop:
 			ms = self.__runtime__()*1000
 			if int(ms) % 3000 == 0:
@@ -283,7 +292,7 @@ class Tester:
 				bit = int(val * 100) % 100
 				msk = 1 << bit
 
-			val = self.get("fixture").cio_read(reg)
+			val = self.fixture.get('cio_read')(reg)
 			if argc > 2:
 				lvl = int(argv[2])
 				val = val & ~msk
@@ -295,11 +304,11 @@ class Tester:
 				else:
 					val = val & ~(msk | inv)
 					val = val | msk
-			self.get("fixture").cio_write(reg, val)
+			self.fixture.get('cio_write')(reg, val)
 			return {"error": "OK",}
 		else:
-			sensors = self.get("fixture").cio_read(  0, 4)
-			control = self.get("fixture").cio_read(300, 4)
+			sensors = self.fixture.get("cio_read")(  0, 4)
+			control = self.fixture.get("cio_read")(300, 4)
 			result = {}
 			result["sensors"] = sensors
 			result["control"] = control
@@ -370,19 +379,19 @@ class Tester:
 				self.set("barcode", None)
 				emsg = test.setBarcode(barcode)
 				self.set("emsg", emsg)
-				self.get("fixture").Start(station)
+				self.fixture.get("Start")(station)
 
 			#yellow flash
-			self.get("fixture").Signal(station, "OFF")
+			self.fixture.get("Signal")(station, "OFF")
 			time.sleep(0.010)
-			self.get("fixture").Signal(station, "BUSY")
+			self.fixture.get("Signal")(station, "BUSY")
 			time.sleep(0.010)
 
 			#uut present?
 			#not self.IsUutPresent(station):
 
 			#fixture ready?
-			ready = self.get("fixture").IsReady(station)
+			ready = self.fixture.get("IsReady")(station)
 			if ready:
 				pressed = self.get("fixture_pressed") + 1
 				self.set("fixture_pressed", pressed)
@@ -408,7 +417,7 @@ class Tester:
 			if guess > 98:
 				pressed = self.get("fixture_pressed") + 1
 				self.set('fixture_pressed', pressed)
-				self.get("db").fixture_set(self.fixture_id, "pressed", pressed)
+				self.db.get("fixture_set")(self.fixture_id, "pressed", pressed)
 				break
 
 		self.test_lock.release()
@@ -419,11 +428,11 @@ class Tester:
 		#blocked if request fail
 		station = test.station
 		self.waste_lock.acquire()
-		wastes = self.get("fixture").ReadWasteCount()
-		self.get("fixture").Signal(self.station, "FAIL")
+		wastes = self.fixture.get("ReadWasteCount")()
+		self.fixture.get("Signal")(self.station, "FAIL")
 		while True:
 			time.sleep(0.001)
-			n = self.get("fixture").ReadWasteCount()
+			n = self.fixture.get("ReadWasteCount")()
 			if n > wastes:
 				assert n - wastes == 1
 				self.set("wastes", n)
