@@ -44,7 +44,7 @@ class ThreadException(Exception):
 	def __init__(self, thread):
 		name = thread.getName()
 		e = thread.exception
-		msg = '%s Exception: %s\n\r'%(name, e.args[0])
+		msg = '%s Exception:\n\r'%(name)
 		print >> sys.stderr, msg
 		print >> sys.stderr, thread.stack
 		sys.stderr.flush()
@@ -79,6 +79,7 @@ class Tester:
 		else:
 			self.scanner = Scanner(settings.scanner_port)
 			self.fixture = Fixture(settings.plc_port)
+
 			if self.mode == "dual" or self.mode == "left":
 				id = id0 = self.fixture.GetID(0)
 			if self.mode == "dual" or self.mode == "right":
@@ -88,7 +89,6 @@ class Tester:
 			self.fixture_id = id
 
 		self.fixture_pressed = self.db.fixture_get(id, "pressed")
-
 		if settings.enable_selfcheck:
 			if self.mode == "dual" or self.mode == "left":
 				station0 = Selfcheck(self, 0)
@@ -163,7 +163,6 @@ class Tester:
 		#estop
 		if not swdebug:
 			self.estop = self.fixture.get("IsEstop")()
-			self.wastes = self.fixture.get('ReadWasteCount')()
 		elif swdebug_estop:
 			ms = self.__runtime__()*1000
 			if int(ms) % 3000 == 0:
@@ -293,13 +292,13 @@ class Tester:
 				msk = (1 << 0) | (1 << 1)
 			else:
 				val = float(argv[1])
-				reg = int(val)
-				bit = int(val * 100) % 100
+				reg = int(round(val))
+				bit = int(round(val * 100)) % 100
 				msk = 1 << bit
 
 			val = self.fixture.get('cio_read')(reg)
 			if argc > 2:
-				lvl = int(argv[2])
+				lvl = int(round(argv[2]))
 				val = val & ~msk
 				if lvl:
 					val = val | msk
@@ -342,14 +341,14 @@ class Tester:
 				msk = (1 << 0) | (1 << 1)
 			else:
 				val = float(argv[1])
-				reg = int(val)
-				bit = int(val * 100) % 100
+				reg = int(round(val))
+				bit = int(round(val * 100)) % 100
 				msk = 1 << bit
 
 			reg = reg % 100
 			val = self.plc_regs_ctrl[reg]
 			if argc > 2:
-				lvl = int(argv[2])
+				lvl = int(round(argv[2]))
 				val = val & ~msk
 				if lvl:
 					val = val | msk
@@ -434,7 +433,7 @@ class Tester:
 		station = test.station
 		self.waste_lock.acquire()
 		wastes = self.fixture.get("ReadWasteCount")()
-		self.fixture.get("Signal")(self.station, "FAIL")
+		self.fixture.get("Signal")(test.station, "FAIL")
 		while True:
 			time.sleep(0.001)
 			n = self.fixture.get("ReadWasteCount")()

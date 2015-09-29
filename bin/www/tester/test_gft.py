@@ -82,10 +82,10 @@ class GFTest(Test):
 
 			if random.randint(0,1):
 				self.Pass()
+				self.mdelay(2000)
 			else:
 				self.Fail()
 			self.Record()
-			self.mdelay(2000)
 
 #module self test
 if __name__ == '__main__':

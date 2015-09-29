@@ -19,6 +19,7 @@ function update_status(status)
 	control = status.control;
 
 	$(".indicators").each(function(){
+		val = null;
 		switch(this.id) {
 		case "LID": //3.07-3.04
 			regv = (sensors[3] >> 4) & 0x0f;
@@ -28,11 +29,19 @@ function update_status(status)
 			regv = (sensors[3] >> 0) & 0x0f;
 			$(this).html(sprintf("%02d", regv));
 			break;
+		case "SB": //0.00 0.01
+			val = sensors[0] & 0x03;
+			val = val == 0x03;
+			break;
 		default:
 			idx = Math.round(this.id);
 			bit = Math.round(this.id * 100) % 100;
-			regv = (sensors[idx] >> bit) & 0x01;
-			if(regv) $(this).css("backgroundColor", "#00ff00");
+			val = (sensors[idx] >> bit) & 0x01;
+			break;
+		}
+
+		if(val != null) {
+			if(val) $(this).css("backgroundColor", "#00ff00");
 			else $(this).css("backgroundColor", "white");
 		}
 	});
