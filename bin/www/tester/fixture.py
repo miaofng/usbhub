@@ -260,42 +260,42 @@ class Fixture(Plc):
 	def ReadWasteCount(self):
 		return self.dm_read(30)
 
+	def cmd_cio_read(self, argc, argv):
+		addr = 0
+		len = 1
+		if argc > 1:
+			addr = int(argv[1])
+		if argc > 2:
+			len = int(argv[2])
+
+		result = self.cio_read(addr, len)
+		return str(result)+"\r\n"
+
+	def cmd_cio_write(self, argc, argv):
+		if argc > 2:
+			addr = int(argv[1])
+			value = int(argv[2])
+			self.cio_write(addr, value)
+
+	def cmd_dm_read(self, argc, argv):
+		addr = 0
+		len = 1
+		if argc > 1:
+			addr = int(argv[1])
+		if argc > 2:
+			len = int(argv[2])
+
+		result = self.dm_read(addr, len)
+		return str(result)+"\r\n"
+
+	def cmd_dm_write(self, argc, argv):
+		if argc > 2:
+			addr = int(argv[1])
+			value = int(argv[2])
+			self.dm_write(addr, value)
+
 ######################module self test######################
 if __name__ == '__main__':
-	def cmd_cio_read(plc, argc, argv):
-		addr = 0
-		len = 1
-		if argc > 1:
-			addr = int(argv[1])
-		if argc > 2:
-			len = int(argv[2])
-
-		result = plc.cio_read(addr, len)
-		return str(result)+"\r\n"
-
-	def cmd_cio_write(plc, argc, argv):
-		if argc > 2:
-			addr = int(argv[1])
-			value = int(argv[2])
-			plc.cio_write(addr, value)
-
-	def cmd_dm_read(plc, argc, argv):
-		addr = 0
-		len = 1
-		if argc > 1:
-			addr = int(argv[1])
-		if argc > 2:
-			len = int(argv[2])
-
-		result = plc.dm_read(addr, len)
-		return str(result)+"\r\n"
-
-	def cmd_dm_write(plc, argc, argv):
-		if argc > 2:
-			addr = int(argv[1])
-			value = int(argv[2])
-			plc.dm_write(addr, value)
-
 	def cmd_debug(fixture, argc, argv):
 		station = 1
 		id = fixture.GetID(station)
@@ -363,10 +363,10 @@ if __name__ == '__main__':
 	fixture = Fixture("COM1")
 	saddr = ('localhost', 10003)
 	shell = Shell(saddr)
-	shell.register("rr", functools.partial(cmd_cio_read, fixture), "rr 10")
-	shell.register("wr", functools.partial(cmd_cio_write, fixture), "wr 10 5")
-	shell.register("rd", functools.partial(cmd_dm_read, fixture), "rd 10")
-	shell.register("wd", functools.partial(cmd_dm_write, fixture), "wd 10 5")
+	shell.register("rr", fixture.cmd_cio_read, "rr 10")
+	shell.register("wr", fixture.cmd_cio_write, "wr 10 5")
+	shell.register("rd", fixture.cmd_dm_read, "rd 10")
+	shell.register("wd", fixture.cmd_dm_write, "wd 10 5")
 	shell.register("debug", functools.partial(cmd_debug, fixture), "test [left|right|dual]")
 
 	while True:

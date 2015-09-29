@@ -105,6 +105,11 @@ class Tester:
 		self.shell.register("test", self.cmd_test, "test start")
 		self.shell.register("stop", self.cmd_stop, "test stop")
 		self.shell.register("plc", self.cmd_plc, "plc status&query")
+		if not swdebug:
+			self.shell.register("rr", self.fixture.get('cmd_cio_read'), "rr 10")
+			self.shell.register("wr", self.fixture.get('cmd_cio_write'), "wr 10 5")
+			self.shell.register("rd", self.fixture.get('cmd_dm_read'), "rd 10")
+			self.shell.register("wd", self.fixture.get('cmd_dm_write'), "wd 10 5")
 
 	def __del__(self):
 		self.shell.unregister("status")
