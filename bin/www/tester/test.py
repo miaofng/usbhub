@@ -126,7 +126,7 @@ class Test(threading.Thread):
 
 	def Pass(self):
 		if not swdebug:
-			self.tester.get("fixture").Signal(self.station, "PASS")
+			self.tester.fixture.get("Signal")(self.station, "PASS")
 		self.set("status", "PASS")
 
 	def Fail(self, ecode = -1):
