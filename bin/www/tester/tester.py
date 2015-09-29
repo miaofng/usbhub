@@ -3,14 +3,19 @@
 #1, shell command should be registered in main thread
 #2, tester's method is thread safe
 #3, instrument's lock must be acquired before calling instrument's method
-#4, UUT Status:
-#	IDLE			(BARCODE GOT)> 			YELLOW
-#	LOADING			(FIXTURE READY)>		YELLOW FLASH + GIF ANIMATION
+#4, UUT Status: easy operator action should has a feedback!!!
+#	READY			DEFAULT STATE			GREEN
+#	LOADING			(UUT PRESENT)>			YELLOW FLASH + GIF ANIMATION
+#	LOADED			(FIXTURE MOV FINISH)> 	YELLOW
 #	TESTING			(TEST OVER)>			YELLOW
-#	PASS/FAIL		(BARCODE GOT)>LOADING	GREEN/RED
-#5, show gui waring dialog when:
-#	a) press start button, but uut not exist
-#	b) scan barcode but no test request received
+#	PASS/FAIL		(UUT REMOVED)>LOADING	GREEN/RED
+#5, show gui dialog when:
+#	a) [keep] estop
+#	b) [keep] test server died
+#	c) [keep] uut present but no barcode, maybe last time error occured
+#	d) [keep] scan barcode but format not correct
+#	e) [keep] please mov uut to the waste box
+#
 #6, It's very dangeous to acquire a lock in side a lock!!!!!!!
 
 import io
@@ -247,6 +252,7 @@ class Tester:
 		model = Model()
 		model = model.Parse(args[0])
 		if model:
+			self.fixture.get("Reset")()
 			if self.mode == "dual" or self.mode == "left":
 				station0 = GFTest(self, model, 0)
 				station0.start()
@@ -375,24 +381,45 @@ class Tester:
 		#blocked if request fail
 		station = test.station
 		self.test_lock.acquire()
-		self.set("barcode", None)
-		while not self.stop:
-			#barcode
-			barcode = self.get("barcode")
-			if barcode:
-				self.set("barcode", None)
-				emsg = test.setBarcode(barcode)
-				self.set("emsg", emsg)
-				self.fixture.get("Start")(station)
 
+		#fuck!!! 2s if barcode is ok
+		vuut_present_deadline = None
+
+		#loading ...
+		while not self.stop:
 			#yellow flash
 			self.fixture.get("Signal")(station, "OFF")
 			time.sleep(0.010)
 			self.fixture.get("Signal")(station, "BUSY")
 			time.sleep(0.010)
 
-			#uut present?
-			#not self.IsUutPresent(station):
+			#barcode
+			barcode = self.get("barcode")
+			if barcode:
+				self.set("barcode", None)
+				test.setBarcode(barcode)
+
+				emsg = test.verifyBarcode(barcode)
+				if emsg:
+					self.set("emsg", emsg)
+				else:
+					vuut_present_deadline = time.time() + 2
+
+			#uut present???
+			#self.fixture.get("IsUutPresent")(station):
+			if vuut_present_deadline:
+				if time.time() >  vuut_present_deadline:
+					#provided that uut is present now
+					test.Prompt("LOADED")
+					self.fixture.get("Signal")(station, "BUSY")
+					self.fixture.get("Start")(station)
+					break
+
+		#loaded, fixture is moving ...
+		fixture_mov_deadline = time.time() + settings.fixture_mov_timeout
+		while not self.stop:
+			#movement blocked by human hand???
+			assert time.time() < fixture_mov_deadline
 
 			#fixture ready?
 			ready = self.fixture.get("IsReady")(station)

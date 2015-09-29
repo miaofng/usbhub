@@ -230,6 +230,9 @@ class Fixture(Plc):
 		#cleared by pc until 'READY' received
 		self.dm_write(12, 1+station)
 
+	def Reset(self):
+		self.dm_write(11, 1)
+
 	def IsReady(self, station):
 		#cleared by plc until 'PASS' or 'FAIL' received
 		ready = 0

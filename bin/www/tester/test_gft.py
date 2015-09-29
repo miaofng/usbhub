@@ -82,7 +82,6 @@ class GFTest(Test):
 
 			if random.randint(0,1):
 				self.Pass()
-				self.mdelay(2000)
 			else:
 				self.Fail()
 			self.Record()

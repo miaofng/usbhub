@@ -100,19 +100,12 @@ class Test(threading.Thread):
 		self.file.write(line)
 		self.file.flush()
 
-	def setBarcode(self, barcode):
+	def verifyBarcode(self, barcode):
 		emsg = None
-		self.set("dfpath", '')
-		if barcode:
-			if settings.barcode_verify:
-				emsg = self.verifyBarcode(barcode)
-			if not emsg:
-				self.set("barcode", barcode)
-				self.set("status", "LOADING")
-		else:
-			self.set("barcode", '')
-			self.set("status", "IDLE")
 		return emsg
+
+	def setBarcode(self, barcode):
+		self.set("barcode", barcode)
 
 	def getBarcode(self):
 		return self.get("barcode")
@@ -128,12 +121,21 @@ class Test(threading.Thread):
 		if not swdebug:
 			self.tester.fixture.get("Signal")(self.station, "PASS")
 		self.set("status", "PASS")
+		#:( who can notice me when uut is removed
+		self.mdelay(2000)
+		#now, uut is removed
+		self.set("status", "LOADING")
+		self.set("barcode", '')
+		self.set("dfpath", '')
 
 	def Fail(self, ecode = -1):
 		assert ecode != 0
 		self.set("ecode", ecode)
 		self.set("status", "FAIL")
 		self.tester.RequestWaste(self)
+		self.set("status", "LOADING")
+		self.set("barcode", '')
+		self.set("dfpath", '')
 
 
 	def Prompt(self, status):
