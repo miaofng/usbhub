@@ -70,7 +70,7 @@ function update_state(station, status, ecode) {
 	$(id_status).css("background-color", bgcolor);
 	if(state == "SCANING") {
 		$(id_result).css("background-image", "url(img/scan.gif)");
-		$(id_result).css("background-size", "200px 150px");
+		$(id_result).css("background-size", "400px 250px");
 		$(id_result).css("background-repeat", "no-repeat");
 		$(id_result).css("background-position", "center top");
 	}
@@ -82,7 +82,7 @@ function update_state(station, status, ecode) {
 	}
 	else if(state == "LOADED") {
 		$(id_result).css("background-image", "url(img/start.png)");
-		$(id_result).css("background-size", "200px 150px");
+		$(id_result).css("background-size", "400px 300px");
 		$(id_result).css("background-repeat", "no-repeat");
 		$(id_result).css("background-position", "center top");
 	}
