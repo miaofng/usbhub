@@ -100,6 +100,9 @@ class Test(threading.Thread):
 		self.file.write(line)
 		self.file.flush()
 
+	def Record(self, barcode):
+		pass
+
 	def verifyBarcode(self, barcode):
 		emsg = None
 		return emsg
@@ -121,6 +124,7 @@ class Test(threading.Thread):
 		if not swdebug:
 			self.tester.fixture.get("Signal")(self.station, "PASS")
 		self.set("status", "PASS")
+		self.Record()
 		#:( who can notice me when uut is removed
 		self.mdelay(2000)
 		#now, uut is removed
@@ -132,6 +136,7 @@ class Test(threading.Thread):
 		assert ecode != 0
 		self.set("ecode", ecode)
 		self.set("status", "FAIL")
+		self.Record()
 		self.tester.RequestWaste(self)
 		self.set("status", "LOADING")
 		self.set("barcode", '')

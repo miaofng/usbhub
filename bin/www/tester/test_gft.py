@@ -30,14 +30,15 @@ class GFTest(Test):
 		#...
 
 	def verifyBarcode(self, barcode):
-		template = model.barcode
-		if not fnmatch.fnmatchcase(barcode, template):
-			emsg = []
-			emsg.append("Barcode Error")
-			emsg.append("expect: %s", template)
-			emsg.append("scaned: %s", barcode)
-			emsg = '\n\r'.join(emsg)
-			return emsg
+		if hasattr(self.model, "barcode"):
+			template = self.model.barcode
+			if not fnmatch.fnmatchcase(barcode, template):
+				emsg = []
+				emsg.append("Barcode Error")
+				emsg.append("expect: %s", template)
+				emsg.append("scaned: %s", barcode)
+				emsg = '\n\r'.join(emsg)
+				return emsg
 
 	def Record(self):
 		dat_dir = self.getPath()
@@ -84,7 +85,6 @@ class GFTest(Test):
 				self.Pass()
 			else:
 				self.Fail()
-			self.Record()
 
 #module self test
 if __name__ == '__main__':

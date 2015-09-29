@@ -70,6 +70,7 @@ class Tester:
 	stop = False
 	estop = False
 	threads = {0: None, 1: None}
+	barcode = None
 
 	def __init__(self, saddr):
 		self.db = Db()
@@ -386,6 +387,7 @@ class Tester:
 		vuut_present_deadline = None
 
 		#loading ...
+		test.Prompt("LOADING")
 		while not self.stop:
 			#yellow flash
 			self.fixture.get("Signal")(station, "OFF")
@@ -403,7 +405,7 @@ class Tester:
 				if emsg:
 					self.set("emsg", emsg)
 				else:
-					vuut_present_deadline = time.time() + 2
+					vuut_present_deadline = time.time() + 3
 
 			#uut present???
 			#self.fixture.get("IsUutPresent")(station):
@@ -416,10 +418,12 @@ class Tester:
 					break
 
 		#loaded, fixture is moving ...
-		fixture_mov_deadline = time.time() + settings.fixture_mov_timeout
+		#fixture_mov_deadline = time.time() + settings.fixture_mov_timeout
 		while not self.stop:
 			#movement blocked by human hand???
-			assert time.time() < fixture_mov_deadline
+			#start button may not been pressed asap
+			#assert time.time() < fixture_mov_deadline
+			time.sleep(0.01)
 
 			#fixture ready?
 			ready = self.fixture.get("IsReady")(station)
