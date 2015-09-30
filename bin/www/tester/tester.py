@@ -30,6 +30,10 @@ from test_gft import GFTest
 from scanner import Scanner
 from fixture import Fixture
 from model import Model
+from hmp4040 import Hmp4040
+from dmm import Dmm
+from uctrl import Uctrl
+from test_hub import HUBTest
 import settings
 import random
 import functools #https://docs.python.org/2/library/functools.html
@@ -57,10 +61,11 @@ class ThreadException(Exception):
 
 class Tester:
 	lock = threading.Lock()
-	db_lock = threading.Lock()
-	fixture_lock = threading.Lock()
 	test_lock = threading.Lock()
 	waste_lock = threading.Lock()
+	uctrl = {0: None, 1: None}
+	dmm = None
+	matrix = None
 
 	time_start = time.time()
 	fixture_id = "Invalid"
@@ -86,11 +91,19 @@ class Tester:
 		else:
 			self.scanner = Scanner(settings.scanner_port)
 			self.fixture = Fixture(settings.plc_port)
+			power = Hmp4040(settings.hmp_port)
+			power.set_vol(1, 13.5, 1.5) #vbat
+			power.set_vol(2, 05.5, 1.0) #uctrl
+			power.lock(True)
+			self.dmm = Dmm(settings.dmm_port)
+			self.dmm.measure_dcv()
 
 			if self.mode == "dual" or self.mode == "left":
 				id = id0 = self.fixture.GetID(0)
+				self.uctrl[0] = Uctrl(settings.uctrl_ports[0])
 			if self.mode == "dual" or self.mode == "right":
 				id = id1 = self.fixture.GetID(1)
+				self.uctrl[1] = Uctrl(settings.uctrl_ports[1])
 			if self.mode == "dual":
 				assert id0 == id1
 			self.fixture_id = id
@@ -251,18 +264,29 @@ class Tester:
 			elif (opt[0] == "-x" or opt[0] == "--mask"):
 				para["mask"] = int(opt[1])
 
-		model = Model()
-		model = model.Parse(args[0])
-		if model:
+		if not swdebug:
 			self.fixture.get("Reset")()
-			if self.mode == "dual" or self.mode == "left":
-				station0 = GFTest(self, model, 0)
-				station0.start()
-				self.threads[0] = station0
-			if self.mode == "dual" or self.mode == "right":
-				station1 = GFTest(self, model, 1)
-				station1.start()
-				self.threads[1] = station1
+
+		if self.mode == "dual" or self.mode == "left":
+			model0 = Model(0)
+			model0 = model0.Parse(args[0])
+			if swdebug:
+				station0 = GFTest(self, model0, 0)
+			else:
+				station0 = HUBTest(self, model0, 0)
+			station0.start()
+			self.threads[0] = station0
+
+		if self.mode == "dual" or self.mode == "right":
+			model1 = Model(1)
+			model1 = model1.Parse(args[0])
+			if swdebug:
+				station1 = GFTest(self, model1, 1)
+			else:
+				station1 = HUBTest(self, model1, 1)
+			station1.start()
+			self.threads[1] = station1
+
 		return result
 
 	def cmd_stop(self, argc, argv):
