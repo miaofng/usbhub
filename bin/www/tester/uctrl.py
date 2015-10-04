@@ -4,8 +4,9 @@ import serial
 class UctrlIoError(Exception): pass
 
 class Uctrl:
+	timeout = 5 #unit: S
 	def __init__(self, port, baud = 115200):
-		self.uart = serial.Serial(self.com,self.baud)
+		self.uart = serial.Serial(port, baud, timeout = self.timeout)
 		self.uart.write("shell -a\r")
 
 	def __del__(self):
@@ -13,7 +14,7 @@ class Uctrl:
 
 	def query(self, cmdline):
 		self.uart.flushInput()
-		self.uart.write(command+"\n\r")
+		self.uart.write(cmdline+"\n\r")
 		echo = self.uart.readline()
 		if echo[0:2] != "OK":
 			raise UctrlIoError
@@ -24,8 +25,9 @@ class Uctrl:
 
 	def reset(self):
 		cmdline = "uht init"
-		self.query(cmdline)
+		self.uart.write(cmdline+"\n\r")
+
 
 	def vbat(self, onoff):
 		cmdline = "uht sw%s"%onoff
-		self.query(cmdline)
+		self.uart.write(cmdline+"\n\r")

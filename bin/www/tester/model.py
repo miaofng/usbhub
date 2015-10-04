@@ -155,11 +155,11 @@ class Model:
 			vcdp["matrix"] = settings.matrix_usb_vdn[index]
 
 		passthrough = None
-		if index < 1:
+		if index == 0:
 			vdp = copy.deepcopy(self.usb_bypass_vdp)
-			vdp["matrix"] = settings.matrix_usb_vdp[index]
+			vdp["matrix"] = settings.matrix_usb_vdp[1]
 			vdn = copy.deepcopy(self.usb_bypass_vdn)
-			vdn["matrix"] = settings.matrix_usb_vdn[index]
+			vdn["matrix"] = settings.matrix_usb_vdn[1]
 			passthrough = {"vdp": vdp, "vdn": vdn}
 
 		identify = copy.deepcopy(self.usb_identify)

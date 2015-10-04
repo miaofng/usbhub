@@ -34,6 +34,7 @@ from hmp4040 import Hmp4040
 from dmm import Dmm
 from uctrl import Uctrl
 from test_hub import HUBTest
+from matrix import Matrix
 import settings
 import random
 import functools #https://docs.python.org/2/library/functools.html
@@ -92,11 +93,12 @@ class Tester:
 			self.scanner = Scanner(settings.scanner_port)
 			self.fixture = Fixture(settings.plc_port)
 			power = Hmp4040(settings.hmp_port)
-			power.set_vol(1, 13.5, 1.5) #vbat
-			power.set_vol(2, 05.5, 1.0) #uctrl
+			power.set_vol(1, 13.5, 3.0) #vbat
+			power.set_vol(2, 05.0, 1.0) #uctrl
 			power.lock(True)
 			self.dmm = Dmm(settings.dmm_port)
 			self.dmm.measure_dcv()
+			self.matrix = Matrix(settings.matrix_port)
 
 			if self.mode == "dual" or self.mode == "left":
 				id = id0 = self.fixture.GetID(0)
@@ -266,6 +268,7 @@ class Tester:
 
 		if not swdebug:
 			self.fixture.get("Reset")()
+			self.matrix.get("reset")()
 
 		if self.mode == "dual" or self.mode == "left":
 			model0 = Model(0)

@@ -6,10 +6,10 @@ swdebug_estop = False
 enable_selfcheck = False
 scanner_port = "COM12"
 plc_port = "COM1"
-hmp_port = ""
-uctrl_ports = ["", ""]
+hmp_port = "COM2"
+uctrl_ports = ["", "COM10"]
+matrix_port = "COM11"
 dmm_port = "USB0::0x0957::0x0607::MY53011514::INSTR"
-
 
 fixture_mov_timeout = 10
 passmark = {

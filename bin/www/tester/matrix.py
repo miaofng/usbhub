@@ -15,18 +15,40 @@ import serial #http://pythonhosted.org/pyserial/
 import re
 import functools
 import time
+import threading
+
 
 class MatrixIoError(Exception):
 	def __init__(self, echo):
 		self.echo = echo
 
 class Matrix:
+	lock = threading.Lock()
 	timeout = 5 #unit: S
 	cmdline_max_bytes = 128
 	IRT_E_VM_OPQ_FULL = -16
 	IRT_E_HV_UP = -7
 	IRT_E_HV_DN = -8
 	IRT_E_HV = -9
+
+	def get(self, attr_name, val_def = None):
+		if hasattr(self, attr_name):
+			self.lock.acquire()
+			obj = getattr(self, attr_name, val_def)
+			self.lock.release()
+			if hasattr(obj, "__call__"):
+				def deco(*args, **kwargs):
+					self.lock.acquire()
+					retval = obj(*args, **kwargs)
+					self.lock.release()
+					return retval
+				return deco
+		return obj
+
+	def set(self, attr_name, value):
+		self.lock.acquire()
+		setattr(self, attr_name, value)
+		self.lock.release()
 
 	def __del__(self):
 		if self.uart is not None:
@@ -57,10 +79,16 @@ class Matrix:
 	def abort(self):
 		pass
 
-	def reset(self):
+	def __reset__(self):
 		self.query("*RST")
 		self.opq = []
 		self.opt = None
+
+	def reset(self):
+		self.open(0, 0, 63)
+		self.open(1, 0, 63)
+		self.open(2, 0, 63)
+		self.open(3, 0, 63)
 
 	def cls(self):
 		echo = self.query("*CLS")
