@@ -32,13 +32,13 @@ class Hmp4040:
 		self.cls()
 
 	#auto add eol
-	def query(self, cmdline, eol = '\r'):
+	def query(self, cmdline, eol = '\n'):
 		self.uart.flushInput()
 		self.uart.write(cmdline + eol)
 		time.sleep(0.05)
 
 	#auto remove eol
-	def readline(self, eol = "\r"):
+	def readline(self, eol = "\n"):
 		linebuf = ""
 		deadline = time.time() + self.timeout
 		while True:
