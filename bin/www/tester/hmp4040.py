@@ -8,6 +8,8 @@ import functools
 import io
 import time
 
+class HmpOutputError(Exception): pass
+
 class Hmp4040:
 	timeout = 5 #unit S
 	def __del__(self):
@@ -70,17 +72,26 @@ class Hmp4040:
 		#such as: -230,"Data stale"
 		return self.cio_write("system:err?")
 
-	def set_vol(self,ch,vol,curr):
+	def set_vol(self, ch, vset, curr):
 		self.cio_write("INST OUT%d"%ch)
 		time.sleep(0.05)
 		self.uart.flushInput()
 		self.cio_write("INST?")
 		echo = self.read_line()
 		if int(echo[4:5]) != ch:
-			assert "Set Vol error"
-		self.cio_write("APPLY %f,%f"%(vol,curr))
-		time.sleep(0.05)
+			raise HmpOutputError
+		self.cio_write("APPLY %f,%f"%(vset,curr))
+		time.sleep(0.5)
+		self.uart.flushInput()
+		self.cio_write("APPLy?")
+		echo = self.read_line()
+		[vget, iget] = echo.split(",")
+		vget = float(vget)
+		delta = abs(vget - vset)
+		if delta > 0.1:
+			raise HmpOutputError
 		self.cio_write("OUTP ON")
+		time.sleep(0.1)
 
 	def output_en(self,ch,en):
 		self.cio_write("INST OUT%d"%ch)
