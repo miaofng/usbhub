@@ -9,9 +9,10 @@ import io
 import time
 
 class HmpOutputError(Exception): pass
+class HmpEchoTimeout(Exception): pass
 
 class Hmp4040:
-	timeout = 5 #unit S
+	timeout = 1 #unit S
 	def __del__(self):
 		if self.uart:
 			self.uart.close()
@@ -25,87 +26,76 @@ class Hmp4040:
 			timeout = self.timeout,
 			writeTimeout = self.timeout
 		)
-		self.sio = io.TextIOWrapper(
-			io.BufferedRWPair(self.uart, self.uart, 1),
-			newline = '\r',
-			line_buffering = True
-		)
-		self.cio_write = functools.partial(self.__write__, prefix = "\r\n")
 
-		self.idn = self.cio_write("*idn?")
+		self.idn = self.query("*idn?")
 		self.reset()
 		self.cls()
 
-	def __write__(self,cmd,prefix=""):
-		cmd_buf = cmd + prefix
-		self.uart.write(cmd_buf)
+	#auto add eol
+	def query(self, cmdline, eol = '\r'):
+		self.uart.flushInput()
+		self.uart.write(cmdline + eol)
+		time.sleep(0.05)
 
-	def write(self,cmd):
-		self.uart.write(cmd)
+	#auto remove eol
+	def readline(self, eol = "\r"):
+		linebuf = ""
+		deadline = time.time() + self.timeout
+		while True:
+			if time.time() > deadline:
+				raise HmpEchoTimeout
 
-	def read_line(self):
-		eol = b'\n'
-		leneol = len(eol)
-		line = bytearray()
-		timeout = 1000 #ms
-		while timeout >0:
-			rd_len = self.uart.inWaiting()
-			if(rd_len > 0):
-				c = self.uart.read(rd_len)
-				if c:
-					line += c
-					if line[-leneol:] == eol:
-						break
-				else:
-					timeout = -1
-			timeout = timeout-100
-			time.sleep(0.1)
-		else:
-			assert "read timeout"
-		return bytes(line)
+			nbytes = self.uart.inWaiting()
+			if nbytes > 0:
+				data = self.uart.read(nbytes)
+				linebuf = linebuf + data
+
+				idx = linebuf.find(eol)
+				if idx >= 0:
+					result = linebuf[:idx]
+					return result
 
 	def reset(self):
-		self.cio_write("*rst")
+		self.query("*rst")
 	def cls(self):
-		self.cio_write("*cls")
+		self.query("*cls")
 	def err(self):
 		#such as: -230,"Data stale"
-		return self.cio_write("system:err?")
+		self.query("system:err?")
+		return self.readline()
 
 	def set_vol(self, ch, vset, curr):
-		self.cio_write("INST OUT%d"%ch)
-		time.sleep(0.05)
-		self.uart.flushInput()
-		self.cio_write("INST?")
-		echo = self.read_line()
-		if int(echo[4:5]) != ch:
+		self.query("INST OUT%d"%ch)
+		self.query("INST?")
+		echo = self.readline()
+		if len(echo) != 6 or int(echo[4:5]) != ch:
+			print echo
 			raise HmpOutputError
-		self.cio_write("APPLY %f,%f"%(vset,curr))
+
+		self.query("APPLY %f,%f"%(vset,curr))
 		time.sleep(0.5)
-		self.uart.flushInput()
-		self.cio_write("APPLy?")
-		echo = self.read_line()
+		self.query("APPLy?")
+		echo = self.readline()
 		[vget, iget] = echo.split(",")
 		vget = float(vget)
 		delta = abs(vget - vset)
 		if delta > 0.1:
 			raise HmpOutputError
-		self.cio_write("OUTP ON")
-		time.sleep(0.1)
+
+		self.query("OUTP ON")
 
 	def output_en(self,ch,en):
-		self.cio_write("INST OUT%d"%ch)
-		time.sleep(0.05)
+		self.query("INST OUT%d"%ch)
 		if en:
-			self.cio_write("OUTP ON")
+			self.query("OUTP ON")
 		else:
-			self.cio_write("OUTP OFF")
+			self.query("OUTP OFF")
 
 	def lock(self,en):
 		if en:
-			self.cio_write("SYSTem:RWLock")
+			self.query("SYSTem:RWLock")
 		else:
-			self.cio_write("SYSTem:LOCal")
+			self.query("SYSTem:LOCal")
 		return
 
 
