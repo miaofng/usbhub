@@ -68,7 +68,7 @@ class Hmp4040:
 		self.query("INST OUT%d"%ch)
 		self.query("INST?")
 		echo = self.readline()
-		if len(echo) != 6 or int(echo[4:5]) != ch:
+		if len(echo) != len("OUTPn") or int(echo[4:5]) != ch:
 			print echo
 			raise HmpOutputError
 
