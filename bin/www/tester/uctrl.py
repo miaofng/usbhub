@@ -27,7 +27,19 @@ class Uctrl:
 		cmdline = "uht init"
 		self.uart.write(cmdline+"\n\r")
 
-
 	def vbat(self, onoff):
 		cmdline = "uht sw%s"%onoff
 		self.uart.write(cmdline+"\n\r")
+
+	def switch(self, relay, enable):
+		relay = {
+			"load1": 12,
+			"load2": 14,
+		}[relay]
+		enable = {
+			"enable": 1,
+			"disable": 0,
+		}[enable]
+
+		cmdline = "uht set %d %d"%(relay, enable)
+		self.uart.write(cmdline + "\n\r")

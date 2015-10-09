@@ -86,6 +86,25 @@ class Db:
 		self.conn.commit()
 		return sql
 
+	def result_add(self, result):
+		cursor = self.conn.cursor()
+		cols = vals = ""
+		for key in result:
+			cols += key + ","
+			if isinstance(result[key], int):
+				vals += str(result[key]) + ","
+			elif isinstance(result[key], float):
+				vals += str(result[key]) + ","
+			else:
+				vals += '"%s",'%str(result[key])
+
+		cols = cols + "time"
+		vals = vals + 'datetime("now", "localtime")'
+		sql = "INSERT INTO result(%s) VALUES(%s)"%(cols, vals)
+		cursor.execute(sql)
+		self.conn.commit()
+		return sql
+
 
 #module self test
 if __name__ == '__main__':

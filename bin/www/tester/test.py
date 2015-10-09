@@ -89,7 +89,7 @@ class Test(threading.Thread):
 		self.file = open(path, 'w')
 
 	def log(self, info, passed=None):
-		line = "%s#  %s"%(time.strftime('%X'), info)
+		line = "%s#  %-48s"%(time.strftime('%X'), info)
 		if passed == True:
 			line = line + " [PASS]"
 		elif passed == False:
@@ -136,7 +136,9 @@ class Test(threading.Thread):
 		self.set("ecode", ecode)
 		self.set("status", "FAIL")
 		self.Record()
-		self.tester.RequestWaste(self)
+		#self.tester.RequestWaste(self)
+		self.tester.fixture.get("Signal")(self.station, "FAIL")
+		self.mdelay(10000)
 		self.set("barcode", '')
 		self.set("dfpath", '')
 

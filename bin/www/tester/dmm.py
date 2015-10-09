@@ -30,6 +30,8 @@ class Dmm:
 		return self.instr.query("meas:res?")
 	def measure_dcv(self):
 		return self.instr.query("meas:volt:dc?")
+	def measure_acv(self):
+		return self.instr.query("meas:volt:ac?")
 	def measure_dci(self):
 		return self.instr.query("meas:curr:dc?")
 	def measure_diode(self):

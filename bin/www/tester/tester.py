@@ -35,6 +35,8 @@ from dmm import Dmm
 from uctrl import Uctrl
 from test_hub import HUBTest
 from matrix import Matrix
+from feasa import Feasa
+from raspberry import Raspberry
 import settings
 import random
 import functools #https://docs.python.org/2/library/functools.html
@@ -54,17 +56,17 @@ class TesterException(Exception): pass
 class ThreadException(Exception):
 	def __init__(self, thread):
 		name = thread.getName()
-		e = thread.exception
-		msg = '%s Exception:\n\r'%(name)
-		print >> sys.stderr, msg
-		print >> sys.stderr, thread.stack
-		sys.stderr.flush()
+		self.e = thread.exception
+		self.msg = '%s Exception:\n\r'%(name)
+		self.thread = thread
 
 class Tester:
 	lock = threading.Lock()
 	test_lock = threading.Lock()
 	waste_lock = threading.Lock()
 	uctrl = {0: None, 1: None}
+	feasa = {0: None, 1: None}
+	rasp  = {0: None, 1: None}
 	dmm = None
 	matrix = None
 
@@ -103,9 +105,13 @@ class Tester:
 			if self.mode == "dual" or self.mode == "left":
 				id = id0 = self.fixture.GetID(0)
 				self.uctrl[0] = Uctrl(settings.uctrl_ports[0])
+				self.feasa[0] = Feasa(settings.feasa_ports[0])
+				self.rasp[0] = Raspberry(settings.rasp_ips[0])
 			if self.mode == "dual" or self.mode == "right":
 				id = id1 = self.fixture.GetID(1)
 				self.uctrl[1] = Uctrl(settings.uctrl_ports[1])
+				self.feasa[1] = Feasa(settings.feasa_ports[1])
+				self.rasp[1] = Raspberry(settings.rasp_ips[1])
 			if self.mode == "dual":
 				assert id0 == id1
 			self.fixture_id = id
@@ -333,7 +339,7 @@ class Tester:
 
 			val = self.fixture.get('cio_read')(reg)
 			if argc > 2:
-				lvl = int(round(argv[2]))
+				lvl = int(argv[2])
 				val = val & ~msk
 				if lvl:
 					val = val | msk
@@ -410,6 +416,7 @@ class Tester:
 		#blocked if request fail
 		station = test.station
 		self.test_lock.acquire()
+		self.set("barcode", None)
 
 		#fuck!!! 2s if barcode is ok
 		vuut_present_deadline = None
@@ -434,7 +441,7 @@ class Tester:
 					self.set("emsg", emsg)
 				else:
 					test.Prompt("LOADING")
-					vuut_present_deadline = time.time() + 3
+					vuut_present_deadline = time.time() + 0.1
 
 			#uut present???
 			#self.fixture.get("IsUutPresent")(station):
@@ -519,5 +526,11 @@ def signal_handler(signal, frame):
 
 signal.signal(signal.SIGINT, signal_handler)
 saddr = ('localhost', 10003)
-tester = Tester(saddr)
-tester.run()
+try:
+	tester = Tester(saddr)
+	tester.run()
+except ThreadException as e:
+	print >> sys.stderr, e.msg
+	print >> sys.stderr, e.thread.stack
+	sys.stderr.flush()
+	sys.exit(0)
