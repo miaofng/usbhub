@@ -138,9 +138,7 @@ class Test(threading.Thread):
 		self.set("ecode", ecode)
 		self.set("status", "FAIL")
 		self.Record()
-		#self.tester.RequestWaste(self)
-		self.tester.fixture.get("Signal")(self.station, "FAIL")
-		self.mdelay(10000)
+		self.tester.RequestWaste(self)
 		self.set("barcode", '')
 		self.set("dfpath", '')
 

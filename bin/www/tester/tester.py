@@ -501,13 +501,19 @@ class Tester:
 		self.waste_lock.acquire()
 		wastes = self.fixture.get("ReadWasteCount")()
 		self.fixture.get("Signal")(test.station, "FAIL")
-		while True:
+		wben = self.db.get("cfg_get")("WasteBox")
+		while wben == "1":
 			time.sleep(0.001)
 			n = self.fixture.get("ReadWasteCount")()
 			if n > wastes:
 				assert n - wastes == 1
 				self.set("wastes", n)
 				break
+
+		if wben == "0":
+			time.sleep(10)
+			self.set("wastes", wastes)
+
 		self.waste_lock.release()
 
 	def vRequestWaste(self, test):
