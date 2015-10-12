@@ -70,7 +70,7 @@ class HUBTest(Test):
 			v = self.tester.dmm.measure_acv()
 
 			v = float(v)
-			ripple = test["ripple"]
+			limit = test["ripple"]
 			max = limit["max"]
 			passed =  v <= max
 
@@ -84,7 +84,7 @@ class HUBTest(Test):
 
 		msg = "%s%s.ripple(<%.3f)...%.3fV"%(prefix, test["desc"], max, v)
 		self.log(msg, passed)
-		self.SaveResult(prefix, test["desc"]+".ripple", max, v, passed)
+		self.SaveResult(prefix, test["desc"]+".ripple", None, max, v, passed)
 		return passed
 
 	def check_voltage(self, test, prefix=""):
@@ -114,7 +114,7 @@ class HUBTest(Test):
 		self.log(msg, passed)
 		self.SaveResult(prefix, test["desc"], min, max, v, passed)
 
-		if ripple in test:
+		if "ripple" in test:
 			ripple_passed = self.check_ripple(test, prefix)
 			passed = passed and ripple_passed
 
@@ -236,6 +236,7 @@ class HUBTest(Test):
 		Test.update(self)
 
 	def SaveResult(self, prefix, name, min, max, value, passed):
+		#return
 		dat_dir = self.getPath()
 		dat_dir = os.path.abspath(dat_dir)
 		self.lock.acquire()

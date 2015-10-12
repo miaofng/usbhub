@@ -114,7 +114,7 @@ class Model:
 		"name": "UT8.14/8.15",
 		"desc": "Vbus@5A",
 		"limit": {"min": -0.1, "typ": 0.0, "max": 0.1},
-		"ripple": {"max": 0.5},
+		#"ripple": {"max": 0.5},
 		"matrix": None,
 	}
 
@@ -122,7 +122,7 @@ class Model:
 		"name": "UT8.16/8.17",
 		"desc": "Vbus@0A Recovery",
 		"limit": {"min": 4.75, "typ": 5.00, "max": 5.25},
-		"ripple": {"max": 0.5},
+		#"ripple": {"max": 0.5},
 		"matrix": None,
 	}
 

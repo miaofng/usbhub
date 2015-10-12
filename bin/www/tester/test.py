@@ -105,6 +105,8 @@ class Test(threading.Thread):
 
 	def verifyBarcode(self, barcode):
 		emsg = None
+		if len(barcode) < 16:
+			emsg = "Plese Scan 2D Barcode"
 		return emsg
 
 	def setBarcode(self, barcode):
