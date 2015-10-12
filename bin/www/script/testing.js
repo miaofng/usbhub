@@ -361,6 +361,7 @@ $(function() {
 		});
 	});
 
+	$("#button_mode").val(test.mode);
 	$("#button_mode").click(function(){
 		if(test.mode == "AUTO") test.mode = "STEP";
 		else test.mode = "AUTO";
