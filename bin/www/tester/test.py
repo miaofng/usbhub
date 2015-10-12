@@ -54,7 +54,24 @@ class Test(threading.Thread):
 
 	def run(self):
 		try:
-			self.Test()
+			test_mode = self.tester.get("test_mode")
+			while True:
+				if test_mode == "AUTO":
+					stop = self.tester.RequestTest(self)
+					if stop:
+						return
+
+				subdir = time.strftime("%Y-%m-%d")
+				fname = time.strftime("%H_%M_")+self.getBarcode()+".dat"
+				fpath = self.getPath(subdir, fname)
+				self.Start(fpath)
+				self.check_passed = True
+
+				self.Test()
+
+				if test_mode == "STEP":
+					return
+
 		except Exception as e:
 			self.lock_exception.acquire()
 			self.exception = e
@@ -123,25 +140,29 @@ class Test(threading.Thread):
 			self.log_start(dfpath)
 
 	def Pass(self):
-		if not swdebug:
-			self.tester.fixture.get("Signal")(self.station, "PASS")
+		test_mode = self.tester.get("test_mode")
 		self.set("status", "PASS")
-		self.Record()
-		#:( who can notice me when uut is removed
-		self.mdelay(2000)
-		#now, uut is removed
-		self.set("barcode", '')
-		self.set("dfpath", '')
+		if test_mode == "AUTO":
+			if not swdebug:
+				self.tester.fixture.get("Signal")(self.station, "PASS")
+
+			self.Record()
+			#:( who can notice me when uut is removed
+			self.mdelay(2000)
+			#now, uut is removed
+			self.set("barcode", '')
+			self.set("dfpath", '')
 
 	def Fail(self, ecode = -1):
+		test_mode = self.tester.get("test_mode")
 		assert ecode != 0
 		self.set("ecode", ecode)
 		self.set("status", "FAIL")
-		self.Record()
-		self.tester.RequestWaste(self)
-		self.set("barcode", '')
-		self.set("dfpath", '')
-
+		if test_mode == "AUTO":
+			self.Record()
+			self.tester.RequestWaste(self)
+			self.set("barcode", '')
+			self.set("dfpath", '')
 
 	def Prompt(self, status):
 		self.set("status", status)

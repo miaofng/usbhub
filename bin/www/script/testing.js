@@ -9,6 +9,7 @@ var crc32 = require('crc-32')
 var test = {
 	"jid": null, //operator job id
 	"model": null,
+	"mode": "AUTO",
 	"bplist":{},
 
 	"ui_status": 'ERROR', //'LOADING', 'READY', 'XXX ERROR'
@@ -360,6 +361,12 @@ $(function() {
 		});
 	});
 
+	$("#button_mode").click(function(){
+		if(test.mode == "AUTO") test.mode = "STEP";
+		else test.mode = "AUTO";
+		$(this).val(test.mode);
+	});
+
 	$("#button_run").click(function(){
 		var run = $(this).val();
 		if(run == "RUN") {
@@ -367,6 +374,7 @@ $(function() {
 				fname = path.resolve(process.cwd(), fname);
 				cmdline = [];
 				cmdline.push("test");
+				cmdline.push("--mode=" + test.mode);
 				cmdline.push('"'+fname+'"');
 				cmdline = cmdline.join(" ");
 				irt.query(cmdline, function(data) {});

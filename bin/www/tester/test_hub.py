@@ -283,125 +283,114 @@ class HUBTest(Test):
 		self.tester.db.get('test_add')(record)
 
 	def Test(self):
-		while True:
-			self.uctrl.reset()
+		self.uctrl.reset()
 
-			stop = self.tester.RequestTest(self)
-			if stop:
-				break
+		#vbat all loads open
+		self.mode("inv", "enable")
+		self.check_voltage(self.model.vbat)
+		self.mode("inv", "disable")
 
-			subdir = time.strftime("%Y-%m-%d")
-			fname = time.strftime("%H_%M_")+self.getBarcode()+".dat"
-			fpath = self.getPath(subdir, fname)
-			self.Start(fpath)
-			self.check_passed = True
+		#hub is offline except vbat is connected
+		self.mode("qc", "enable")
+		self.check_current(self.model.iq)
+		self.mode("qc", "disable")
 
-			#vbat all loads open
-			self.mode("inv", "enable")
-			self.check_voltage(self.model.vbat)
-			self.mode("inv", "disable")
+		#only upstream usb is pluged-in, so no sd card and etc
+		self.mode("ic", "enable")
+		self.check_current(self.model.i0)
+		self.mode("ic", "disable")
 
-			#hub is offline except vbat is connected
-			self.mode("qc", "enable")
-			self.check_current(self.model.iq)
-			self.mode("qc", "disable")
+		self.mode("allwork", "enable")
+		self.wait_until_usb_identified()
+		self.feasa.capture() #...about 6s
+		self.rasp.benchmark() #...about 3s
 
-			#only upstream usb is pluged-in, so no sd card and etc
-			self.mode("ic", "enable")
-			self.check_current(self.model.i0)
-			self.mode("ic", "disable")
+		#vcc normal?
+		for port in self.model.usb_ports:
+			prefix = "USB%d: "%(port["index"] + 1)
+			vopen = port["vopen"]
+			if vopen:
+				self.check_voltage(vopen, prefix)
 
-			self.mode("allwork", "enable")
-			self.wait_until_usb_identified()
-			self.feasa.capture() #...about 6s
-			self.rasp.benchmark() #...about 3s
+		#vload
+		self.mode("allload", "enable")
+		self.log("Loading Test(=2s)")
+		time.sleep(2)
+		for port in self.model.usb_ports:
+			prefix = "USB%d: "%(port["index"] + 1)
+			vload = port["vload"]
+			if vload:
+				self.check_voltage(vload, prefix)
+		self.mode("allload", "disable")
 
-			#vcc normal?
-			for port in self.model.usb_ports:
-				prefix = "USB%d: "%(port["index"] + 1)
-				vopen = port["vopen"]
-				if vopen:
-					self.check_voltage(vopen, prefix)
+		#passmark test
+		self.wait_until_benchmark_finished()
+		for port in self.model.usb_ports:
+			prefix = "USB%d: "%(port["index"] + 1)
+			identify = port["identify"]
+			benchmark = port["benchmark"]
+			self.check_identify(identify, prefix)
+			if benchmark:
+				self.check_benchmark(benchmark, prefix)
 
-			#vload
-			self.mode("allload", "enable")
-			self.log("Loading Test(=2s)")
-			time.sleep(2)
-			for port in self.model.usb_ports:
-				prefix = "USB%d: "%(port["index"] + 1)
-				vload = port["vload"]
-				if vload:
-					self.check_voltage(vload, prefix)
-			self.mode("allload", "disable")
+		self.mode("allwork", "disable")
 
-			#passmark test
-			self.wait_until_benchmark_finished()
-			for port in self.model.usb_ports:
-				prefix = "USB%d: "%(port["index"] + 1)
-				identify = port["identify"]
-				benchmark = port["benchmark"]
-				self.check_identify(identify, prefix)
-				if benchmark:
-					self.check_benchmark(benchmark, prefix)
+		#cdp
+		self.mode("allcdp", "enable")
+		for port in self.model.usb_ports:
+			prefix = "USB%d: "%(port["index"] + 1)
+			cdp = port["cdp"]
+			if cdp:
+				self.check_voltage(cdp, prefix)
+		self.mode("allcdp", "disable")
 
-			self.mode("allwork", "disable")
+		#passthrough
+		for port in self.model.usb_ports:
+			prefix = "USB%d: "%(port["index"] + 1)
+			passthrough = port["passthrough"]
+			if passthrough:
+				index = port["index"] + 1
+				self.mode("port%d bypass"%index, "enable")
+				#list = self.rasp.list()
+				#self.check_passthrough(port, list)
 
-			#cdp
-			self.mode("allcdp", "enable")
-			for port in self.model.usb_ports:
-				prefix = "USB%d: "%(port["index"] + 1)
-				cdp = port["cdp"]
-				if cdp:
-					self.check_voltage(cdp, prefix)
-			self.mode("allcdp", "disable")
+				#self.check_voltage(passthrough["vdp"], prefix)
+				#self.check_voltage(passthrough["vdn"], prefix)
+				self.mode("port%d bypass"%index, "disable")
 
-			#passthrough
-			for port in self.model.usb_ports:
-				prefix = "USB%d: "%(port["index"] + 1)
-				passthrough = port["passthrough"]
-				if passthrough:
-					index = port["index"] + 1
-					self.mode("port%d bypass"%index, "enable")
-					#list = self.rasp.list()
-					#self.check_passthrough(port, list)
+		#scp
+		self.mode("allscp", "enable")
+		self.log("Short Test(=3s)")
+		time.sleep(3)
+		for port in self.model.usb_ports:
+			prefix = "USB%d: "%(port["index"] + 1)
+			scp = port["scp"]
+			if scp:
+				self.check_voltage(scp["vscp"], prefix)
 
-					#self.check_voltage(passthrough["vdp"], prefix)
-					#self.check_voltage(passthrough["vdn"], prefix)
-					self.mode("port%d bypass"%index, "disable")
+		#do not reboot until feasa captured
+		self.wait_until_feasa_captured()
 
-			#scp
-			self.mode("allscp", "enable")
-			self.log("Short Test(=3s)")
-			time.sleep(3)
-			for port in self.model.usb_ports:
-				prefix = "USB%d: "%(port["index"] + 1)
-				scp = port["scp"]
-				if scp:
-					self.check_voltage(scp["vscp"], prefix)
+		#uut vbat restart
+		self.mode("allscp", "disable")
+		self.uctrl.vbat("off")
+		time.sleep(0.1)
+		self.uctrl.vbat("on")
+		time.sleep(1)
 
-			#do not reboot until feasa captured
-			self.wait_until_feasa_captured()
+		for port in self.model.usb_ports:
+			prefix = "USB%d: "%(port["index"] + 1)
+			scp = port["scp"]
+			if scp:
+				self.check_voltage(scp["vrcv"], prefix)
 
-			#uut vbat restart
-			self.mode("allscp", "disable")
-			self.uctrl.vbat("off")
-			time.sleep(0.1)
-			self.uctrl.vbat("on")
-			time.sleep(1)
+		#feasa
+		self.check_feasa(self.model.feasa)
 
-			for port in self.model.usb_ports:
-				prefix = "USB%d: "%(port["index"] + 1)
-				scp = port["scp"]
-				if scp:
-					self.check_voltage(scp["vrcv"], prefix)
+		#test finished
+		self.uctrl.reset()
 
-			#feasa
-			self.check_feasa(self.model.feasa)
-
-			#test finished
-			self.uctrl.reset()
-
-			if self.check_passed:
-				self.Pass()
-			else:
-				self.Fail()
+		if self.check_passed:
+			self.Pass()
+		else:
+			self.Fail()

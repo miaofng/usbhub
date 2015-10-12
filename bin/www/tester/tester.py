@@ -80,6 +80,7 @@ class Tester:
 	estop = False
 	threads = {0: None, 1: None}
 	barcode = None
+	test_mode = "STEP" #"AUTO" or "STEP"(for debug or selfcheck use)
 
 	def __init__(self, saddr):
 		self.db = Db()
@@ -271,6 +272,8 @@ class Tester:
 				para["mode"] = opt[1]
 			elif (opt[0] == "-x" or opt[0] == "--mask"):
 				para["mask"] = int(opt[1])
+
+		self.test_mode = para["mode"]
 
 		if not swdebug:
 			self.fixture.get("Reset")()
