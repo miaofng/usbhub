@@ -511,10 +511,11 @@ class Tester:
 					test.Prompt("LOADING")
 					vuut_present_deadline = time.time() + 3
 
-		#loaded, fixture is moving ...
-		test.mdelay(3000)
-		pressed = self.get("fixture_pressed") + 1
-		self.set("fixture_pressed", pressed)
+		if not self.stop:
+			#loaded, fixture is moving ...
+			test.mdelay(3000)
+			pressed = self.get("fixture_pressed") + 1
+			self.set("fixture_pressed", pressed)
 
 		self.test_lock.release()
 		return self.stop
