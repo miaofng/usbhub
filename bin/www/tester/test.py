@@ -122,8 +122,13 @@ class Test(threading.Thread):
 
 	def verifyBarcode(self, barcode):
 		emsg = None
-		if len(barcode) < 16:
-			emsg = "Plese Scan 2D Barcode"
+		if not settings.swdebug:
+			if len(barcode) < 16:
+				emsg = "Plese Scan 2D Barcode"
+		else:
+			barcode = int(barcode)
+			if barcode < 195000:
+				emsg = "Plese Scan 2D Barcode"
 		return emsg
 
 	def setBarcode(self, barcode):

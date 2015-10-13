@@ -478,21 +478,43 @@ class Tester:
 		station = test.station
 		self.test_lock.acquire()
 		self.set("barcode", None)
+
+		#fuck!!! 2s if barcode is ok
+		vuut_present_deadline = None
+
+		#loading ...
+		test.Prompt("SCANING")
 		while not self.stop:
-			time.sleep(0.020)
+			#yellow flash
+			#...
+
+			#uut present???
+			#self.fixture.get("IsUutPresent")(station):
+			if vuut_present_deadline:
+				if time.time() >  vuut_present_deadline:
+					#provided that uut is present now
+					test.Prompt("LOADED")
+					break
+				else:
+					continue
+
 			#barcode
 			barcode = self.get("barcode")
 			if barcode:
 				self.set("barcode", None)
-				emsg = test.setBarcode(barcode)
-				self.set("emsg", emsg)
+				test.setBarcode(barcode)
 
-			guess = random.randint(0,99)
-			if guess > 98:
-				pressed = self.get("fixture_pressed") + 1
-				self.set('fixture_pressed', pressed)
-				self.db.get("fixture_set")(self.fixture_id, "pressed", pressed)
-				break
+				emsg = test.verifyBarcode(barcode)
+				if emsg:
+					self.set("emsg", emsg)
+				else:
+					test.Prompt("LOADING")
+					vuut_present_deadline = time.time() + 3
+
+		#loaded, fixture is moving ...
+		test.mdelay(3000)
+		pressed = self.get("fixture_pressed") + 1
+		self.set("fixture_pressed", pressed)
 
 		self.test_lock.release()
 		return self.stop

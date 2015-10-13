@@ -29,16 +29,16 @@ class GFTest(Test):
 		#add specified update here
 		#...
 
-	def verifyBarcode(self, barcode):
-		if hasattr(self.model, "barcode"):
-			template = self.model.barcode
-			if not fnmatch.fnmatchcase(barcode, template):
-				emsg = []
-				emsg.append("Barcode Error")
-				emsg.append("expect: %s", template)
-				emsg.append("scaned: %s", barcode)
-				emsg = '\n\r'.join(emsg)
-				return emsg
+	# def verifyBarcode(self, barcode):
+		# if hasattr(self.model, "barcode"):
+			# template = self.model.barcode
+			# if not fnmatch.fnmatchcase(barcode, template):
+				# emsg = []
+				# emsg.append("Barcode Error")
+				# emsg.append("expect: %s", template)
+				# emsg.append("scaned: %s", barcode)
+				# emsg = '\n\r'.join(emsg)
+				# return emsg
 
 	def Record(self):
 		dat_dir = self.getPath()
@@ -54,37 +54,17 @@ class GFTest(Test):
 		self.tester.db.get('test_add')(record)
 
 	def Test(self):
-		# if self.precheck() == False:
-			# self.tester.start(self.path, self.station)
-			# self.log("Test Abort!!!")
-			# self.tester.failed(self.station)
-			# return
+		self.mdelay(random.randint(0,500))
+		for i in range(0, 500):
+			self.mdelay(5)
+			err = random.random()
+			line = "R%04d = %.3fohm"%(i, err*10)
+			self.log(line, err<0.6)
 
-		while True:
-			stop = self.tester.RequestTest(self)
-			if stop:
-				break
-
-			subdir = time.strftime("%Y-%m-%d")
-			fname = time.strftime("%H_%M_")+self.getBarcode()+".dat"
-			fpath = self.getPath(subdir, fname)
-			self.Start(fpath)
-
-			self.mdelay(random.randint(0,500))
-			for i in range(0, 500):
-				self.mdelay(5)
-				err = random.random()
-				line = "R%04d = %.3fohm"%(i, err*10)
-				self.log(line, err<0.6)
-				if self.flag_stop:
-					self.log("Test Abort by usr!!!")
-					self.Fail()
-					return
-
-			if random.randint(0,1):
-				self.Pass()
-			else:
-				self.Fail()
+		if random.randint(0,1):
+			self.Pass()
+		else:
+			self.Fail()
 
 #module self test
 if __name__ == '__main__':
