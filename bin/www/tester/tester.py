@@ -525,6 +525,7 @@ class Tester:
 		#blocked if request fail
 		station = test.station
 		self.waste_lock.acquire()
+		test.Prompt("WASTE")
 		wastes = self.fixture.get("ReadWasteCount")()
 		self.fixture.get("Signal")(test.station, "FAIL")
 		wben = self.db.get("cfg_get")("WasteBox")
@@ -536,6 +537,7 @@ class Tester:
 				self.set("wastes", n)
 				break
 
+		test.Prompt("FAIL")
 		if wben == "0":
 			time.sleep(10)
 			self.set("wastes", wastes)
@@ -545,9 +547,11 @@ class Tester:
 	def vRequestWaste(self, test):
 		#to avoid WasteBox Competion
 		#blocked if request fail
+		test.Prompt("WASTE")
 		station = test.station
 		self.waste_lock.acquire()
 		time.sleep(3)
+		test.Prompt("FAIL")
 		wastes = self.get("wastes") + 1
 		self.set("wastes", wastes)
 		self.waste_lock.release()

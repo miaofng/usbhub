@@ -38,7 +38,7 @@ function gft_load(gft) {
 }
 
 function update_state(station, status, ecode) {
-	var state = (test.ui_status != "READY") ? test.ui_status : status;
+	var state = status = (test.ui_status != "READY") ? test.ui_status : status;
 	var bgcolor = "#ff0000";
 
 	switch(state) {
@@ -60,6 +60,8 @@ function update_state(station, status, ecode) {
 	case "FAULT":
 		$("#button_run").attr("disabled", true);
 	case "FAIL":
+	case "WASTE":
+		status = "FAIL";
 	default:
 		break;
 	}
@@ -67,7 +69,7 @@ function update_state(station, status, ecode) {
 	id_status = "#status"+station
 	id_result = "#result"+station
 
-	$(id_status).html(state);
+	$(id_status).html(status);
 	$(id_status).css("background-color", bgcolor);
 	if(state == "SCANING") {
 		$(id_result).css("background-image", "url(img/scan.gif)");
@@ -83,6 +85,12 @@ function update_state(station, status, ecode) {
 	}
 	else if(state == "LOADED") {
 		$(id_result).css("background-image", "url(img/start.png)");
+		$(id_result).css("background-size", "400px 300px");
+		$(id_result).css("background-repeat", "no-repeat");
+		$(id_result).css("background-position", "center top");
+	}
+	else if(state == "WASTE") {
+		$(id_result).css("background-image", "url(img/waste.gif)");
 		$(id_result).css("background-size", "400px 300px");
 		$(id_result).css("background-repeat", "no-repeat");
 		$(id_result).css("background-position", "center top");
