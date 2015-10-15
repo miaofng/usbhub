@@ -30,7 +30,7 @@ class Model:
 		port["index"] = index
 
 		####identify test
-		usb_identify = getattr(model, "usb_identify")
+		usb_identify = getattr(model, "usb_identify", None)
 		usb_identify = getattr(model, "usb_identify%d"%(index + 1), usb_identify)
 		if usb_identify is None:
 			raise ModelException("usb%d.identify not found"%(index + 1))
@@ -44,7 +44,7 @@ class Model:
 			benchmark_cfg = port["benchmark"]
 			if isinstance(benchmark_cfg, bool):
 				if benchmark_cfg:
-					benchmark = getattr(model, "usb_benchmark")
+					benchmark = getattr(model, "usb_benchmark", None)
 					benchmark = getattr(model, "usb_benchmark%d"%(index + 1), benchmark)
 					if benchmark is None:
 						raise ModelException("usb%d.benchmark not found"%(index + 1))
@@ -64,21 +64,21 @@ class Model:
 			hostflip_cfg = port["hostflip"]
 			if isinstance(hostflip_cfg, bool):
 				if hostflip_cfg is True:
-					hostflip_identify = getattr(model, "usb_hostflip_identify")
+					hostflip_identify = getattr(model, "usb_hostflip_identify", None)
 					hostflip_identify = getattr(model, "usb_hostflip_identify%d"%(index + 1), hostflip_identify)
 					if hostflip_identify is None:
 						raise ModelException("usb%d.hostflip.identify not found"%(index + 1))
 
 					#if benchmark is none, do not test it
-					hostflip_benchmark = getattr(model, "usb_hostflip_benchmark")
+					hostflip_benchmark = getattr(model, "usb_hostflip_benchmark", None)
 					hostflip_benchmark = getattr(model, "usb_hostflip_benchmark%d"%(index + 1), hostflip_benchmark)
 
-					hostflip_vdn = getattr(model, "usb_hostflip_vdn")
+					hostflip_vdn = getattr(model, "usb_hostflip_vdn", None)
 					hostflip_vdn = getattr(model, "usb_hostflip_vdn%d"%(index + 1), hostflip_vdn)
 					if hostflip_vdn is None:
 						raise ModelException("usb%d.hostflip.vdn not found"%(index + 1))
 
-					hostflip_vdp = getattr(model, "usb_hostflip_vdp")
+					hostflip_vdp = getattr(model, "usb_hostflip_vdp", None)
 					hostflip_vdp = getattr(model, "usb_hostflip_vdp%d"%(index + 1), hostflip_vdp)
 					if hostflip_vdp is None:
 						raise ModelException("usb%d.hostflip.vdp not found"%(index + 1))
@@ -124,7 +124,7 @@ class Model:
 			vopen_cfg = port["vopen"]
 			if isinstance(vopen_cfg, bool):
 				if vopen_cfg is True:
-					vopen = getattr(model, "usb_vcc")
+					vopen = getattr(model, "usb_vcc", None)
 					vopen = getattr(model, "usb_vcc%d"%(index + 1), vopen)
 			elif isinstance(vopen_cfg, dict):
 				vopen = copy.deepcopy(vopen_cfg)
@@ -143,7 +143,7 @@ class Model:
 			vload_cfg = port["vload"]
 			if isinstance(vload_cfg, bool):
 				if vload_cfg is True:
-					vload = getattr(model, "usb_vcc")
+					vload = getattr(model, "usb_vcc", None)
 					vload = getattr(model, "usb_vcc%d"%(index + 1), vload)
 			elif isinstance(vload_cfg, dict):
 				vload = copy.deepcopy(vload_cfg)
@@ -162,7 +162,7 @@ class Model:
 			cdp_cfg = port["cdp"]
 			if isinstance(cdp_cfg, bool):
 				if cdp_cfg is True:
-					vcdp = getattr(model, "usb_cdp")
+					vcdp = getattr(model, "usb_cdp", None)
 					vcdp = getattr(model, "usb_cdp%d"%(index + 1), vcdp)
 			elif isinstance(cdp_cfg, dict):
 				vcdp = copy.deepcopy(cdp_cfg)
@@ -181,13 +181,13 @@ class Model:
 			scp_cfg = port["scp"]
 			if isinstance(scp_cfg, bool):
 				if scp_cfg is True:
-					vscp = getattr(model, "usb_scp_vcc")
+					vscp = getattr(model, "usb_scp_vcc", None)
 					vscp = getattr(model, "usb_scp_vcc%d"%(index + 1), vscp)
 					if vscp is None:
 						raise ModelException("usb%d.scp.vcc not found"%(index + 1))
 
 					#if vsc is None, do not test
-					vrcv = getattr(model, "usb_scp_recover")
+					vrcv = getattr(model, "usb_scp_recover", None)
 					vrcv = getattr(model, "usb_scp_recover%d"%(index + 1), vrcv)
 
 					scp = {
@@ -235,7 +235,7 @@ class Model:
 
 		if not hasattr(model, "i0"):
 			raise ModelException("i0 not found")
-		model.iq["matrix"] = settings.matrix_ibat
+		model.i0["matrix"] = settings.matrix_ibat
 
 		model.usb_ports = []
 		for index in range(0, 3):

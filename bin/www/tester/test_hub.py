@@ -7,6 +7,7 @@ import sys, signal
 from test import Test
 import random
 import os
+import fnmatch
 
 class HUBTest(Test):
 	model = None
@@ -26,8 +27,8 @@ class HUBTest(Test):
 			if not fnmatch.fnmatchcase(barcode, template):
 				emsg = []
 				emsg.append("Barcode Error")
-				emsg.append("expect: %s", template)
-				emsg.append("scaned: %s", barcode)
+				emsg.append("expect: %s"%template)
+				emsg.append("scaned: %s"%barcode)
 				emsg = '\n\r'.join(emsg)
 				return emsg
 
@@ -66,6 +67,7 @@ class HUBTest(Test):
 		elif mode == "allcdp":
 			uctrl.mode("port1 cdp", enable)
 			uctrl.mode("port2 cdp", enable)
+			uctrl.switch("cdp2", enable) #to fix cdp2 disable bug
 		elif mode == "allscp":
 			uctrl.mode("port1 short", enable)
 			uctrl.mode("port2 short", enable)
@@ -337,8 +339,8 @@ class HUBTest(Test):
 
 		#vload
 		self.mode("allload", "enable")
-		self.log("Loading Test(=2s)")
-		time.sleep(2)
+		self.log("Loading Test(=1s)")
+		time.sleep(1)
 		for port in self.model.usb_ports:
 			prefix = "USB%d: "%(port["index"] + 1)
 			vload = port["vload"]
@@ -370,11 +372,12 @@ class HUBTest(Test):
 
 		#hostflip
 		for port in self.model.usb_ports:
-			prefix = "USB%d-HOSTFLIP: "%(port["index"] + 1)
+			prefix = "USB%d: "%(port["index"] + 1)
 			hostflip = port["hostflip"]
 			if hostflip is not None:
 				index = port["index"] + 1
 				self.mode("port%d bypass"%index, "enable")
+				self.wait_until_usb_identified()
 
 				identify = hostflip["identify"]
 				self.check_identify(identify, prefix)
@@ -387,6 +390,7 @@ class HUBTest(Test):
 				vdp = hostflip["vdp"]
 				vdn = hostflip["vdn"]
 
+				time.sleep(0.8)
 				self.check_voltage(vdp, prefix)
 				self.check_voltage(vdn, prefix)
 

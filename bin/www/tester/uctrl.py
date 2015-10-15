@@ -35,11 +35,16 @@ class Uctrl:
 		relay = {
 			"load1": 12,
 			"load2": 14,
+			"cdp2": 0,
 		}[relay]
 		enable = {
 			"enable": 1,
 			"disable": 0,
 		}[enable]
+
+		#cdp2<relay k0> hardware invert
+		if relay == 0:
+			enable = enable ^ 1
 
 		cmdline = "uht set %d %d"%(relay, enable)
 		self.uart.write(cmdline + "\n\r")

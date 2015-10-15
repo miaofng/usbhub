@@ -2,7 +2,7 @@
 #'?': ignore one char
 #'*': ignore all following char
 #barcode: "332703260140-003-00102921715500342"
-barcode = "33270327*" #2USB-WHITE
+barcode = "33270328*" #2USB-BLUE
 fixture_id = 1
 
 vbat = {
@@ -146,12 +146,12 @@ usb2 = {
 }
 
 light = {
-    1: light_white,
-    2: light_white,
-    3: light_white,
-    4: light_white,
-    5: light_white,
-    6: light_white,
-    7: light_white,
-    8: light_white,
+    1: light_blue,
+    2: light_blue,
+    3: light_blue,
+    4: light_blue,
+    5: light_blue,
+    6: light_blue,
+    7: light_blue,
+    8: light_blue,
 }
