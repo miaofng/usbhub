@@ -127,6 +127,7 @@ function load_report(id, datafile) {
 
 var estop = false
 var ims = null
+var emsg = null
 
 function update_status(status) {
 	var date = new Date();
@@ -164,6 +165,17 @@ function update_status(status) {
 	//report update
 	load_report("#result0", status.datafile[0]);
 	load_report("#result1", status.datafile[1]);
+
+	if(status.emsg != emsg) {
+		emsg = status.emsg;
+		if(emsg.length > 0) {
+			$("#warn_txt").html(emsg);
+			$("#dialog_warn").dialog("open");
+		}
+		else {
+			$("#dialog_warn").dialog("close");
+		}
+	}
 
 	if(test.jid) {
 		if(status.estop != estop) {
@@ -292,6 +304,18 @@ $(function() {
 		height: 250,
 		width: 500,
 		modal: true,
+		hide: {
+			effect: "puff",
+			duration: 500
+		}
+	});
+
+	$( "#dialog_warn" ).dialog({
+		autoOpen: false,
+		closeOnEscape: true,
+		height: 250,
+		width: 500,
+		modal: false,
 		hide: {
 			effect: "puff",
 			duration: 500

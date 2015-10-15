@@ -331,6 +331,7 @@ class Tester:
 		return result;
 
 	def __stop__(self):
+		self.set("emsg", '')
 		self.stop = True
 		for key in self.threads:
 			thread = self.threads[key]
@@ -467,6 +468,7 @@ class Tester:
 				if emsg:
 					self.set("emsg", emsg)
 				else:
+					self.set("emsg", '')
 					test.Prompt("LOADING")
 					vuut_present_deadline = time.time() + 0.1
 
@@ -532,6 +534,7 @@ class Tester:
 				if emsg:
 					self.set("emsg", emsg)
 				else:
+					self.set("emsg", '')
 					test.Prompt("LOADING")
 					vuut_present_deadline = time.time() + 3
 
