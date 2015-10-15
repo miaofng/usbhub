@@ -86,6 +86,7 @@ class Raspberry:
 			data = {}
 			data["w_mbps"] = int(speed[1])
 			data["r_mbps"] = int(speed[2])
+			data["a_mbps"] = int(speed[3])
 			return data
 
 if __name__=='__main__':

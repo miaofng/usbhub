@@ -19,6 +19,17 @@ class HUBTest(Test):
 		self.feasa = tester.feasa[station]
 		self.rasp = tester.rasp[station]
 
+	def verifyBarcode(self, barcode):
+		if hasattr(self.model, "barcode"):
+			template = self.model.barcode
+			if not fnmatch.fnmatchcase(barcode, template):
+				emsg = []
+				emsg.append("Barcode Error")
+				emsg.append("expect: %s", template)
+				emsg.append("scaned: %s", barcode)
+				emsg = '\n\r'.join(emsg)
+				return emsg
+
 	def matrix_close(self, image):
 		matrix = self.tester.matrix
 		matrix.lock.acquire()
@@ -162,13 +173,16 @@ class HUBTest(Test):
 		limit = test["limit"]
 		wmin = limit["w_mbps_min"]
 		rmin = limit["r_mbps_min"]
+		amin = limit["a_mbps_min"]
 		w_mbps = 0
 		r_mbps = 0
+		a_mbps = 0
 
 		passed = False
 		if result:
 			w_mbps = result["w_mbps"]
 			r_mbps = result["r_mbps"]
+			a_mbps = result["a_mbps"]
 
 		passed = w_mbps > wmin
 		self.check_passed = self.check_passed and passed
@@ -181,6 +195,12 @@ class HUBTest(Test):
 		msg = "%s%s.r(>%d)...%dMbps"%(prefix, test["desc"], rmin, r_mbps)
 		self.log(msg, passed)
 		self.SaveResult(prefix, test["desc"]+".r", rmin, None, r_mbps, passed)
+
+		passed = a_mbps > amin
+		self.check_passed = self.check_passed and passed
+		msg = "%s%s.a(>%d)...%dMbps"%(prefix, test["desc"], amin, a_mbps)
+		self.log(msg, passed)
+		self.SaveResult(prefix, test["desc"]+".a", amin, None, a_mbps, passed)
 		return passed
 
 	def check_feasa(self, feasa):
@@ -309,7 +329,7 @@ class HUBTest(Test):
 		for port in self.model.usb_ports:
 			prefix = "USB%d: "%(port["index"] + 1)
 			vopen = port["vopen"]
-			if vopen:
+			if vopen is not None:
 				self.check_voltage(vopen, prefix)
 
 		#vload
@@ -319,7 +339,7 @@ class HUBTest(Test):
 		for port in self.model.usb_ports:
 			prefix = "USB%d: "%(port["index"] + 1)
 			vload = port["vload"]
-			if vload:
+			if vload is not None:
 				self.check_voltage(vload, prefix)
 		self.mode("allload", "disable")
 
@@ -328,9 +348,10 @@ class HUBTest(Test):
 		for port in self.model.usb_ports:
 			prefix = "USB%d: "%(port["index"] + 1)
 			identify = port["identify"]
-			benchmark = port["benchmark"]
 			self.check_identify(identify, prefix)
-			if benchmark:
+
+			benchmark = port["benchmark"]
+			if benchmark is not None:
 				self.check_benchmark(benchmark, prefix)
 
 		self.mode("allwork", "disable")
@@ -340,22 +361,32 @@ class HUBTest(Test):
 		for port in self.model.usb_ports:
 			prefix = "USB%d: "%(port["index"] + 1)
 			cdp = port["cdp"]
-			if cdp:
+			if cdp is not None:
 				self.check_voltage(cdp, prefix)
 		self.mode("allcdp", "disable")
 
-		#passthrough
+		#hostflip
 		for port in self.model.usb_ports:
-			prefix = "USB%d: "%(port["index"] + 1)
-			passthrough = port["passthrough"]
-			if passthrough:
+			prefix = "USB%d-HOSTFLIP: "%(port["index"] + 1)
+			hostflip = port["hostflip"]
+			if hostflip is not None:
 				index = port["index"] + 1
 				self.mode("port%d bypass"%index, "enable")
-				#list = self.rasp.list()
-				#self.check_passthrough(port, list)
 
-				#self.check_voltage(passthrough["vdp"], prefix)
-				#self.check_voltage(passthrough["vdn"], prefix)
+				identify = hostflip["identify"]
+				self.check_identify(identify, prefix)
+
+				#optional, usb_hostflip_benchmark must be set
+				benchmark = hostflip["benchmark"]
+				if benchmark is not None:
+					self.check_benchmark(benchmark, prefix)
+
+				vdp = hostflip["vdp"]
+				vdn = hostflip["vdn"]
+
+				self.check_voltage(vdp, prefix)
+				self.check_voltage(vdn, prefix)
+
 				self.mode("port%d bypass"%index, "disable")
 
 		#scp
@@ -365,7 +396,7 @@ class HUBTest(Test):
 		for port in self.model.usb_ports:
 			prefix = "USB%d: "%(port["index"] + 1)
 			scp = port["scp"]
-			if scp:
+			if scp is not None:
 				self.check_voltage(scp["vscp"], prefix)
 
 		#do not reboot until feasa captured
@@ -381,11 +412,13 @@ class HUBTest(Test):
 		for port in self.model.usb_ports:
 			prefix = "USB%d: "%(port["index"] + 1)
 			scp = port["scp"]
-			if scp:
+			if scp is not None:
 				self.check_voltage(scp["vrcv"], prefix)
 
 		#feasa
-		self.check_feasa(self.model.feasa)
+		light = getattr(self.model, "light")
+		if light is not None:
+			self.check_feasa(light)
 
 		#test finished
 		self.uctrl.reset()

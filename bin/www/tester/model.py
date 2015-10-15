@@ -14,203 +14,241 @@ swdebug = True
 if hasattr(settings, "swdebug"):
 	swdebug = settings.swdebug
 
+
+class ModelException(Exception):
+	def __init__(self, info):
+		print >> sys.stderr, info
+		sys.stderr.flush()
+
 class Model:
-	vbat = {
-		"name": "UT8.1",
-		"desc": "VBAT Voltage",
-		"limit": {"min": 13.3, "typ": 13.5, "max": 13.7},
-		"matrix": [12, 14, None, None],
-	}
-
-	iq = {
-		"name": "UT8.2",
-		"desc": "Q-Current Draw",
-		"limit": {"min": 0.025, "typ": 0.035, "max": 0.048},
-		"matrix": [None, 15, 13, None],
-	}
-
-	i0 = {
-		"name": "UT8.3",
-		"desc": "Idle Current Draw",
-		"limit": {"min": 0.038, "typ": 0.040, "max": 0.048},
-		"matrix": [None, 15, 13, None],
-	}
-
-	usb_identify = {
-		"name": "UT8.4~5",
-		"desc": "USB Port Identification",
-		"limit": None,
-	}
-
-	usb_benchmark = {
-		"name": "UT8.6",
-		"desc": "USB Transfer Speed",
-		"limit": {"w_mbps_min": 50, "r_mbps_min": 50},
-	}
-
-	usb_vcc = {
-		"name": "UT8.7",
-		"desc": "Vbus@0A",
-		"limit": {"min": 4.75, "typ": 5.12, "max": 5.18},
-		"ripple": {"max": 0.5},
-		"matrix": None,
-	}
-
-	usb_vload = {
-		"name": "UT8.8",
-		"desc": "Vbus@2.5A",
-		"limit": { "min": 4.50, "typ": 4.90, "max": 5.25},
-		"ripple": {"max": 0.5},
-		"matrix": None,
-	}
-
-	test_usb_bypass_identify = {
-		"name": "UT8.9",
-		"desc": "Host Flip Mode",
-	}
-
-	usb_bypass_vdn = {
-		"name": "UT8.10",
-		"desc": "Host Flip Mode Vd-",
-		"limit": {"min": 2.65, "typ": 2.70, "max": 2.75},
-		"matrix": None,
-	}
-
-	usb_bypass_vdp = {
-		"name": "UT8.10",
-		"desc": "Host Flip Mode Vd+",
-		"limit": {"min": 1.95, "typ": 2.00, "max": 2.05},
-		"matrix": None,
-	}
-
-	light_white = {
-		"name": "UT8.11~12",
-		"desc": "Lighting",
-		"limit": {
-			"min": [0.280, 0.280, 0.100],
-			"typ": [0.330, 0.330, 0.400],
-			"max": [0.380, 0.380, 0.700],
-		}
-	}
-
-	light_blue = {
-		"name": "UT8.11~12",
-		"desc": "Lighting",
-		"limit": {
-			"min": [0.137, 0.225, 0.020],
-			"typ": [0.187, 0.275, 0.400],
-			"max": [0.250, 0.400, 0.700],
-		}
-	}
-
-	usb_cdp = {
-		"name": "UT8.13",
-		"desc": "CDP Vd-",
-		"limit": {"min": 0.50, "typ": 0.60, "max": 0.70},
-		"matrix": None,
-	}
-
-	usb_scp = {
-		"name": "UT8.14/8.15",
-		"desc": "Vbus@5A",
-		"limit": {"min": -0.1, "typ": 0.0, "max": 0.1},
-		#"ripple": {"max": 0.5},
-		"matrix": None,
-	}
-
-	usb_rcv = {
-		"name": "UT8.16/8.17",
-		"desc": "Vbus@0A Recovery",
-		"limit": {"min": 4.75, "typ": 5.00, "max": 5.25},
-		#"ripple": {"max": 0.5},
-		"matrix": None,
-	}
-
-	usb_ports = [
-		{"index": 0},
-		{"index": 1},
-	]
-
 	def __init__(self, station):
 		self.station = station
-		for port in self.usb_ports:
-			port["vopen"] = None
-			port["vload"] = None
-			port["scp"] = None
-			port["cdp"] = None
-			port["passthrough"] = None
-			port["identify"] = None
-			port["benchmark"] = None
+		self.passmark = getattr(settings, "passmark_station%d"%station)
 
-	def usb_port_enable(self, index):
-		port = self.usb_ports[index]
-		vopen = copy.deepcopy(self.usb_vcc)
-		vopen["matrix"] = settings.matrix_usb_vcc[index]
+	def usb_parse(self, model, index):
+		port = getattr(model, "usb%d"%(index + 1))
+		port["index"] = index
 
-		vload = copy.deepcopy(self.usb_vload)
-		vload["matrix"] = settings.matrix_usb_vcc[index]
+		####identify test
+		usb_identify = getattr(model, "usb_identify")
+		usb_identify = getattr(model, "usb_identify%d"%(index + 1), usb_identify)
+		if usb_identify is None:
+			raise ModelException("usb%d.identify not found"%(index + 1))
+		identify = copy.deepcopy(usb_identify)
+		identify["passmark"] = self.passmark[index]["normal"]
+		port["identify"] = identify
 
-		vscp = copy.deepcopy(self.usb_scp)
-		vscp["matrix"] = settings.matrix_usb_vcc[index]
-		vrcv = copy.deepcopy(self.usb_rcv)
-		vrcv["matrix"] = settings.matrix_usb_vcc[index]
-		scp = {"vscp": vscp, "vrcv": vrcv}
-
-		vcdp = None
-		if index < 2:
-			vcdp = copy.deepcopy(self.usb_cdp)
-			vcdp["matrix"] = settings.matrix_usb_vdn[index]
-
-		passthrough = None
-		if index == 0:
-			vdp = copy.deepcopy(self.usb_bypass_vdp)
-			vdp["matrix"] = settings.matrix_usb_vdp[1]
-			vdn = copy.deepcopy(self.usb_bypass_vdn)
-			vdn["matrix"] = settings.matrix_usb_vdn[1]
-			passthrough = {"vdp": vdp, "vdn": vdn}
-
-		identify = None
+		#benchmark test
 		benchmark = None
-		passmark = settings.passmark[self.station][index]
-		if passmark:
-			identify = copy.deepcopy(self.usb_identify)
-			identify["passmark"] = passmark
-			benchmark = copy.deepcopy(self.usb_benchmark)
-			benchmark["passmark"] = passmark
+		if "benchmark" in port:
+			benchmark_cfg = port["benchmark"]
+			if isinstance(benchmark_cfg, bool):
+				if benchmark_cfg:
+					benchmark = getattr(model, "usb_benchmark")
+					benchmark = getattr(model, "usb_benchmark%d"%(index + 1), benchmark)
+					if benchmark is None:
+						raise ModelException("usb%d.benchmark not found"%(index + 1))
+			elif isinstance(benchmark_cfg, dict):
+				benchmark = copy.deepcopy(benchmark_cfg)
+			else:
+				raise ModelException("usb%d.benchmark type unknown"%(index + 1))
+
+		if benchmark is not None:
+			benchmark["passmark"] = self.passmark[index]["normal"]
+
+		port["benchmark"] = benchmark
+
+		####hostflip test
+		hostflip = None
+		if "hostflip" in port:
+			hostflip_cfg = port["hostflip"]
+			if isinstance(hostflip_cfg, bool):
+				if hostflip_cfg is True:
+					hostflip_identify = getattr(model, "usb_hostflip_identify")
+					hostflip_identify = getattr(model, "usb_hostflip_identify%d"%(index + 1), hostflip_identify)
+					if hostflip_identify is None:
+						raise ModelException("usb%d.hostflip.identify not found"%(index + 1))
+
+					#if benchmark is none, do not test it
+					hostflip_benchmark = getattr(model, "usb_hostflip_benchmark")
+					hostflip_benchmark = getattr(model, "usb_hostflip_benchmark%d"%(index + 1), hostflip_benchmark)
+
+					hostflip_vdn = getattr(model, "usb_hostflip_vdn")
+					hostflip_vdn = getattr(model, "usb_hostflip_vdn%d"%(index + 1), hostflip_vdn)
+					if hostflip_vdn is None:
+						raise ModelException("usb%d.hostflip.vdn not found"%(index + 1))
+
+					hostflip_vdp = getattr(model, "usb_hostflip_vdp")
+					hostflip_vdp = getattr(model, "usb_hostflip_vdp%d"%(index + 1), hostflip_vdp)
+					if hostflip_vdp is None:
+						raise ModelException("usb%d.hostflip.vdp not found"%(index + 1))
+
+					hostflip = {
+						"vdn" : hostflip_vdn,
+						"vdp" : hostflip_vdp,
+						"identify": hostflip_identify,
+						"benchmark": hostflip_benchmark,
+					}
+
+			elif isinstance(hostflip_cfg, dict):
+				hostflip = copy.deepcopy(hostflip_cfg)
+			else:
+				raise ModelException("usb%d.hostflip type unknown"%(index+1))
+
+		#fill hostflip matrix channels & passmark
+		if hostflip is not None:
+			identify = hostflip["identify"]
+			identify["passmark"] = self.passmark[index]["hostflip"]
+
+			benchmark = hostflip["benchmark"]
+			if benchmark is not None:
+				benchmark["passmark"] = self.passmark[index]["hostflip"]
+
+			vdn = hostflip["vdn"]
+			vdp = hostflip["vdp"]
+
+			if index == 0:
+				vdn["matrix"] = settings.matrix_usb_vdn[1]
+				vdp["matrix"] = settings.matrix_usb_vdp[1]
+			else:
+				raise ModelException("usb%d.hostflip hardware not support"%(index + 1))
+
+			hostflip["vdn"] = vdn
+			hostflip["vdp"] = vdp
+
+		port["hostflip"] = hostflip
+
+		####vopen test
+		vopen = None
+		if "vopen" in port:
+			vopen_cfg = port["vopen"]
+			if isinstance(vopen_cfg, bool):
+				if vopen_cfg is True:
+					vopen = getattr(model, "usb_vcc")
+					vopen = getattr(model, "usb_vcc%d"%(index + 1), vopen)
+			elif isinstance(vopen_cfg, dict):
+				vopen = copy.deepcopy(vopen_cfg)
+			else:
+				raise ModelException("usb%d.vopen type unknown"%(index + 1))
+
+		#fill vopen matrix channel
+		if vopen is not None:
+			vopen["matrix"] = settings.matrix_usb_vcc[index]
 
 		port["vopen"] = vopen
+
+		####vload test
+		vload = None
+		if "vload" in port:
+			vload_cfg = port["vload"]
+			if isinstance(vload_cfg, bool):
+				if vload_cfg is True:
+					vload = getattr(model, "usb_vcc")
+					vload = getattr(model, "usb_vcc%d"%(index + 1), vload)
+			elif isinstance(vload_cfg, dict):
+				vload = copy.deepcopy(vload_cfg)
+			else:
+				raise ModelException("usb%d.vload type unknown"%(index + 1))
+
+		#fill vload matrix channel
+		if vload is not None:
+			vload["matrix"] = settings.matrix_usb_vcc[index]
+
 		port["vload"] = vload
-		port["scp"] = scp
+
+		####cdp test
+		vcdp = None
+		if "cdp" in port:
+			cdp_cfg = port["cdp"]
+			if isinstance(cdp_cfg, bool):
+				if cdp_cfg is True:
+					vcdp = getattr(model, "usb_cdp")
+					vcdp = getattr(model, "usb_cdp%d"%(index + 1), vcdp)
+			elif isinstance(cdp_cfg, dict):
+				vcdp = copy.deepcopy(cdp_cfg)
+			else:
+				raise ModelException("usb%d.cdp type unknown"%(index + 1))
+
+		#fill cdp matrix channel
+		if vcdp is not None:
+			vcdp["matrix"] = settings.matrix_usb_vdn[index]
+
 		port["cdp"] = vcdp
-		port["passthrough"] = passthrough
-		port["identify"] = identify
-		port["benchmark"] = benchmark
+
+		####scp test
+		scp = None
+		if "scp" in port:
+			scp_cfg = port["scp"]
+			if isinstance(scp_cfg, bool):
+				if scp_cfg is True:
+					vscp = getattr(model, "usb_scp_vcc")
+					vscp = getattr(model, "usb_scp_vcc%d"%(index + 1), vscp)
+					if vscp is None:
+						raise ModelException("usb%d.scp.vcc not found"%(index + 1))
+
+					#if vsc is None, do not test
+					vrcv = getattr(model, "usb_scp_recover")
+					vrcv = getattr(model, "usb_scp_recover%d"%(index + 1), vrcv)
+
+					scp = {
+						"vscp" : vscp,
+						"vrcv" : vrcv,
+					}
+			elif isinstance(scp_cfg, dict):
+				scp = copy.deepcopy(scp_cfg)
+			else:
+				raise ModelException("usb%d.scp type unknown"%(index + 1))
+
+		#fill scp matrix channel
+		if scp is not None:
+			vscp = scp["vscp"]
+			vrcv = scp["vrcv"]
+			vscp["matrix"] = settings.matrix_usb_vcc[index]
+			vrcv["matrix"] = settings.matrix_usb_vcc[index]
+
+		port["scp"] = scp
+		return port
+
+	def light_parse(self, model):
+		feasa = {}
+		for ch in model.light:
+			light_cfg = model.light[ch]
+			light_cfg = copy.deepcopy(light_cfg)
+			feasa[ch - 1] = light_cfg
+		return feasa
 
 	def Parse(self, fpath):
 		fname = os.path.split(fpath)[1]
 		[title, ext] = os.path.splitext(fname)
 
-		self.usb_port_enable(0)
-		self.usb_port_enable(1)
-
 		model = imp.load_source(title, fpath)
 		model.name = title
 		model.ext = ext
-		model.vbat = self.vbat
-		model.iq = self.iq
-		model.i0 = self.i0
-		model.usb_ports = self.usb_ports
-		model.feasa = {
-			0: copy.deepcopy(self.light_blue),
-			1: copy.deepcopy(self.light_blue),
-			2: copy.deepcopy(self.light_blue),
-			3: copy.deepcopy(self.light_blue),
-			4: copy.deepcopy(self.light_blue),
-			5: copy.deepcopy(self.light_blue),
-			6: copy.deepcopy(self.light_blue),
-			7: copy.deepcopy(self.light_blue),
-		}
+
+		if not hasattr(model, "vbat"):
+			raise ModelException("vbat not found")
+		model.vbat["matrix"] = settings.matrix_vbat
+
+		if not hasattr(model, "iq"):
+			raise ModelException("iq not found")
+		model.iq["matrix"] = settings.matrix_ibat
+
+		if not hasattr(model, "i0"):
+			raise ModelException("i0 not found")
+		model.iq["matrix"] = settings.matrix_ibat
+
+		model.usb_ports = []
+		for index in range(0, 3):
+			if hasattr(model, "usb%d"%(index+1)):
+				port = self.usb_parse(model, index)
+				model.usb_ports.append(port)
+
+		if hasattr(model, "light"):
+			model.light = self.light_parse(model)
+
 		return model
 
-
+if __name__ == '__main__':
+	model = Model(1)
+	model.Parse("./33270327.py")
 

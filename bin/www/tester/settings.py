@@ -14,12 +14,24 @@ rasp_ips = ["", "192.168.8.11"]
 dmm_port = "USB0::0x0957::0x0607::MY53011514::INSTR"
 
 fixture_mov_timeout = 10
-passmark = {
-	0: [None, None, None],
-	1: ["PMQ7VH1P", "PMQ7WKYY", None],
+passmark_station0 = {
+	0: {"normal": None, "hostflip": None},
+	1: {"normal": None, "hostflip": None},
+	2: {"normal": None, "hostflip": None},
 }
 
-#matrix ch assign of usb dn port vcc
+passmark_station1 = {
+	0: {"normal": "PMQ7VH1P", "hostflip": "PMQ7VH1P"},
+	1: {"normal": "PMQ7WKYY", "hostflip": None},
+	2: {"normal": None, "hostflip": None},
+}
+
+#matrix assignments
+#matrix bus:  V+ V-/I- I+ NC
+
+matrix_vbat = [12, 14, None, None]
+matrix_ibat = [None, 15, 13, None]
+
 matrix_usb_vcc = {
 	0: [0, 14, None, None],
 	1: [4, 14, None, None],
