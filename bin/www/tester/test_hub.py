@@ -20,6 +20,7 @@ class HUBTest(Test):
 		self.feasa = tester.feasa[station]
 		self.rasp = tester.rasp[station]
 		self.dbResult = self.tester.db.get('cfg_get')("dbResult")
+		self.dbResult = int(self.dbResult)
 
 	def verifyBarcode(self, barcode):
 		if hasattr(self.model, "barcode"):

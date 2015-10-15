@@ -37,6 +37,7 @@ from test_hub import HUBTest
 from matrix import Matrix
 from feasa import Feasa
 from raspberry import Raspberry
+from ims import Ims
 import settings
 import random
 import functools #https://docs.python.org/2/library/functools.html
@@ -81,10 +82,16 @@ class Tester:
 	threads = {0: None, 1: None}
 	barcode = None
 	test_mode = "STEP" #"AUTO" or "STEP"(for debug or selfcheck use)
+	ims_mode = "StartOrder"
+	ims_en = False
 
 	def __init__(self, saddr):
 		self.db = Db()
 		self.mode = self.db.cfg_get("Mode")
+		ims_en = self.db.cfg_get("IMS")
+		if int(ims_en) == 1:
+			self.ims_en = True
+			self.ims = Ims(settings.ims_port)
 
 		if swdebug:
 			self.RequestTest = self.vRequestTest
@@ -199,6 +206,14 @@ class Tester:
 		if self.estop:
 			self.__stop__()
 
+		#ims
+		if self.ims_en:
+			cmd = self.ims.recv()
+			if cmd is not None:
+				self.ims_mode = cmd
+				if cmd is "StopOrder":
+					self.__stop__()
+
 	def run(self):
 		while True:
 			self.update()
@@ -214,6 +229,10 @@ class Tester:
 		result["wastes"] = self.get('wastes')
 		result["runtime"] = int(self.__runtime__())
 		result["estop"] = self.get('estop')
+		result["ims"] = self.ims_mode
+		result["ims_saddr"] = "off"
+		if hasattr(self, "ims"):
+			result["ims_saddr"] = "%s:%d"%self.ims.saddr
 		result["emsg"] = self.get("emsg")
 		result["time"] = time.strftime("%H:%M:%S", time.localtime())
 		result["date"] = time.strftime("%Y-%m-%d", time.localtime())

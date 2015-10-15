@@ -126,6 +126,7 @@ function load_report(id, datafile) {
 }
 
 var estop = false
+var ims = null
 
 function update_status(status) {
 	var date = new Date();
@@ -142,6 +143,7 @@ function update_status(status) {
 	$("#fixture_id").html(status.fixture_id);
 	$("#fixture_pressed").html(status.pressed);
 	$("#wastes").html(status.wastes);
+	$("#ims_saddr").html(status.ims_saddr);
 
 	//run stm update
 	$("#time_run").html(status.runtime+"s");
@@ -163,18 +165,32 @@ function update_status(status) {
 	load_report("#result0", status.datafile[0]);
 	load_report("#result1", status.datafile[1]);
 
-	//estop?
 	if(test.jid) {
-		if(status.estop) {
-			if(!estop) {
-				estop = true;
+		if(status.estop != estop) {
+			estop = status.estop;
+			if(estop) {
+				ims = null
+				$("#estop_img").attr("src","img/estop.gif");
+				$("#estop_txt").html("Emergency Stop!!! Release it, Then Press Reset Button to Continue..")
 				$( "#dialog_estop" ).dialog("open");
 			}
-		}
-		else {
-			if(estop) {
-				estop = false;
+			else {
 				$( "#dialog_estop" ).dialog("close");
+			}
+		}
+
+		//ims stop?
+		if(!estop) {
+			if(status.ims != ims) {
+				ims = status.ims
+				if(ims == "StopOrder") {
+					$("#estop_img").attr("src","img/ims.png");
+					$("#estop_txt").html("IMS Stop!!! Tester Is Under Remote Control, Please Wait ...")
+					$( "#dialog_estop" ).dialog("open");
+				}
+				else {
+					$( "#dialog_estop" ).dialog("close");
+				}
 			}
 		}
 	}
