@@ -28,7 +28,8 @@ function model_load(fname) {
 		editor.session.setValue(content);
 
 		var model = path.basename(fname, ".py");
-		$('#m_model').html(" - " + model);
+		$('#m_model').html(model);
+		$('#m_model').attr("title", fname)
 
 		settings.fname = fname;
 		$("#m_save, #m_saveas").attr("disabled", false);
