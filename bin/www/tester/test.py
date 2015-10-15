@@ -29,6 +29,10 @@ class Test(threading.Thread):
 	barcode = ''
 	dfpath = ''
 
+	#for test duration calculation
+	start_time = 0
+	duration = "&nbsp;"
+
 	#..
 	flag_stop = False
 
@@ -138,6 +142,8 @@ class Test(threading.Thread):
 		return self.get("barcode")
 
 	def Start(self, dfpath=None):
+		self.set("start_time", time.time())
+		self.set("duration", "&nbsp;")
 		self.set("ecode", 0)
 		self.set("status", "TESTING")
 		self.set("dfpath", os.path.abspath(dfpath))
@@ -145,6 +151,9 @@ class Test(threading.Thread):
 			self.log_start(dfpath)
 
 	def Pass(self):
+		self.set("duration", self.getDuration())
+		self.set("start_time", 0)
+
 		test_mode = self.tester.get("test_mode")
 		self.set("status", "PASS")
 		if test_mode == "AUTO":
@@ -159,6 +168,9 @@ class Test(threading.Thread):
 			self.set("dfpath", '')
 
 	def Fail(self, ecode = -1):
+		self.set("duration", self.getDuration())
+		self.set("start_time", 0)
+
 		test_mode = self.tester.get("test_mode")
 		assert ecode != 0
 		self.set("ecode", ecode)
@@ -175,6 +187,14 @@ class Test(threading.Thread):
 ###########method could be called by main thread ########
 	def stop(self):
 		self.set("flag_stop", True)
+
+	def getDuration(self):
+		start_time = self.get("start_time")
+		duration = self.get("duration")
+		if start_time != 0:
+			duration = time.time() - start_time
+			duration = "%.01fs"%duration
+		return duration
 
 
 

@@ -129,9 +129,11 @@ var estop = false
 
 function update_status(status) {
 	var date = new Date();
-	var sdate = date.toLocaleDateString();
-	$("#time_cur").html(date.toTimeString().substr(0, 8));
-	$("#date").html(sdate);
+	//var sdate = date.toLocaleDateString();
+	//$("#time_cur").html(date.toTimeString().substr(0, 8));
+	//$("#date").html(sdate);
+	$("#time_cur").html(status.time);
+	$("#date").html(status.date);
 
 	if(!status)
 		return;
@@ -150,6 +152,8 @@ function update_status(status) {
 	//barcode
 	$("#barcode0").html(status.barcode[0]);
 	$("#barcode1").html(status.barcode[1]);
+	$("#duration0").html(status.duration[0]);
+	$("#duration1").html(status.duration[1]);
 
 	//status update
 	update_state(0, status.status[0], status.ecode[0]);

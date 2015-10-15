@@ -215,11 +215,14 @@ class Tester:
 		result["runtime"] = int(self.__runtime__())
 		result["estop"] = self.get('estop')
 		result["emsg"] = self.get("emsg")
+		result["time"] = time.strftime("%H:%M:%S", time.localtime())
+		result["date"] = time.strftime("%Y-%m-%d", time.localtime())
 
 		ecode = [0, 0]
 		barcode = ['', '']
 		status = ['READY', 'READY']
 		datafile = ['', '']
+		duration = ['&nbsp;', '&nbsp;']
 		result["testing"] = self.IsTesting()
 
 		for key in self.threads:
@@ -229,11 +232,13 @@ class Tester:
 				status[key] = test.get("status")
 				barcode[key] = test.get("barcode")
 				datafile[key] = test.get("dfpath")
+				duration[key] = test.get("getDuration")()
 
 		result["ecode"] = ecode
 		result["status"] = status
 		result["barcode"] = barcode
 		result["datafile"] = datafile
+		result["duration"] = duration
 		return result
 
 	def IsTesting(self):
