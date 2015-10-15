@@ -18,6 +18,7 @@ class HUBTest(Test):
 		self.uctrl = tester.uctrl[station]
 		self.feasa = tester.feasa[station]
 		self.rasp = tester.rasp[station]
+		self.dbResult = self.tester.db.get('cfg_get')("dbResult")
 
 	def verifyBarcode(self, barcode):
 		if hasattr(self.model, "barcode"):
@@ -256,7 +257,9 @@ class HUBTest(Test):
 		Test.update(self)
 
 	def SaveResult(self, prefix, name, min, max, value, passed):
-		#return
+		if self.dbResult == 0:
+			return
+
 		dat_dir = self.getPath()
 		dat_dir = os.path.abspath(dat_dir)
 		self.lock.acquire()
