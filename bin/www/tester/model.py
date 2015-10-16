@@ -241,6 +241,7 @@ class Model:
 		for index in range(0, 3):
 			if hasattr(model, "usb%d"%(index+1)):
 				port = self.usb_parse(model, index)
+				port = copy.deepcopy(port)
 				model.usb_ports.append(port)
 
 		if hasattr(model, "light"):
