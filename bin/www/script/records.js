@@ -25,36 +25,7 @@ function test_load(id) {
 		$('#time_run').html(parseInt(test.runtime));
 		$('#time_test').html(parseInt(test.duration));
 		result_load(test.datafile);
-
-		irt.model_get(test.model, function(model) {
-			$("#mask").hide();
-			//update sub board display for mask purpose
-			if(model == null) {
-				//alert("Model is Not Found in Database!!!");
-				test.status = 'MODEL NOT FOUND';
-				return;
-			}
-			//console.dir(model);
-			var html = [];
-			var nsubs = model.nrow * model.ncol;
-			for(var i = 0; i < nsubs; i ++) {
-				var subname = String.fromCharCode("A".charCodeAt()+i);
-				var checked = (test.mask & (1 << i)) ? "" : 'checked = "checked"';
-				html[i] = '<div id="mask'+i+'"><input id="'+i+'" type="checkbox" ' + checked + ' />' +
-				'<label for="'+i+'">'+subname+'</label></div>';
-			}
-			html = html.join("\n");
-			$("#mask").html(html);
-			$( "#mask input" ).button({
-				//disabled: true,
-			});
-
-			var w = 100/model.ncol + "%";
-			var h = 100/model.nrow + "%";
-			$("#mask div").removeAttr("width").removeAttr("height").css({"width":w, "height":h});
-			$("#mask").show();
-			irt_show_status((test.failed)?"FAIL":"PASS", test.failed, model);
-		});
+		show_status((test.failed)?"FAIL":"PASS", test.failed);
 	});
 }
 
@@ -81,7 +52,7 @@ function result_load(datafile) {
 	});
 }
 
-function irt_show_status(status, ecode, model) {
+function show_status(status, ecode) {
 
 	$("#status").html(status);
 	switch(status) {
@@ -104,17 +75,6 @@ function irt_show_status(status, ecode, model) {
 	default:
 		$("#status").css("background-color", "#ff0000");
 		break;
-	}
-
-	for(var i = 0; i < model.nsub; i ++) {
-		//border color?
-		var border_color = "#00ff00";
-		if((1 << i) & ecode) {
-			border_color = "red";
-		}
-
-		var target = "#mask" + i + " label";
-		$(target).css("border-color", border_color);
 	}
 }
 
