@@ -11,8 +11,9 @@ var test = {
 	"model": null,
 	"mode": "AUTO",
 	"bplist":{},
+	"fname": null,
 
-	"ui_status": 'ERROR', //'LOADING', 'READY', 'XXX ERROR'
+	"ui_status": 'Starting...', //'LOADING', 'READY', 'XXX ERROR'
 	//show irt server status only when ui_status = 'READY'
 };
 
@@ -21,12 +22,14 @@ function gft_load(gft) {
 		return;
 	}
 
+	test.fname = null;
 	fs.readFile(path.resolve(process.cwd(), gft), "ascii", function (err, content) {
 		if(err) {
 			alert(err.message);
 			return;
 		}
 		else {
+			test.fname = gft;
 			var model = path.basename(gft, ".gft");
 			model = path.basename(model, ".py");
 			$('#model').html(model);
@@ -42,6 +45,8 @@ function update_state(station, status, ecode) {
 	var bgcolor = "#ff0000";
 
 	switch(state) {
+	case "Starting...":
+		$("#button_run").attr("disabled", true);
 	case "SCANING":
 	case "LOADING":
 	case "LOADED":
@@ -106,7 +111,7 @@ var datafile_crc = [];
 function load_report(id, datafile) {
 	fs.readFile(datafile, "ascii", function (err, content) {
 		if(err) {
-			content = '...'
+			content = ''
 		}
 		else {
 			crc = crc32.str(content);
@@ -407,7 +412,7 @@ $(function() {
 		});
 
 		Dialog.getFilePath(function (err, fname) {
-			test.ui_status = 'LOADING';
+			test.ui_status = 'Starting...';
 			irt.query("reset", function(data) {});
 			gft_load(fname);
 		});
@@ -440,11 +445,15 @@ $(function() {
 	});
 
 	irt.cfg_get('gft_last', function(fname) {
-		gft_load(fname);
+		//test.fname = fname;
 	});
 
-	update_state(0, "ERROR", 0);
-	update_state(1, "ERROR", 0);
+	if (test.fname != null) {
+		gft_load(test.fname);
+	}
+
+	update_state(0, test.ui_status, 0);
+	update_state(1, test.ui_status, 0);
 
 	var timer_tick = setInterval("timer_tick_update()", 100);
 	var stimer = setInterval("timer_statistics_update()", 1000);
