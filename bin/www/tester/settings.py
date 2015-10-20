@@ -4,14 +4,14 @@
 swdebug = False
 swdebug_estop = False
 enable_selfcheck = False
-scanner_port = "COM3"
-plc_port = "COM1"
-hmp_port = "COM2"
-uctrl_ports = ["", "COM8"]
+scanner_port = "COM21"
+plc_port = "COM20"
+hmp_port = "COM19"
+uctrl_ports = ["COM18", "COM8"]
 matrix_port = "COM11"
 feasa_ports = ["", "COM14"]
 ims_port = 10000
-rasp_ips = ["", "192.168.8.11"]
+rasp_ips = ["192.168.20.11", "192.168.8.11"]
 dmm_port = "USB0::0x0957::0x0607::MY53011514::INSTR"
 
 fixture_mov_timeout = 10
