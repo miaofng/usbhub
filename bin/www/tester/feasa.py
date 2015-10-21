@@ -23,13 +23,14 @@ class Feasa:
 
 	#auto add eol
 	def query(self, cmdline, eol = '\r\n'):
+		time.sleep(0.1)
 		self.echo = ""
 		self.uart.flushInput()
 		self.uart.write(cmdline + eol)
 		self.ready = False
 
 	#auto remove eol
-	def readline(self, eol = "\r\n"):
+	def readline(self, eol = "\r\n\4"):
 		linebuf = ""
 		deadline = time.time() + self.timeout
 		while True:
@@ -93,6 +94,7 @@ class Feasa:
 		self.query("GetABSINT%02d"%ch)
 		echo = self.readline()
 
+		i = 0.0
 		if echo.find("RANGE") >= 0:
 			i = 0.0
 		else:
@@ -102,7 +104,12 @@ class Feasa:
 
 			i = float(echo)
 			i = i / 1000 / self.getExposureFactor()
-		return [x, y, i]
+
+		d = 0
+		echo = self.query("GetIntensity%02d"%ch)
+		d = float(d)
+
+		return [x, y, i, d]
 
 if __name__=='__main__':
 	import os, sys, signal
