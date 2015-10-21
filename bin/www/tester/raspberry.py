@@ -78,7 +78,7 @@ class Raspberry:
 	#usb benchmark test result
 	def status(self, id):
 		ready = self.IsReady(id)
-		if ready:
+		if ready and id is not None:
 			echo = self.__status__()
 			result = echo[id]
 			speed = result["speed"]
