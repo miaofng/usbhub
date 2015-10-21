@@ -105,9 +105,9 @@ class Feasa:
 			i = float(echo)
 			i = i / 1000 / self.getExposureFactor()
 
-		d = 0
-		echo = self.query("GetIntensity%02d"%ch)
-		d = float(d)
+		self.query("GetIntensity%02d"%ch)
+		echo = self.readline()
+		d = float(echo)
 
 		return [x, y, i, d]
 
