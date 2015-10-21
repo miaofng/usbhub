@@ -110,7 +110,8 @@ class Test(threading.Thread):
 		self.file = open(path, 'w')
 
 	def log(self, info, passed=None):
-		line = "%s#  %-48s"%(time.strftime('%X'), info)
+		#line = "%s#  %-48s"%(time.strftime('%X'), info)
+		line = "%s#  %-48s"%(self.getDuration(), info)
 		if passed == True:
 			line = line + " [PASS]"
 		elif passed == False:
@@ -150,6 +151,20 @@ class Test(threading.Thread):
 		if dfpath:
 			self.log_start(dfpath)
 
+	def wait_uut_remove(self, signal = "PASS"):
+		if not swdebug:
+			self.tester.fixture.get("Signal")(self.station, signal)
+
+		deadline = time.time() + 3
+		while True:
+			if settings.enable_sensor_ue:
+				ue = self.tester.fixture.get("IsUutPresent")(self.station)
+				if not ue:
+					break
+			else:
+				if deadline > time.time():
+					break
+
 	def Pass(self):
 		self.set("duration", self.getDuration())
 		self.set("start_time", 0)
@@ -157,12 +172,12 @@ class Test(threading.Thread):
 		test_mode = self.tester.get("test_mode")
 		self.set("status", "PASS")
 		if test_mode == "AUTO":
-			if not swdebug:
-				self.tester.fixture.get("Signal")(self.station, "PASS")
-
 			self.Record()
+
+			#wait...until uut been removed
 			#:( who can notice me when uut is removed
-			self.mdelay(2000)
+			self.wait_uut_remove("PASS")
+
 			#now, uut is removed
 			self.set("barcode", '')
 			self.set("dfpath", '')
@@ -177,6 +192,7 @@ class Test(threading.Thread):
 		self.set("status", "FAIL")
 		if test_mode == "AUTO":
 			self.Record()
+			self.wait_uut_remove("FAIL")
 			self.tester.RequestWaste(self)
 			self.set("barcode", '')
 			self.set("dfpath", '')
@@ -193,7 +209,7 @@ class Test(threading.Thread):
 		duration = self.get("duration")
 		if start_time != 0:
 			duration = time.time() - start_time
-			duration = "%.01fs"%duration
+			duration = "%4.01fs"%duration
 		return duration
 
 

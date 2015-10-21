@@ -39,17 +39,17 @@ class HUBTest(Test):
 		for bus in range(4):
 			line = image[bus]
 			if line is not None:
-				#line = line + 16 * self.station
+				line = line + 16 * self.station
 				matrix.close(bus, line)
-		matrix.lock.release()
+		#matrix.lock.release()
 
 	def matrix_open(self, image):
 		matrix = self.tester.matrix
-		matrix.lock.acquire()
+		#matrix.lock.acquire()
 		for bus in reversed(range(4)):
 			line = image[bus]
 			if line is not None:
-				#line = line + 16 * self.station
+				line = line + 16 * self.station
 				matrix.open(bus, line)
 		matrix.lock.release()
 
@@ -223,8 +223,11 @@ class HUBTest(Test):
 					passed = val > min[idx] and val < max[idx]
 					feasa_passed = feasa_passed and passed
 
-					chname = ("x","y", "i")[idx]
-					msg = "FEASA CH%02d: %s.%s(%6.03f,%6.03f)...%6.03f"%(ch+1, test["desc"], chname, min[idx], max[idx], val)
+					chname = ("x","y", "i", "d")[idx]
+					if chname != "d":
+						msg = "FEASA CH%02d: %s.%s(%6.03f,%6.03f)...%6.03f"%(ch+1, test["desc"], chname, min[idx], max[idx], val)
+					else:
+						msg = "FEASA CH%02d: %s.%s(%6.0f,%6.0f)...%6.0f"%(ch+1, test["desc"], chname, min[idx], max[idx], val)
 					self.log(msg, passed)
 					self.SaveResult("FEASA CH%02d"%ch, "%s.%s"%(test["desc"], chname), min[idx], max[idx], val, passed)
 

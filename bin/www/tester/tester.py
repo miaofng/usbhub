@@ -105,6 +105,8 @@ class Tester:
 			power = Hmp4040(settings.hmp_port)
 			power.set_vol(1, 13.5, 3.0) #vbat
 			power.set_vol(2, 05.0, 1.0) #uctrl
+			power.set_vol(3, 13.5, 3.0) #vbat
+			power.set_vol(4, 05.0, 1.0) #uctrl
 			power.lock(True)
 			self.dmm = Dmm(settings.dmm_port)
 			self.dmm.measure_dcv()
@@ -445,6 +447,7 @@ class Tester:
 		station = test.station
 		self.test_lock.acquire()
 		self.set("barcode", None)
+		scanned = False
 
 		#fuck!!! 2s if barcode is ok
 		vuut_present_deadline = None
@@ -470,16 +473,27 @@ class Tester:
 				else:
 					self.set("emsg", '')
 					test.Prompt("LOADING")
-					vuut_present_deadline = time.time() + 0.1
+					scanned = True
+					if not settings.enable_sensor_ue:
+						vuut_present_deadline = time.time() + 0.1
+
+			def fixture_start():
+				test.Prompt("LOADED")
+				self.fixture.get("Signal")(station, "BUSY")
+				self.fixture.get("Start")(station)
 
 			#uut present???
-			#self.fixture.get("IsUutPresent")(station):
 			if vuut_present_deadline:
 				if time.time() >  vuut_present_deadline:
 					#provided that uut is present now
-					test.Prompt("LOADED")
-					self.fixture.get("Signal")(station, "BUSY")
-					self.fixture.get("Start")(station)
+					fixture_start()
+					break
+
+			#uut presents?
+			if scanned and settings.enable_sensor_ue:
+				ue = self.fixture.get("IsUutPresent")(station)
+				if ue:
+					fixture_start()
 					break
 
 		#loaded, fixture is moving ...
@@ -517,7 +531,7 @@ class Tester:
 			#uut present???
 			#self.fixture.get("IsUutPresent")(station):
 			if vuut_present_deadline:
-				if time.time() >  vuut_present_deadline:
+				if time.time() > vuut_present_deadline:
 					#provided that uut is present now
 					test.Prompt("LOADED")
 					break
@@ -554,7 +568,7 @@ class Tester:
 		self.waste_lock.acquire()
 		test.Prompt("WASTE")
 		wastes = self.fixture.get("ReadWasteCount")()
-		self.fixture.get("Signal")(test.station, "FAIL")
+		#self.fixture.get("Signal")(test.station, "FAIL")
 		wben = self.db.get("cfg_get")("WasteBox")
 		while wben == "1":
 			time.sleep(0.001)
@@ -564,9 +578,9 @@ class Tester:
 				self.set("wastes", n)
 				break
 
-		test.Prompt("FAIL")
+		#test.Prompt("FAIL")
 		if wben == "0":
-			time.sleep(10)
+			#time.sleep(10)
 			self.set("wastes", wastes)
 
 		self.waste_lock.release()
