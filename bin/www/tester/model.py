@@ -143,8 +143,8 @@ class Model:
 			vload_cfg = port["vload"]
 			if isinstance(vload_cfg, bool):
 				if vload_cfg is True:
-					vload = getattr(model, "usb_vcc", None)
-					vload = getattr(model, "usb_vcc%d"%(index + 1), vload)
+					vload = getattr(model, "usb_vload", None)
+					vload = getattr(model, "usb_vload%d"%(index + 1), vload)
 			elif isinstance(vload_cfg, dict):
 				vload = copy.deepcopy(vload_cfg)
 			else:
