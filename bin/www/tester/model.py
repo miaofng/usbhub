@@ -221,7 +221,7 @@ class Model:
 		fname = os.path.split(fpath)[1]
 		[title, ext] = os.path.splitext(fname)
 
-		model = imp.load_source(title, fpath)
+		model = imp.load_source("model.%d"%self.station, fpath)
 		model.name = title
 		model.ext = ext
 
