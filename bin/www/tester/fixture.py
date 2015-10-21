@@ -254,8 +254,11 @@ class Fixture(Plc):
 		self.dm_write(addr, value)
 
 	def IsUutPresent(self, station):
-		#sensor not exist yet
-		return True
+		#left: 2.09 right: 2.10
+		regv = self.cio_read(0x02)
+		present = regv & (1 << (9 + station))
+		present = (present > 0)
+		return present
 
 	def ClearWasteCount(self):
 		self.dm_write(30, 0)
