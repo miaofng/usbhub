@@ -13,8 +13,16 @@ class Scanner:
 	uart = None
 	data = ''
 
+	def release(self):
+		if self.uart:
+			self.uart.close()
+			self.uart = None
+
 	def __init__(self, port, baud = 115200):
 		self.uart = serial.Serial(port, baud)
+
+	def __del__(self):
+		self.release()
 
 	def read(self):
 		nbytes = self.uart.inWaiting()

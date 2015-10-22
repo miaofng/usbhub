@@ -46,6 +46,7 @@ class PlcIoError(Exception):
 class Plc:
 	lock = threading.Lock()
 	timeout = 1 #unit: S
+	uart = None
 
 	def get(self, attr_name, val_def = None):
 		if hasattr(self, attr_name):
@@ -66,7 +67,7 @@ class Plc:
 		setattr(self, attr_name, value)
 		self.lock.release()
 
-	def __del__(self):
+	def release(self):
 		if self.uart:
 			self.uart.close()
 			self.uart = None
@@ -89,6 +90,9 @@ class Plc:
 		self.dm_read = functools.partial(self.__read__, header = "RD")
 		self.dm_write = functools.partial(self.__write__, header = "WD")
 		self.__mode__("MONITOR")
+
+	def __del__(self):
+		self.release()
 
 	def __cksum__(self, frame):
 		fcs = 0

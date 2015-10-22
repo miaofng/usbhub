@@ -13,7 +13,9 @@ class HmpEchoTimeout(Exception): pass
 
 class Hmp4040:
 	timeout = 1 #unit S
-	def __del__(self):
+	uart = None
+
+	def release(self):
 		if self.uart:
 			self.uart.close()
 			self.uart = None
@@ -30,6 +32,9 @@ class Hmp4040:
 		self.idn = self.query("*idn?")
 		self.reset()
 		self.cls()
+
+	def __del__(self):
+		self.release()
 
 	#auto add eol
 	def query(self, cmdline, eol = '\n'):

@@ -5,12 +5,19 @@ class UctrlIoError(Exception): pass
 
 class Uctrl:
 	timeout = 5 #unit: S
+	uart = None
+
+	def release(self):
+		if self.uart:
+			self.uart.close()
+			self.uart = None
+
 	def __init__(self, port, baud = 115200):
 		self.uart = serial.Serial(port, baud, timeout = self.timeout)
 		self.uart.write("shell -a\r")
 
 	def __del__(self):
-		self.uart.close()
+		self.release()
 
 	def query(self, cmdline):
 		self.uart.flushInput()

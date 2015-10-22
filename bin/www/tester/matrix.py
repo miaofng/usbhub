@@ -25,6 +25,8 @@ class MatrixIoError(Exception):
 class Matrix:
 	lock = threading.Lock()
 	timeout = 5 #unit: S
+	uart = None
+
 	cmdline_max_bytes = 128
 	IRT_E_VM_OPQ_FULL = -16
 	IRT_E_HV_UP = -7
@@ -50,8 +52,8 @@ class Matrix:
 		setattr(self, attr_name, value)
 		self.lock.release()
 
-	def __del__(self):
-		if self.uart is not None:
+	def release(self):
+		if self.uart:
 			self.query("shell -m", echo=False)
 			self.uart.close()
 			self.uart = None
@@ -62,6 +64,9 @@ class Matrix:
 		self.opq = []
 		self.pipeling_enable = False
 		self.pipeling_simplify = False
+
+	def __del__(self):
+		self.release()
 
 	def pipeling(self, enable=True, autosimplify=True):
 		''' pipling mode means:

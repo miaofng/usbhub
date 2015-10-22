@@ -7,7 +7,9 @@ class FeasaIOError(Exception):pass
 
 class Feasa:
 	timeout = 1
-	def __del__(self):
+	uart = None
+
+	def release(self):
 		if self.uart:
 			self.uart.close()
 			self.uart = None
@@ -20,6 +22,9 @@ class Feasa:
 			timeout = self.timeout,
 			writeTimeout = self.timeout
 		)
+
+	def __del__(self):
+		self.release()
 
 	#auto add eol
 	def query(self, cmdline, eol = '\r\n'):

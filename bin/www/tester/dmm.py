@@ -6,12 +6,25 @@
 import visa
 
 class Dmm:
+	rm = None
+	instr = None
+
+	def release(self):
+		if self.instr:
+			self.instr.close()
+			self.rm.close()
+			self.instr = None
+			self.rm = None
+
 	def __init__(self, visa_name="USB0::0x0957::0x0607::MY53011514::INSTR"):
 		self.rm = visa.ResourceManager()
 		self.instr = self.rm.open_resource(visa_name)
 		self.idn = self.instr.query("*idn?")
 		self.reset()
 		self.cls()
+
+	def __del__(self):
+		self.release()
 
 	def reset(self):
 		self.instr.write("*rst")

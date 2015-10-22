@@ -85,6 +85,40 @@ class Tester:
 	ims_mode = "StartOrder"
 	ims_en = False
 
+	def cmd_stop(self, argc, argv):
+		result = {"error": "OK",}
+		self.__stop__()
+		return result;
+
+	def cmd_close(self, argc, argv):
+		self.release()
+		return "OK"
+
+	def release(self):
+		#wait for thread exit ...
+		self.__stop__()
+		while self.IsTesting():
+			time.sleep(0.1)
+
+		self.db.release()
+		if swdebug:
+			pass
+		else:
+			self.scanner.release()
+			self.fixture.release()
+			self.power.release()
+			self.dmm.release()
+			self.matrix.release()
+			for i in self.uctrl:
+				instr = self.uctrl[i]
+				if instr:
+					instr.release()
+
+			for i in self.feasa:
+				instr = self.feasa[i]
+				if instr:
+					instr.release()
+
 	def __init__(self, saddr):
 		self.db = Db()
 		self.mode = self.db.cfg_get("Mode")
@@ -142,6 +176,7 @@ class Tester:
 		#self.shell.register("reset", self.cmd_reset, "reset tester status to READY")
 		self.shell.register("test", self.cmd_test, "test start")
 		self.shell.register("stop", self.cmd_stop, "test stop")
+		self.shell.register("close", self.cmd_close, "test close")
 		self.shell.register("plc", self.cmd_plc, "plc status&query")
 		if not swdebug:
 			self.shell.register("rr", self.fixture.get('cmd_cio_read'), "rr 10")
@@ -326,11 +361,6 @@ class Tester:
 			self.threads[1] = station1
 
 		return result
-
-	def cmd_stop(self, argc, argv):
-		result = {"error": "OK",}
-		self.__stop__()
-		return result;
 
 	def __stop__(self):
 		self.set("emsg", '')
@@ -598,7 +628,6 @@ class Tester:
 		self.waste_lock.release()
 
 def signal_handler(signal, frame):
-	print 'user abort'
 	sys.exit(0)
 
 signal.signal(signal.SIGINT, signal_handler)

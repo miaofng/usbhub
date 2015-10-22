@@ -9,6 +9,12 @@ import threading
 
 class Db:
 	lock = threading.Lock()
+	conn = None
+
+	def release(self):
+		if self.conn:
+			self.conn.close()
+			self.conn = None
 
 	def __init__(self):
 		self.conn = sqlite3.connect('irt.db', check_same_thread = False)
@@ -18,8 +24,9 @@ class Db:
 				d[col[0]] = row[idx]
 			return d
 		self.conn.row_factory = dict_factory
+
 	def __del__(self):
-		self.conn.close()
+		self.release()
 
 	def get(self, attr_name, val_def = None):
 		if hasattr(self, attr_name):
