@@ -187,6 +187,8 @@ exports.model_enum = function(name) {
 	});
 };
 
+var test_server = null
+
 exports.start = function(cb) {
 	var server = net.createServer();
 	server.once('error', function(err) {
@@ -198,18 +200,19 @@ exports.start = function(cb) {
 	server.listen(port, host, function() {
 		server.close();
 		console.log("starting server tester.py ...");
-		tester = spawn('python', ['tester.py'], { stdio: 'pipe', cwd: 'www/tester/'});
-		tester.stdout.on('data', function(data) {
+
+		test_server = spawn('python', ['tester.py'], { stdio: 'pipe', cwd: 'www/tester/'});
+		test_server.stdout.on('data', function(data) {
 			console.log(data.toString());
 		});
-		tester.stderr.on('data', function (data) {
+		test_server.stderr.on('data', function (data) {
 			cb(data.toString());
 		});
 	});
 };
 
 exports.stop = function() {
-	tester.kill();
+	test_server.kill();
 }
 
 exports.query = function(cmdline, callback) {

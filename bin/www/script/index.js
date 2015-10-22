@@ -18,17 +18,18 @@ $(function() {
 	var win = gui.Window.get();
 	win.show();
 	win.on('close', function() {
-		this.hide(); // Pretend to be closed already
-		console.log("We're closing...");
-		this.close(true);
+		win = this
+		irt.query("close", function(data) {
+			//debug mode, irt.stop will fail,
+			//exe won't exit
+			irt.stop();
+			win.hide(); // Pretend to be closed already
+			win.close(true);
+		});
 	});
 
 	irt.start(function(err){
 		session.server_error = err;
 		window.mainFrame.location.href = "about.html";
-	});
-
-	$(window).unload(function(){
-		irt.stop();
 	});
 });
