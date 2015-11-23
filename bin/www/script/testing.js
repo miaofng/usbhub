@@ -40,8 +40,9 @@ function gft_load(gft) {
 	});
 }
 
-function update_state(station, status, ecode) {
-	var state = status = (test.ui_status != "READY") ? test.ui_status : status;
+function update_state(station, status, testing) {
+	//var state = status = (test.ui_status != "READY") ? test.ui_status : status;
+	var state = status = (testing) ? status : test.ui_status;
 	var bgcolor = "#ff0000";
 
 	switch(state) {
@@ -164,8 +165,8 @@ function update_status(status) {
 	$("#duration1").html(status.duration[1]);
 
 	//status update
-	update_state(0, status.status[0], status.ecode[0]);
-	update_state(1, status.status[1], status.ecode[1]);
+	update_state(0, status.status[0], status.testing);
+	update_state(1, status.status[1], status.testing);
 
 	//report update
 	load_report("#result0", status.datafile[0]);
@@ -221,7 +222,7 @@ function timer_tick_update() {
 }
 
 function wcl_update() {
-	irt.query("plc", function(data) {
+	irt.waste_query("plc", function(data) {
 		data = JSON.parse(data);
 		control = data.control;
 		locked = control[1]&(1 << 2); //101.02
@@ -355,8 +356,12 @@ $(function() {
 
 	var wcl_timer;
 	$("#wastes").dblclick(function(){
-		$( "#dialog_wcl" ).dialog("open");
-		wcl_timer = setInterval("wcl_update()", 100);
+		mode_nxt = $("#button_run").val()
+		//alert(mode_nxt)
+		if(mode_nxt == "RUN") {
+			$( "#dialog_wcl" ).dialog("open");
+			wcl_timer = setInterval("wcl_update()", 800);
+		}
 	})
 
 	$( "#dialog_wcl" ).dialog({
@@ -393,11 +398,13 @@ $(function() {
 	});
 
 	$("#wcl_unlock").click(function(){
-		irt.query("plc 301.02 0", function(data) {
+		//plc 301.02 0
+		irt.waste_query("plc waste_door unlock", function(data) {
 		});
 	})
 	$("#wcl_lock").click(function(){
-		irt.query("plc 301.02 1", function(data) {
+		//plc 301.02 1
+		irt.waste_query("plc waste_door lock", function(data) {
 		});
 	})
 
@@ -421,11 +428,13 @@ $(function() {
 	$("#button_mode").val(test.mode);
 	$("#button_mode").click(function(){
 		if(test.mode == "AUTO") test.mode = "STEP";
+		else if(test.mode == "STEP") test.mode = "CAL"
 		else test.mode = "AUTO";
 		$(this).val(test.mode);
 	});
 
 	$("#button_run").click(function(){
+		emsg = ""
 		var run = $(this).val();
 		if(run == "RUN") {
 			irt.cfg_get('gft_last', function(fname) {
@@ -455,7 +464,7 @@ $(function() {
 	update_state(0, test.ui_status, 0);
 	update_state(1, test.ui_status, 0);
 
-	var timer_tick = setInterval("timer_tick_update()", 100);
+	var timer_tick = setInterval("timer_tick_update()", 500);
 	var stimer = setInterval("timer_statistics_update()", 1000);
 
 	$(window).unload(function(){

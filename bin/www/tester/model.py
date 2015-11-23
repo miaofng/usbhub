@@ -9,6 +9,7 @@ import sys, signal
 import settings
 import imp
 import copy
+import json
 
 swdebug = True
 if hasattr(settings, "swdebug"):
@@ -21,8 +22,9 @@ class ModelException(Exception):
 		sys.stderr.flush()
 
 class Model:
-	def __init__(self, station):
+	def __init__(self, tester, station):
 		self.station = station
+		self.tester = tester
 		self.passmark = getattr(settings, "passmark_station%d"%station)
 
 	def usb_parse(self, model, index):
@@ -57,6 +59,11 @@ class Model:
 			benchmark["passmark"] = self.passmark[index]["normal"]
 
 		port["benchmark"] = benchmark
+
+		h2h = None
+		if "h2h" in port:
+			h2h = port["h2h"]
+		port["h2h"] = h2h
 
 		####hostflip test
 		hostflip = None
@@ -244,10 +251,28 @@ class Model:
 				port = copy.deepcopy(port)
 				model.usb_ports.append(port)
 
+		emsg = []
+		if self.tester.fixture_id != model.fixture_id:
+			emsg.append("Fixture & UUT Model Not Match")
+
 		if hasattr(model, "light"):
 			model.light = self.light_parse(model)
 
-		return model
+			#try to get feasa calibration info from db
+			data_cal = self.tester.db.get("cal_get")(model.name, self.station, "feasa")
+			if data_cal:
+				model.light_cal = json.loads(data_cal)
+			else:
+				if self.tester.LightCal:
+					if self.tester.test_mode[0:3] != "CAL":
+						emsg.append("Feasa Calibration Data Not Found")
+
+		if len(emsg) > 0:
+			emsg = ';'.join(emsg)
+		else:
+			emsg = None
+
+		return model, emsg
 
 if __name__ == '__main__':
 	model = Model(1)

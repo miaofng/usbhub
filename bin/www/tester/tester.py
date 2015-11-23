@@ -44,6 +44,7 @@ import functools #https://docs.python.org/2/library/functools.html
 import shlex #https://docs.python.org/2/library/shlex.html
 import getopt #https://docs.python.org/2/library/getopt.html
 import threading
+import traceback
 
 swdebug = True
 if hasattr(settings, "swdebug"):
@@ -92,13 +93,15 @@ class Tester:
 
 	def cmd_close(self, argc, argv):
 		self.release()
-		return "OK"
+		sys.exit(0)
+		#return "OK"
 
 	def release(self):
 		#wait for thread exit ...
 		self.__stop__()
-		while self.IsTesting():
-			time.sleep(0.1)
+		#while self.IsTesting():
+		#	time.sleep(0.1)
+		time.sleep(0.5)
 
 		self.db.release()
 		if swdebug:
@@ -122,6 +125,8 @@ class Tester:
 	def __init__(self, saddr):
 		self.db = Db()
 		self.mode = self.db.cfg_get("Mode")
+		self.LightCal = self.db.cfg_get("LightCal")
+		self.LightCal = int(self.LightCal)
 		ims_en = self.db.cfg_get("IMS")
 		if int(ims_en) == 1:
 			self.ims_en = True
@@ -136,11 +141,12 @@ class Tester:
 		else:
 			self.scanner = Scanner(settings.scanner_port)
 			self.fixture = Fixture(settings.plc_port)
-			power = Hmp4040(settings.hmp_port)
+			self.wastes = self.fixture.get("ReadWasteCount")()
+			self.power = power = Hmp4040(settings.hmp_port)
 			power.set_vol(1, 13.5, 3.0) #vbat
 			power.set_vol(2, 05.0, 1.0) #uctrl
 			power.set_vol(3, 13.5, 3.0) #vbat
-			power.set_vol(4, 05.0, 1.0) #uctrl
+			power.set_vol(4, 08.0, 1.0) #uctrl
 			power.lock(True)
 			self.dmm = Dmm(settings.dmm_port)
 			self.dmm.measure_dcv()
@@ -159,6 +165,8 @@ class Tester:
 			if self.mode == "dual":
 				assert id0 == id1
 			self.fixture_id = id
+			if id == 0:
+				self.emsg = "Fixture Type Not Identified"
 
 		self.fixture_pressed = self.db.fixture_get(id, "pressed")
 		if settings.enable_selfcheck:
@@ -224,9 +232,10 @@ class Tester:
 
 		#barcode
 		if not swdebug:
-			barcode = self.scanner.read()
-			if barcode:
-				self.set("barcode", barcode)
+			if not self.stop:
+				barcode = self.scanner.read()
+				if barcode:
+					self.set("barcode", barcode)
 		else:
 			guess = random.randint(0,999)
 			if guess > 990:
@@ -234,7 +243,7 @@ class Tester:
 				self.set("barcode", barcode)
 
 		#estop
-		if not swdebug:
+		if not swdebug and not self.stop:
 			self.estop = self.fixture.get("IsEstop")()
 		elif swdebug_estop:
 			ms = self.__runtime__()*1000
@@ -307,7 +316,8 @@ class Tester:
 		return testing
 
 	def cmd_test(self, argc, argv):
-		result = {"error": "E_OK",}
+		self.set("emsg", "")
+		result = {"error": None,}
 		del argv[0]
 		try:
 			opts, args = getopt.getopt(argv, "m:x:", ["mode=", "mask="])
@@ -336,13 +346,30 @@ class Tester:
 
 		self.test_mode = para["mode"]
 
+		error = []
+
+		if self.mode == "dual" or self.mode == "left":
+			model0 = Model(self, 0)
+			model0, emsg = model0.Parse(args[0])
+			if emsg:
+				error.append(emsg)
+
+		if self.mode == "dual" or self.mode == "right":
+			model1 = Model(self, 1)
+			model1, emsg = model1.Parse(args[0])
+			if emsg:
+				error.append(emsg)
+
+		if len(error) > 0:
+			result["error"] = ";".join(error)
+			self.set("emsg", result["error"])
+			return result
+
 		if not swdebug:
 			self.fixture.get("Reset")()
 			self.matrix.get("reset")()
 
 		if self.mode == "dual" or self.mode == "left":
-			model0 = Model(0)
-			model0 = model0.Parse(args[0])
 			if swdebug:
 				station0 = GFTest(self, model0, 0)
 			else:
@@ -351,8 +378,6 @@ class Tester:
 			self.threads[0] = station0
 
 		if self.mode == "dual" or self.mode == "right":
-			model1 = Model(1)
-			model1 = model1.Parse(args[0])
 			if swdebug:
 				station1 = GFTest(self, model1, 1)
 			else:
@@ -391,6 +416,25 @@ class Tester:
 				#103.00(R) 103.01(G)
 				reg = 303
 				msk = (1 << 0) | (1 << 1)
+			elif argv[1] == "waste_door":
+				unlock = False
+				if argv[2] == "unlock":
+					unlock = True
+
+				#301.02
+				reg = 301
+				val = self.fixture.get('cio_read')(reg)
+				if unlock:
+					val = val & ~(1 << 2)
+					self.fixture.get('cio_write')(reg, val)
+					#clear waste count
+					self.fixture.get('dm_write')(30, 0)
+					self.set("wastes", 0)
+				else:
+					val = val | (1 << 2)
+					self.fixture.get('cio_write')(reg, val)
+
+				return {"error": "OK",}
 			else:
 				val = float(argv[1])
 				reg = int(round(val))
@@ -487,9 +531,9 @@ class Tester:
 		while not self.stop:
 			#yellow flash
 			self.fixture.get("Signal")(station, "OFF")
-			time.sleep(0.010)
+			time.sleep(0.10)
 			self.fixture.get("Signal")(station, "BUSY")
-			time.sleep(0.010)
+			time.sleep(0.10)
 
 			#barcode
 			barcode = self.get("barcode")
@@ -539,6 +583,7 @@ class Tester:
 			if ready:
 				pressed = self.get("fixture_pressed") + 1
 				self.set("fixture_pressed", pressed)
+				self.db.get("fixture_set")(self.fixture_id, "pressed", pressed)
 				break
 
 		self.test_lock.release()
@@ -597,6 +642,7 @@ class Tester:
 		station = test.station
 		self.waste_lock.acquire()
 		test.Prompt("WASTE")
+		test.wait_uut_remove("FAIL")
 		wastes = self.fixture.get("ReadWasteCount")()
 		#self.fixture.get("Signal")(test.station, "FAIL")
 		wben = self.db.get("cfg_get")("WasteBox")
@@ -604,7 +650,7 @@ class Tester:
 			time.sleep(0.001)
 			n = self.fixture.get("ReadWasteCount")()
 			if n > wastes:
-				assert n - wastes == 1
+				#assert n - wastes == 1
 				self.set("wastes", n)
 				break
 
@@ -613,6 +659,7 @@ class Tester:
 			#time.sleep(10)
 			self.set("wastes", wastes)
 
+		test.Prompt("FAIL")
 		self.waste_lock.release()
 
 	def vRequestWaste(self, test):
@@ -639,4 +686,12 @@ except ThreadException as e:
 	print >> sys.stderr, e.msg
 	print >> sys.stderr, e.thread.stack
 	sys.stderr.flush()
+	tester.release()
 	sys.exit(0)
+# except Exception as e:
+	# stack = ''.join(traceback.format_exception(*sys.exc_info()))
+	# print >> sys.stderr, stack
+	# sys.stderr.flush()
+	# #tester.release()
+	# sys.exit(0)
+

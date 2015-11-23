@@ -10,13 +10,15 @@ enable_sensor_ue = True
 if swdebug:
 	enable_sensor_ue = False
 
-scanner_port = "COM21"
-plc_port = "COM20"
-hmp_port = "COM19"
-uctrl_ports = ["COM18", "COM8"]
+scanner_port = "COM25"
+plc_port = "COM24"
+hmp_port = "COM26"
+uctrl_ports = ["COM18", "COM29"]
 matrix_port = "COM11"
 feasa_ports = ["COM23", "COM14"]
-ims_port = 10000
+ims_addr = "192.168.110.181"
+ims_addr = "127.0.0.1"
+ims_port = 5000
 rasp_ips = ["192.168.20.11", "192.168.8.11"]
 dmm_port = "USB0::0x0957::0x0607::MY53011514::INSTR"
 

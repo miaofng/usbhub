@@ -63,18 +63,36 @@ class Test(threading.Thread):
 				if test_mode == "AUTO":
 					stop = self.tester.RequestTest(self)
 					if stop:
-						return
+						break
 
-				subdir = time.strftime("%Y-%m-%d")
-				fname = time.strftime("%H_%M_")+self.getBarcode()+".dat"
-				fpath = self.getPath(subdir, fname)
-				self.Start(fpath)
-				self.check_passed = True
+					subdir = self.model.name + "/" + time.strftime("%Y-%m-%d")
+					fname = time.strftime("%H-%M-%S_")+self.getBarcode()+".dat"
+					fpath = self.getPath(subdir, fname)
+					self.Start(fpath)
+					self.check_passed = True
+					self.Test()
 
-				self.Test()
+				elif test_mode == "STEP":
+					subdir = self.model.name + "/" + time.strftime("%Y-%m-%d")
+					fname = time.strftime("%H-%M-%S_STEP")+".dat"
+					fpath = self.getPath(subdir, fname)
+					self.Start(fpath)
+					self.check_passed = True
+					self.Test()
+					break
 
-				if test_mode == "STEP":
-					return
+				else:
+					stop = self.tester.RequestTest(self)
+					if stop:
+						break
+
+					subdir = self.model.name + "/" + time.strftime("%Y-%m-%d")
+					fname = time.strftime("%H-%M-%S_CAL")+".dat"
+					fpath = self.getPath(subdir, fname)
+					self.Start(fpath)
+					self.check_passed = True
+					self.Calibrate()
+					break
 
 		except Exception as e:
 			self.lock_exception.acquire()
@@ -111,7 +129,8 @@ class Test(threading.Thread):
 
 	def log(self, info, passed=None):
 		#line = "%s#  %-48s"%(time.strftime('%X'), info)
-		line = "%s#  %-48s"%(self.getDuration(), info)
+		#line = "%s#  %-48s"%(self.getDuration(), info)
+		line = "%-48s"%info
 		if passed == True:
 			line = line + " [PASS]"
 		elif passed == False:
@@ -171,12 +190,13 @@ class Test(threading.Thread):
 
 		test_mode = self.tester.get("test_mode")
 		self.set("status", "PASS")
-		if test_mode == "AUTO":
-			self.Record()
-
+		if test_mode is not "STEP":
 			#wait...until uut been removed
 			#:( who can notice me when uut is removed
 			self.wait_uut_remove("PASS")
+
+		if test_mode == "AUTO":
+			self.Record()
 
 			#now, uut is removed
 			self.set("barcode", '')
@@ -192,7 +212,7 @@ class Test(threading.Thread):
 		self.set("status", "FAIL")
 		if test_mode == "AUTO":
 			self.Record()
-			self.wait_uut_remove("FAIL")
+			#self.wait_uut_remove("FAIL")
 			self.tester.RequestWaste(self)
 			self.set("barcode", '')
 			self.set("dfpath", '')

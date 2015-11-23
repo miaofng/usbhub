@@ -8,6 +8,8 @@ from test import Test
 import random
 import os
 import fnmatch
+import eloger
+import json
 
 class HUBTest(Test):
 	model = None
@@ -92,7 +94,7 @@ class HUBTest(Test):
 			if passed or count > 3:
 				break
 			else:
-				time.sleep(0.1)
+				time.sleep(0.01)
 				count = count + 1
 
 		self.check_passed = self.check_passed and passed
@@ -123,6 +125,10 @@ class HUBTest(Test):
 				time.sleep(0.1)
 				count = count + 1
 
+				msg = "%s%s(%.3f,%.3f)...%.3fV"%(prefix, test["desc"], min, max, v)
+				loger = eloger.Eloger()
+				loger.log(msg)
+
 		self.check_passed = self.check_passed and passed
 
 		msg = "%s%s(%.3f,%.3f)...%.3fV"%(prefix, test["desc"], min, max, v)
@@ -139,7 +145,7 @@ class HUBTest(Test):
 	def check_current(self, test, prefix=""):
 		relays = test["matrix"]
 		self.matrix_close(relays)
-		time.sleep(0.1)
+		time.sleep(0.01)
 		i = self.tester.dmm.measure_dci()
 		self.matrix_open(relays)
 
@@ -207,6 +213,76 @@ class HUBTest(Test):
 		self.SaveResult(prefix, test["desc"]+".a", amin, None, a_mbps, passed)
 		return passed
 
+	def check_bridge(self, index):
+		prefix = "USB%d: "%(index + 1)
+
+		passed = False
+		for count in range(0, 3):
+			self.mode("carplay", "enable")
+			passed = self.rasp.h2htest(index)
+			if passed == "die":
+				self.mode("carplay", "disable")
+				time.sleep(0.1)
+				self.log("h2h bridge test died...:(")
+				continue
+			else:
+				break
+
+		self.check_passed = self.check_passed and passed
+		self.log("%sH2H Bridge Looptest..."%prefix, passed)
+		self.mode("carplay", "disable")
+
+	def check_sd(self, test, prefix=""):
+		echo = self.rasp.cid()
+		cid = ""
+		if len(echo) > 0:
+			cid = str(echo["cid"])
+
+		passed = len(cid) == 32
+		self.log("SD: CID...%s"% cid, passed)
+		self.check_passed &= passed
+
+		if not passed:
+			return
+
+		limit = test["limit"]
+		speed = self.rasp.sd()
+		passed = False
+		if speed:
+			passed = speed["w"] > limit["w_mbps_min"]
+			self.check_passed &= passed
+			msg = "SD: %s%s.w(>%4.01f)...%4.01fMBps"%(prefix, test["desc"], limit["w_mbps_min"], speed["w"])
+			self.log(msg, passed)
+
+			passed = speed["r"] > limit["r_mbps_min"]
+			self.check_passed &= passed
+			msg = "SD: %s%s.r(>%4.01f)...%4.01fMBps"%(prefix, test["desc"], limit["r_mbps_min"], speed["r"])
+			self.log(msg, passed)
+
+		else:
+			self.check_passed = False
+			msg = "SD: %s%s.w(>%4.01f)...None"%(prefix, test["desc"], limit["w_mbps_min"])
+			self.log(msg, False)
+			msg = "SD: %s%s.r(>%4.01f)...None"%(prefix, test["desc"], limit["r_mbps_min"])
+			self.log(msg, False)
+
+	def calibrate_feasa(self, feasa):
+		light_cal = {}
+		for ch in feasa:
+			test = feasa[ch]
+			xyidh = self.feasa.getXYI(ch)
+			self.log("FEASA CH%02d: Lighting.i = %6.03f cd/m^2"%(ch + 1, xyidh[2]))
+			self.log("FEASA CH%02d: Lighting.h = %6.1f degree"%(ch + 1, xyidh[4]))
+			light_cal[ch] = {"i": xyidh[2], "h": xyidh[4]}
+
+		if self.check_passed:
+			record = {}
+			record["model"] = self.model.name
+			record["station"] = self.station
+			record["name"] = "feasa"
+			record["value"] = json.dumps(light_cal)
+			self.tester.db.get("cal_add")(record)
+
 	def check_feasa(self, feasa):
 		#feasa = {0: {test}, 1: {test}, ... 9: {test}}
 		feasa_passed = False
@@ -219,17 +295,40 @@ class HUBTest(Test):
 				max = limit["max"]
 
 				xyi = self.feasa.getXYI(ch)
+
 				for idx, val in enumerate(xyi):
 					passed = val > min[idx] and val < max[idx]
 					feasa_passed = feasa_passed and passed
 
-					chname = ("x","y", "i", "d")[idx]
-					if chname != "d":
-						msg = "FEASA CH%02d: %s.%s(%6.03f,%6.03f)...%6.03f"%(ch+1, test["desc"], chname, min[idx], max[idx], val)
-					else:
+					chname = ("x","y", "i", "d", "h")[idx]
+					if chname == "d":
 						msg = "FEASA CH%02d: %s.%s(%6.0f,%6.0f)...%6.0f"%(ch+1, test["desc"], chname, min[idx], max[idx], val)
+					elif chname == "h":
+						msg = "FEASA CH%02d: %s.%s(%6.0f,%6.0f)...%6.1f"%(ch+1, test["desc"], chname, min[idx], max[idx], val)
+					else:
+						msg = "FEASA CH%02d: %s.%s(%6.03f,%6.03f)...%6.03f"%(ch+1, test["desc"], chname, min[idx], max[idx], val)
 					self.log(msg, passed)
 					self.SaveResult("FEASA CH%02d"%ch, "%s.%s"%(test["desc"], chname), min[idx], max[idx], val, passed)
+
+				#light_cal check
+				if self.tester.LightCal:
+					ityp = self.model.light_cal["%d"%ch]["i"]
+					htyp = self.model.light_cal["%d"%ch]["h"]
+
+					ilim = {"min": 0.6, "max": 1.4}
+					hlim = {"min": 0.6, "max": 1.4}
+
+					ratio = xyi[2] / ityp
+					passed = ratio > ilim["min"] and ratio < ilim["max"]
+					feasa_passed = feasa_passed and passed
+					msg = "FEASA CH%02d: %s.i(%5.0f%%,%5.0f%%)...%6.01f"%(ch+1, test["desc"], ilim["min"]*100, ilim["max"]*100, ratio*100)
+					self.log(msg, passed)
+
+					ratio = xyi[4] / htyp
+					passed = ratio > hlim["min"] and ratio < hlim["max"]
+					feasa_passed = feasa_passed and passed
+					msg = "FEASA CH%02d: %s.h(%5.0f%%,%5.0f%%)...%6.01f"%(ch+1, test["desc"], hlim["min"]*100, hlim["max"]*100, ratio*100)
+					self.log(msg, passed)
 
 		self.check_passed = self.check_passed and feasa_passed
 		return feasa_passed
@@ -238,15 +337,24 @@ class HUBTest(Test):
 		self.log("Waiting for USB Identify, <1s")
 		deadline = time.time() + timeout
 		while time.time() < deadline:
-			time.sleep(0.1)
+			time.sleep(0.01)
 			list = self.rasp.list()
 			if len(list) > 0:
+				break
+
+	def wait_until_cid_identified(self, timeout = 3):
+		self.log("Waiting for SD Card Identify, <3s")
+		deadline = time.time() + timeout
+		while time.time() < deadline:
+			time.sleep(0.01)
+			echo = self.rasp.cid()
+			if len(echo) > 0: #{"cid": "xxxxxxxx"}
 				break
 
 	def wait_until_benchmark_finished(self):
 		self.log("Waiting for Benchmark Test, <3s")
 		while True:
-			time.sleep(0.1)
+			time.sleep(0.01)
 			ready = self.rasp.IsReady()
 			if ready:
 				break;
@@ -254,7 +362,7 @@ class HUBTest(Test):
 	def wait_until_feasa_captured(self):
 		self.log("Waiting for Feasa Capture, <6s")
 		while True:
-			time.sleep(0.1)
+			time.sleep(0.01)
 			ready = self.feasa.IsReady()
 			if ready:
 				break;
@@ -297,7 +405,6 @@ class HUBTest(Test):
 
 		self.tester.db.get('result_add')(record)
 
-
 	def Record(self):
 		dat_dir = self.getPath()
 		dat_dir = os.path.abspath(dat_dir)
@@ -311,7 +418,37 @@ class HUBTest(Test):
 		self.lock.release()
 		self.tester.db.get('test_add')(record)
 
+	def Calibrate(self):
+		self.log("uctrl reset")
+		self.uctrl.reset()
+
+		self.mode("inv", "enable")
+		self.check_voltage(self.model.vbat)
+		self.mode("inv", "disable")
+
+		self.mode("ic", "enable")
+		self.check_current(self.model.i0)
+		self.mode("ic", "disable")
+
+		self.mode("allwork", "enable")
+		self.wait_until_usb_identified()
+		self.feasa.capture() #...about 6s
+
+		self.wait_until_feasa_captured()
+		light = getattr(self.model, "light", None)
+		if light is not None:
+			self.calibrate_feasa(light)
+
+		self.log("uctrl power off")
+		self.uctrl.reset()
+
+		if self.check_passed:
+			self.Pass()
+		else:
+			self.Fail()
+
 	def Test(self):
+		self.log("uctrl reset")
 		self.uctrl.reset()
 
 		#vbat all loads open
@@ -320,19 +457,22 @@ class HUBTest(Test):
 		self.mode("inv", "disable")
 
 		#hub is offline except vbat is connected
+		#time.sleep(0.1) #add by xlj
 		self.mode("qc", "enable")
 		self.check_current(self.model.iq)
 		self.mode("qc", "disable")
 
 		#only upstream usb is pluged-in, so no sd card and etc
+		#time.sleep(0.1) #add by xlj
 		self.mode("ic", "enable")
 		self.check_current(self.model.i0)
 		self.mode("ic", "disable")
 
+		#time.sleep(0.1) #add by xlj
 		self.mode("allwork", "enable")
 		self.wait_until_usb_identified()
 		self.feasa.capture() #...about 6s
-		self.rasp.benchmark() #...about 3s
+		time.sleep(0.1)
 
 		#vcc normal?
 		for port in self.model.usb_ports:
@@ -341,10 +481,12 @@ class HUBTest(Test):
 			if vopen is not None:
 				self.check_voltage(vopen, prefix)
 
+		self.rasp.benchmark() #...about 3s
+
 		#vload
 		self.mode("allload", "enable")
-		self.log("Loading Test(=1s)")
-		time.sleep(1)
+		self.log("Loading Test")
+		time.sleep(0.1)
 		for port in self.model.usb_ports:
 			prefix = "USB%d: "%(port["index"] + 1)
 			vload = port["vload"]
@@ -365,7 +507,15 @@ class HUBTest(Test):
 
 		self.mode("allwork", "disable")
 
+		#h2h bridge test
+		for port in self.model.usb_ports:
+			h2h = port["h2h"]
+			if h2h:
+				self.check_bridge(port["index"])
+				pass
+
 		#cdp
+		#time.sleep(0.1) #add by xlj
 		self.mode("allcdp", "enable")
 		for port in self.model.usb_ports:
 			prefix = "USB%d: "%(port["index"] + 1)
@@ -380,9 +530,17 @@ class HUBTest(Test):
 			hostflip = port["hostflip"]
 			if hostflip is not None:
 				index = port["index"] + 1
+				#time.sleep(0.1) #add by xlj
 				self.mode("port%d bypass"%index, "enable")
-				self.wait_until_usb_identified()
 
+				vdp = hostflip["vdp"]
+				vdn = hostflip["vdn"]
+
+				time.sleep(1.5)
+				self.check_voltage(vdp, prefix)
+				self.check_voltage(vdn, prefix)
+
+				self.wait_until_usb_identified()
 				identify = hostflip["identify"]
 				self.check_identify(identify, prefix)
 
@@ -391,45 +549,46 @@ class HUBTest(Test):
 				if benchmark is not None:
 					self.check_benchmark(benchmark, prefix)
 
-				vdp = hostflip["vdp"]
-				vdn = hostflip["vdn"]
-
-				time.sleep(0.8)
-				self.check_voltage(vdp, prefix)
-				self.check_voltage(vdn, prefix)
-
 				self.mode("port%d bypass"%index, "disable")
 
-		#scp
-		self.mode("allscp", "enable")
+		#scp start
 		self.log("Short Test(=3s)")
-		time.sleep(3)
+		#time.sleep(0.1) #add by xlj
+		self.mode("allscp", "enable")
+		deadline = time.time() + 3
+
+		#do not reboot until feasa captured
+		self.wait_until_feasa_captured()
+		light = getattr(self.model, "light", None)
+		if light is not None:
+			self.check_feasa(light)
+
+		#short test report
+		while deadline > time.time(): pass
 		for port in self.model.usb_ports:
 			prefix = "USB%d: "%(port["index"] + 1)
 			scp = port["scp"]
 			if scp is not None:
 				self.check_voltage(scp["vscp"], prefix)
 
-		#do not reboot until feasa captured
-		self.wait_until_feasa_captured()
+		#check sd card
+		sd = getattr(self.model, "sd", None)
+		if sd is not None:
+			self.wait_until_cid_identified()
+			self.check_sd(sd)
 
 		#uut vbat restart
 		self.mode("allscp", "disable")
 		self.uctrl.vbat("off")
-		time.sleep(0.1)
+		time.sleep(0.01)
 		self.uctrl.vbat("on")
-		time.sleep(1)
+		time.sleep(0.01)
 
 		for port in self.model.usb_ports:
 			prefix = "USB%d: "%(port["index"] + 1)
 			scp = port["scp"]
 			if scp is not None:
 				self.check_voltage(scp["vrcv"], prefix)
-
-		#feasa
-		light = getattr(self.model, "light")
-		if light is not None:
-			self.check_feasa(light)
 
 		#test finished
 		self.uctrl.reset()

@@ -1,5 +1,6 @@
 import time
 import serial
+import eloger
 
 class UctrlIoError(Exception): pass
 
@@ -13,30 +14,68 @@ class Uctrl:
 			self.uart = None
 
 	def __init__(self, port, baud = 115200):
-		self.uart = serial.Serial(port, baud, timeout = self.timeout)
-		self.uart.write("shell -a\r")
+		self.port = port
+		self.baud = baud
+		#self.baud = baud
+		#self.uart = serial.Serial(port, baud, timeout = self.timeout)
+		#self.uart.write("shell -a\r")
+		self.query("shell -a")
 
 	def __del__(self):
 		self.release()
 
-	def query(self, cmdline):
+	def __query__old(self, cmdline, echo = None):
+		self.uart = uart = serial.Serial(self.port, self.baud, timeout = self.timeout)
+		uart.flushInput()
+		uart.write(cmdline+"\n\r")
+		resp = ""
+		if echo is not None:
+			resp = self.uart.readline()
+		uart.close()
+		self.uart = None
+		if echo is not None:
+			if resp[0:2] != echo:
+				raise UctrlIoError
+
+	def __query__(self, cmdline, echo = None):
+		if self.uart is None:
+			self.uart = serial.Serial(self.port, self.baud, timeout = self.timeout)
 		self.uart.flushInput()
 		self.uart.write(cmdline+"\n\r")
-		echo = self.uart.readline()
-		if echo[0:2] != "OK":
-			raise UctrlIoError
+		if echo is not None:
+			resp = self.uart.readline()
+			if resp[0:2] != echo:
+				raise UctrlIoError
+
+	def query(self, cmdline, echo = None):
+		count = 0
+		while True:
+			try:
+				self.__query__(cmdline, echo)
+				return
+			except Exception as e:
+				if self.uart is not None:
+					self.uart.close()
+					self.uart = None
+				loger = eloger.Eloger(e)
+				loger.log("port = %s"%self.port)
+				count = count + 1
+				if count > 3:
+					raise e
 
 	def mode(self, mode, enable):
 		cmdline = "uht %s %s"%(mode, enable)
-		self.query(cmdline)
+		self.query(cmdline, "OK")
 
 	def reset(self):
 		cmdline = "uht init"
-		self.uart.write(cmdline+"\n\r")
+		#self.uart.write(cmdline+"\n\r")
+		self.query(cmdline)
 
 	def vbat(self, onoff):
 		cmdline = "uht sw%s"%onoff
-		self.uart.write(cmdline+"\n\r")
+		self.query(cmdline)
+		#self.uart.write(cmdline+"\n\r")
 
 	def switch(self, relay, enable):
 		relay = {
@@ -54,4 +93,5 @@ class Uctrl:
 			enable = enable ^ 1
 
 		cmdline = "uht set %d %d"%(relay, enable)
-		self.uart.write(cmdline + "\n\r")
+		#self.uart.write(cmdline + "\n\r")
+		self.query(cmdline)

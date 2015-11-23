@@ -51,7 +51,8 @@ class Db:
 		cursor = self.conn.cursor()
 		cursor.execute('SELECT * FROM cfg WHERE name=?', (name,))
 		record = cursor.fetchone()
-		return record["value"]
+		if record:
+			return record["value"]
 
 	def cfg_set(self, name, value):
 		cursor = self.conn.cursor()
@@ -61,8 +62,9 @@ class Db:
 	def fixture_get(self, id, col):
 		cursor = self.conn.cursor()
 		cursor.execute('SELECT * FROM fixture WHERE id=?', (id,))
-		fixture = cursor.fetchone()
-		return fixture[col]
+		record = cursor.fetchone()
+		if record:
+			return record[col]
 
 	def fixture_set(self, id, col, val):
 		cursor = self.conn.cursor()
@@ -112,6 +114,32 @@ class Db:
 		self.conn.commit()
 		return sql
 
+	def cal_get(self, model, station, name):
+		cursor = self.conn.cursor()
+		cursor.execute('SELECT * FROM cal WHERE model=? AND station=? AND name=? ORDER BY id DESC', (model, station, name))
+		record = cursor.fetchone()
+		if record:
+			return record["value"]
+
+	def cal_add(self, record):
+		#add new cal record
+		cursor = self.conn.cursor()
+		cols = vals = ""
+		for key in record:
+			cols += key + ","
+			if isinstance(record[key], int):
+				vals += str(record[key]) + ","
+			elif isinstance(record[key], float):
+				vals += str(record[key]) + ","
+			else:
+				vals += "'%s',"%str(record[key])
+
+		cols = cols + "time"
+		vals = vals + 'datetime("now", "localtime")'
+		sql = "INSERT INTO cal(%s) VALUES(%s)"%(cols, vals)
+		cursor.execute(sql)
+		self.conn.commit()
+		return sql
 
 #module self test
 if __name__ == '__main__':

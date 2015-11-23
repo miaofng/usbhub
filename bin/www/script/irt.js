@@ -216,7 +216,19 @@ exports.stop = function() {
 }
 
 exports.query = function(cmdline, callback) {
-	var tester = new net.Socket();
+	tester = new net.Socket();
+	tester.connect(port, host, function() {
+		tester.write(cmdline+"\n\r");
+	});
+
+	tester.on('data', function(data) {
+		tester.destroy();
+		callback(data);
+	});
+};
+
+exports.waste_query = function(cmdline, callback) {
+	tester = new net.Socket();
 	tester.connect(port, host, function() {
 		tester.write(cmdline+"\n\r");
 	});

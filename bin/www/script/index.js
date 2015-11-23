@@ -10,6 +10,12 @@ var irt = require('./script/irt.js');
 storage = window.sessionStorage;
 storage.testing_status = "BOOTING";
 
+function shutdown_timer_func() {
+	var win = gui.Window.get();
+	//irt.stop();
+	win.close(true);
+}
+
 $(function() {
 	var session = window.sessionStorage;
 	delete(session.test);
@@ -18,13 +24,14 @@ $(function() {
 	var win = gui.Window.get();
 	win.show();
 	win.on('close', function() {
-		win = this
+		// Pretend obama appears
+		win.hide();
+
+		//wait at most 1s
+		setTimeout("shutdown_timer_func()", 1000);
+
+		//inform tester server to shutdown
 		irt.query("close", function(data) {
-			//debug mode, irt.stop will fail,
-			//exe won't exit
-			irt.stop();
-			win.hide(); // Pretend to be closed already
-			win.close(true);
 		});
 	});
 

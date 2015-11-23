@@ -29,6 +29,8 @@ class Cmd:
 				del(self.cmd_list[name])
 
 	def run(self, cmdline):
+		eol_idx = cmdline.find("\n\r")
+		cmdline = cmdline[:eol_idx]
 		try:
 			argv = shlex.split(cmdline)
 		except ValueError as e:
@@ -70,18 +72,26 @@ class Shell(Cmd):
 
 	def process(self, req):
 		sock = req['sock']
-		if sock not in self.cmdline:
-			self.cmdline[sock] = req['data']
+		if not self.mode_auto:
+			if sock not in self.cmdline:
+				self.cmdline[sock] = req['data']
+			else:
+				self.cmdline[sock] = self.cmdline[sock] + req['data']
+
+			cmdline = self.cmdline[sock]
+			tail = cmdline[-1]
+			if (tail != '\n') and (tail != '\r'):
+				self.mode_auto = False
+				return
+
+			del(self.cmdline[sock])
 		else:
-			self.cmdline[sock] = self.cmdline[sock] + req['data']
+			cmdline = req['data']
+			tail = cmdline[-1]
+			if (tail != '\n') and (tail != '\r'):
+				self.mode_auto = False
+				return
 
-		cmdline = self.cmdline[sock]
-		tail = cmdline[-1]
-		if (tail != '\n') and (tail != '\r'):
-			self.mode_auto = False
-			return
-
-		del(self.cmdline[sock])
 		result = self.run(cmdline)
 		self.response(sock, result)
 

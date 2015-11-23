@@ -6,13 +6,15 @@ import select
 import Queue
 from time import sleep
 import sys
+import settings
 
 class Ims:
 	imsg = {}
 	omsg = {}
 
 	def __init__(self, port):
-		ipaddr = self.get_my_ip()
+		#ipaddr = self.get_my_ip()
+		ipaddr = settings.ims_addr
 		self.saddr = (ipaddr, port)
 		print 'IMS server init .. %s:%d '%self.saddr
 		self._server = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
@@ -147,13 +149,13 @@ class Ims:
 			csock.close()
 			return addr
 		except socket.error:
-			return "127.0.0.1"
+			return "192.168.110.181"
 
 import time
 if __name__ == '__main__':
 	#pi_addr = get_my_ip()
 	#saddr = (pi_addr, 10003)
-	ims = Ims(10000)
+	ims = Ims(5000)
 	while True:
 		time.sleep(0.01)
 		cmd = ims.recv()

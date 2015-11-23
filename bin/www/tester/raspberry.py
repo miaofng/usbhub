@@ -9,7 +9,7 @@ class RaspIOError(Exception):pass
 class RaspParaError(Exception):pass
 
 class Raspberry:
-	timeout = 1
+	timeout = 10
 
 	def __init__(self, saddr, port=10003):
 		self.saddr = saddr
@@ -88,6 +88,20 @@ class Raspberry:
 			data["r_mbps"] = int(speed[2])
 			data["a_mbps"] = int(speed[3])
 			return data
+
+	#sd card read/write test
+	def sd(self):
+		echo = self.query("sd")
+		return echo
+
+	def cid(self):
+		echo = self.query("cid")
+		return echo
+
+	def h2htest(self, index):
+		index += 1
+		echo = self.query("bridge %d"%index)
+		return echo["bridge"]
 
 if __name__=='__main__':
 	import os, sys, signal

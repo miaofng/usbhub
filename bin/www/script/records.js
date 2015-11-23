@@ -90,6 +90,7 @@ function test_list() {
 		var html = [];
 		html.push('\
 			<ul class="list_head">\
+				<li>STATION</li>\
 				<li>DATE</li>\
 				<li>MODEL</li>\
 				<li>BARCODE</li>\
@@ -98,6 +99,8 @@ function test_list() {
 		rows.forEach(function(row, index){
 			var ul = [];
 			ul.push('<ul title="'+row.datafile+'">');
+			ul.push('<li>' + row.station +'</li>');
+
 			ul.push('<li>');
 			ul.push('<a href="#'+row.id+'">'+row.time+'</a>');
 			ul.push('</li>');

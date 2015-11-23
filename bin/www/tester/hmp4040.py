@@ -30,7 +30,7 @@ class Hmp4040:
 		)
 
 		self.idn = self.query("*idn?")
-		self.reset()
+		#self.reset()
 		self.cls()
 
 	def __del__(self):

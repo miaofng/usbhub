@@ -1,6 +1,7 @@
 import time
 import serial #http://pythonhosted.org/pyserial/
 import re
+import eloger
 
 class FeasaTimeout(Exception):pass
 class FeasaIOError(Exception):pass
@@ -114,7 +115,16 @@ class Feasa:
 		echo = self.readline()
 		d = float(echo)
 
-		return [x, y, i, d]
+		##add###
+		self.query("GetHSI%02d"%ch)
+		echo = self.readline()
+		hsi = echo.split(' ')
+		h = float(hsi[0])
+
+		loger = eloger.Eloger()
+		loger.log(echo)
+
+		return [x, y, i, d, h]
 
 if __name__=='__main__':
 	import os, sys, signal
