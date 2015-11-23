@@ -2,8 +2,8 @@
 #'?': ignore one char
 #'*': ignore all following char
 #barcode: "332703260140-003-00102921715500342"
-barcode = "33270328*" #2USB-BLUE
-fixture_id = 1
+barcode = "33267445*" #1USB-WHITE
+fixture_id = 3
 
 vbat = {
 	"name": "UT8.1",
@@ -14,13 +14,13 @@ vbat = {
 iq = {
 	"name": "UT8.2",
 	"desc": "Q-Current Draw",
-	"limit": {"min": 0.025, "typ": 0.035, "max": 0.058},
+	"limit": {"min": 0.008, "typ": 0.013, "max": 0.020},
 }
 
 i0 = {
 	"name": "UT8.3",
 	"desc": "Idle Current Draw",
-	"limit": {"min": 0.038, "typ": 0.040, "max": 0.055},
+	"limit": {"min": 0.008, "typ": 0.013, "max": 0.020},
 }
 
 #usb port general limit settings
@@ -39,7 +39,7 @@ usb_benchmark = {
 usb_vcc = {
 	"name": "UT8.7",
 	"desc": "Vbus@0A",
-	"limit": {"min": 4.70, "typ": 5.12, "max": 5.18},
+	"limit": {"min": 4.70, "typ": 5.12, "max": 5.25},
 	"ripple": {"max": 0.5},
 }
 
@@ -81,9 +81,9 @@ light_blue = {
 	"name": "UT8.11~12",
 	"desc": "Lighting",
 	"limit": {
-		"min": [0.137, 0.225, 0.020,  200, 140],
-		"typ": [0.187, 0.275, 0.400, 4000, 220],
-		"max": [0.260, 0.420, 0.700, 7000, 270],
+		"min": [0.137, 0.225, 0.020,  200, 150],
+		"typ": [0.187, 0.275, 0.400, 4000, 170],
+		"max": [0.260, 0.420, 0.700, 7000, 190],
 	}
 }
 
@@ -117,6 +117,7 @@ usb_scp_recover = {
 #  benchmark	: usb - passmark speed test, about 3s
 #  hostflip	    : usb - exchange down&up stream port
 #  carplay		: usb - apple's carplay detection
+#  h2h          : usb - h2h host-2-host bridge verify
 #  vopen		: usb - open load test
 #  vload		: usb - loaded test
 #  cdp			: usb - charge device port test
@@ -125,33 +126,31 @@ usb_scp_recover = {
 
 usb1 = {
 	"benchmark": True,
-	"hostflip" : True,
+	"hostflip" : False,
+	"h2h": True,
 
 	"vopen": True,
 	"vload": True,
 
-	"cdp": True,
+	"cdp": False,
 	"scp": True,
 }
 
 usb2 = {
 	"benchmark": True,
 	"hostflip" : False,
+	"h2h": True,
 
 	"vopen": True,
 	"vload": True,
 
-	"cdp": True,
+	"cdp": False,
 	"scp": True,
 }
 
 light = {
-    1: light_blue,
-    2: light_blue,
-    3: light_blue,
-    4: light_blue,
-    5: light_blue,
-    6: light_blue,
-    7: light_blue,
-    8: light_blue,
+    1: light_white,
+    2: light_white,
+    3: light_white,
+    4: light_white,
 }
