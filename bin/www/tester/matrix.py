@@ -2,13 +2,20 @@
 #coding:utf8
 #linktron techology matrix driver
 #miaofng@2015-8-31 initial version
+#miaofng@2015-11-26 optimization for matrix pipeline mode
+#
 #note:
-#1, execute() must be called if pipeling is enabled
-#	vm queue full error is handled by execute's inner wait loop
-#2, only HV related ecode will be return by execute(),
-#	others exception is raised
-#3, simplify function could be used to remove dummy
-#	relay "open/close" operaions between "route scan"
+#1, RLY1 Operation Sequence:
+#	CLOS - SCAN - OPEN ... OK
+#	CLOS - OPEN - SCAN ... RLY1 Not Acts
+#	CLOS - GRP - OPEN -... OK
+#	so in pipeline mode, close+open the same relay operation
+#	maybe ignored during the same scan stage
+#
+#2, to use pipeline mode(zero wait), you must:
+#	matrix.pipeline(True) #start thread
+#	matrix.switch(...) as normal, but it only adds op to queue
+#	matrix.pipeline(False) #stop thread
 
 import sys, os, signal
 import serial #http://pythonhosted.org/pyserial/
@@ -16,8 +23,9 @@ import re
 import functools
 import time
 import threading
+import Queue
 
-
+class MatrixIoTimeout(Exception):pass
 class MatrixIoError(Exception):
 	def __init__(self, echo):
 		self.echo = echo
@@ -27,7 +35,11 @@ class Matrix:
 	timeout = 5 #unit: S
 	uart = None
 
-	cmdline_max_bytes = 128
+	#<+0, No Error
+	epat = re.compile(r"[\n\r]*<(?P<ecode>[+-]\d*)(,\s*(?P<emsg>[\S ]+)|)[\n\r]+$")
+	last_cmd = None #record last ROUTE_XXX cmd for resend purpose
+
+	cmdline_max_bytes = 192 #do not exceed matrix's uart dma fifo size!!!
 	IRT_E_VM_OPQ_FULL = -16
 	IRT_E_HV_UP = -7
 	IRT_E_HV_DN = -8
@@ -35,22 +47,22 @@ class Matrix:
 
 	def get(self, attr_name, val_def = None):
 		if hasattr(self, attr_name):
-			self.lock.acquire()
+			#self.lock.acquire()
 			obj = getattr(self, attr_name, val_def)
-			self.lock.release()
-			if hasattr(obj, "__call__"):
-				def deco(*args, **kwargs):
-					self.lock.acquire()
-					retval = obj(*args, **kwargs)
-					self.lock.release()
-					return retval
-				return deco
+			#self.lock.release()
+			# if hasattr(obj, "__call__"):
+				# def deco(*args, **kwargs):
+					# self.lock.acquire()
+					# retval = obj(*args, **kwargs)
+					# self.lock.release()
+					# return retval
+				# return deco
 		return obj
 
 	def set(self, attr_name, value):
-		self.lock.acquire()
+		#self.lock.acquire()
 		setattr(self, attr_name, value)
-		self.lock.release()
+		#self.lock.release()
 
 	def release(self):
 		if self.uart:
@@ -61,26 +73,21 @@ class Matrix:
 	def __init__(self, port='COM6', baud=115200):
 		self.uart = serial.Serial(port, baud, timeout = self.timeout)
 		self.query("shell -a", echo=False)
-		self.opq = []
-		self.pipeling_enable = False
-		self.pipeling_simplify = False
+		self.opq = Queue.Queue()
+		self.pipeline_enable = False
 
 	def __del__(self):
 		self.release()
 
-	def pipeling(self, enable=True, autosimplify=True):
-		''' pipling mode means:
-		in case of pipeling mode, ops will be gathered
-		in operation queue until "excute()" is called
-
-		autosimplify effects only when pipeling enabled
-		auto remove identical operation and reversed operation
-		except "SCAN"/"FSCN"
-		'''
-		assert len(self.opq) == 0
-		self.pipeling_enable = enable
-		self.pipeling_simplify = enable and autosimplify
-
+	def pipeline(self, enable=True):
+		assert self.opq.empty()
+		self.pipeline_enable = enable
+		if enable:
+			self.thread = threading.Thread(target=self.execute)
+			self.thread.setDaemon(True)
+			self.thread.start()
+		else:
+			while self.thread.isAlive(): continue
 	def abort(self):
 		pass
 
@@ -110,9 +117,14 @@ class Matrix:
 		ecode = self.retval(echo)
 		assert ecode == 0
 
-	def opc(self, arm):
-		echo = self.query("*OPC?")
-		opc = self.retval(echo)
+	def opc(self):
+		opc = False
+		if self.opq.empty():
+			echo = self.query("*OPC?")
+			opc = self.retval(echo)
+			print "opc=%d"%opc
+			#if opc: ?????????
+			opc = True
 		return opc
 
 	def open(self, bus0, line0, line1=None):
@@ -126,96 +138,76 @@ class Matrix:
 
 	def switch(self, opt, bus0, line0, line1=None):
 		ops = {"opt": opt, "bus0": bus0, "line0": line0, "bus1": bus0, "line1": line1}
-		self.opq.append(ops)
-		if self.pipeling_enable:
-			if self.pipeling_simplify:
-				self.simplify()
-		else:
-			#deadloop until matrix return "<+0", or error occurs
-			ecode = self.execute()
-			self.opq = []
-			return ecode
+		self.opq.put(ops)
 
-	def simplify(self):
-		index = 0
-		ops_cur = None
-		for ops in reversed(self.opq):
-			index = index - 1
-			if ops["opt"] == "SCAN" or ops["opt"] == "FSCN":
-				break
+		#wait until matrix response or timeout exception
+		if not self.pipeline_enable:
+			self.execute()
 
-			if ops_cur is None:
-				ops_cur = ops
-				continue
+	def execute(self):
+		hv_ecodes = [
+			self.IRT_E_HV_UP,
+			self.IRT_E_HV_DN,
+			self.IRT_E_HV
+		]
 
-			#seq type simplify not supported yet
-			if ops["line1"] is not None:
-				continue
+		timeout = 0 #do not wait to avoid deadlock
+		if self.pipeline_enable:
+			timeout = 0.01
 
-			if ops["bus0"] == ops_cur["bus0"] and ops["line0"] == ops_cur["line0"]:
-				if ops["opt"] == ops_cur["opt"]:
-					del(self.opq[index])
-				else:
-					del(self.opq[index])
-					del(self.opq[-1])
-				break
-
-	def execute_once(self, wait=None):
-		paras = []
-		bytes = 16 #ROUTE CLOS (@)
-		opt = None
-		index = 0
-		for ops in self.opq:
-			index = index + 1
-			if opt is None:
-				opt = ops["opt"]
-
-			if ops["opt"] == opt:
-				cmdline = "%02d%04d"%(ops["bus0"], ops["line0"])
-				if ops["line1"] is not None:
-					cmdline = cmdline + ":%02d%04d"%(ops["bus1"], ops["line1"])
-
-				paras.append(cmdline)
-				bytes = bytes + len(cmdline) + 1 #+','
-				if bytes > self.cmdline_max_bytes:
-					break
-			else:
-				break
-
-		cmdline = ",".join(paras)
-		cmdline = "ROUTE %s (@%s)"%(opt, cmdline)
+		ops = None
 		while True:
-			echo = self.query(cmdline)
-			ecode = self.retval(echo)
-			if ecode == 0: #success, remove from queue
-				self.opq = self.opq[index:]
-				return 0
-			elif ecode == self.IRT_E_VM_OPQ_FULL:
-				if wait is not None:
-					wait()
-				continue
-			elif ecode == self.IRT_E_HV_UP:
-				return ecode
-			elif ecode == self.IRT_E_HV_DN:
-				return ecode
-			elif ecode == self.IRT_E_HV:
-				return ecode
-			else:
-				raise MatrixIoError(echo)
+			#get a group of ops
+			last_opt = None
+			cmdline = None
+			paras = []
+			bytes = 16 #ROUTE CLOS (@)
+			while True:
+				if ops is None:
+					try:
+						ops = self.opq.get(True, timeout)
+					except Queue.Empty:
+						break
 
-	def execute(self, wait=None):
-		while len(self.opq) > 0:
-			ecode = self.execute_once(wait)
-			if ecode is not None:
-				return ecode
+				if last_opt is None:
+					last_opt = ops["opt"]
 
-	def query(self, command, echo=True):
-		self.uart.flushInput()
-		self.uart.write(command+"\n\r")
-		if echo:
-			echo = self.uart.readline()
-			#echo = "<+0"
-			return echo
+				if ops["opt"] == last_opt:
+					cmdline = "%02d%04d"%(ops["bus0"], ops["line0"])
+					if ops["line1"] is not None:
+						cmdline = cmdline + ":%02d%04d"%(ops["bus1"], ops["line1"])
+					ops = None #been used
+
+					paras.append(cmdline)
+					bytes = bytes + len(cmdline) + 1 #+','
+					if bytes > self.cmdline_max_bytes:
+						break
+				else:
+					break
+
+			ecode = None
+			if cmdline:
+				cmdline = ",".join(paras)
+				cmdline = "ROUTE %s (@%s)"%(last_opt, cmdline)
+				while True:
+					echo = self.query(cmdline, True)
+					ecode = self.retval(echo)
+					if ecode is 0:
+						ecode = None
+						break
+					elif ecode in hv_ecodes:
+						break
+					elif ecode is self.IRT_E_VM_OPQ_FULL:
+						continue #resend
+					else:
+						print echo
+						raise MatrixIoError(echo)
+
+			#non-pipeline mode only run once
+			if not self.pipeline_enable:
+				break
+		#return None or hv_ecodes
+		return ecode
 
 	def retval(self, echo):
 		match = re.search("^<[+-]\d*", echo)
@@ -225,6 +217,20 @@ class Matrix:
 				ecode = int(match[1:])
 				return ecode
 		raise MatrixIoError(echo)
+
+	def query(self, cmdline, echo=True):
+		self.lock.acquire()
+		self.uart.flushInput()
+		self.uart.write(cmdline + "\n\r")
+		print cmdline
+
+		line = None
+		if echo:
+			#wait until echo back or timeout
+			line = self.uart.readline()
+
+		self.lock.release()
+		return line
 
 if __name__ == '__main__':
 	def cmd_query(matrix, argc, argv):
@@ -249,12 +255,12 @@ if __name__ == '__main__':
 		return "open/close/scan bus line\n\r"
 
 	def cmd_test(matrix, argc, argv):
-		sdelay = 0.1
+		sdelay = 0
 		loops = 1
 		if argc > 1:
-			sdelay = float(argv[1])
+			loops = int(argv[1])
 		if argc > 2:
-			loops = int(argv[2])
+			sdelay = float(argv[2])
 
 		now = time.time()
 		for i in range(0, loops):
@@ -263,9 +269,45 @@ if __name__ == '__main__':
 					matrix.close(bus, line)
 					if sdelay != 0:
 						time.sleep(sdelay)
+			for line in range(0, 32):
+				for bus in range(0, 4):
+					if sdelay != 0:
+						time.sleep(sdelay)
 					matrix.open(bus, line)
 		now = time.time() - now
-		now = now * 1000 / 160.0 / loops
+		now = now * 1000 / 256.0 / loops
+		return "%.1fmS/operation\n\r"%now
+
+	def cmd_pipe(matrix, argc, argv):
+		sdelay = 0
+		loops = 1
+		if argc > 1:
+			loops = int(argv[1])
+		if argc > 2:
+			sdelay = float(argv[2])
+
+		ms = int(sdelay * 1000)
+		echo = matrix.query("ROUTE DELAY %d"%ms)
+		print "echo = %s" % echo
+
+		now = time.time()
+		matrix.pipeline(True)
+		for i in range(0, loops):
+			for line in range(0, 32):
+				for bus in range(0, 4):
+					matrix.close(bus, line)
+
+			while not matrix.opc(): continue
+
+			for line in range(0, 32):
+				for bus in range(0, 4):
+					matrix.open(bus, line)
+
+			while not matrix.opc(): continue
+
+		matrix.pipeline(False)
+		now = time.time() - now
+		now = now * 1000 / 32 / 4 / 2 / loops
 		return "%.1fmS/operation\n\r"%now
 
 	def signal_handler(signal, frame):
@@ -273,7 +315,7 @@ if __name__ == '__main__':
 
 	from shell import Shell
 	signal.signal(signal.SIGINT, signal_handler)
-	matrix = Matrix("COM6", 115200)
+	matrix = Matrix("COM20", 115200)
 	saddr = ('localhost', 10003)
 	shell = Shell(saddr)
 	shell.register("default", functools.partial(cmd_query, matrix), "query matrix")
@@ -281,6 +323,7 @@ if __name__ == '__main__':
 	shell.register("close", functools.partial(cmd_switch, matrix), "relay close")
 	shell.register("scan", functools.partial(cmd_switch, matrix), "relay scan")
 	shell.register("test", functools.partial(cmd_test, matrix), "test")
+	shell.register("pipe", functools.partial(cmd_pipe, matrix), "pipe")
 
 	while True:
 		shell.update()
