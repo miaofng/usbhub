@@ -27,8 +27,10 @@ import Queue
 
 class MatrixIoTimeout(Exception):pass
 class MatrixIoError(Exception):
-	def __init__(self, echo):
-		self.echo = echo
+	def __init__(self, cmdline, echo):
+		Exception.__init__(self)
+		print >> sys.stderr, "Q: %s"%cmdline
+		print >> sys.stderr, "A: %s"%echo
 
 class Matrix:
 	lock = threading.Lock()
@@ -75,8 +77,10 @@ class Matrix:
 		self.query("shell -a", echo=False)
 		self.opq = Queue.Queue()
 		self.pipeline_enable = False
+		self.thread = None
 
 	def __del__(self):
+		self.pipeline(False)
 		self.release()
 
 	def pipeline(self, enable=True):
@@ -87,14 +91,14 @@ class Matrix:
 			self.thread.setDaemon(True)
 			self.thread.start()
 		else:
-			while self.thread.isAlive(): continue
+			if self.thread:
+				self.thread.join()
+				self.thread = None
 	def abort(self):
 		pass
 
 	def __reset__(self):
-		self.query("*RST")
-		self.opq = []
-		self.opt = None
+		self.query("*RST", False)
 
 	def reset(self):
 		self.open(0, 0, 63)
@@ -103,29 +107,40 @@ class Matrix:
 		self.open(3, 0, 63)
 
 	def cls(self):
-		echo = self.query("*CLS")
-		ecode = self.retval(echo)
-		assert ecode == 0
+		cmdline = "*CLS"
+		ecode = self.query(cmdline)
+		if ecode:
+			raise MatrixIoError(cmdline, self.echo)
 
 	def err(self):
-		echo = self.query("*ERR?")
-		ecode = self.retval(echo)
-		return ecode
+		return self.query("*ERR?")
 
 	def arm(self, arm):
-		echo = self.query("ROUTE ARM %d"%arm)
-		ecode = self.retval(echo)
-		assert ecode == 0
+		cmdline = "ROUTE ARM %d"%arm
+		ecode = self.query(cmdline)
+		if ecode:
+			raise MatrixIoError(cmdline, self.echo)
 
-	def opc(self):
-		opc = False
-		if self.opq.empty():
-			echo = self.query("*OPC?")
-			opc = self.retval(echo)
-			print "opc=%d"%opc
-			#if opc: ?????????
-			opc = True
-		return opc
+	def mode(self, md):
+		cmdline = "MODE %s"%md
+		ecode = self.query(cmdline)
+		if ecode:
+			raise MatrixIoError(cmdline, self.echo)
+
+	def mdelay(self, ms):
+		cmdline = "ROUTE DELAY %d"%ms
+		ecode = self.query(cmdline)
+		if ecode:
+			raise MatrixIoError(cmdline, self.echo)
+
+	# def opc(self):
+		# opc = False
+		# if self.opq.empty():
+			# opc = self.query("*OPC?")
+			# print "opc=%d"%opc
+			# #if opc: ?????????
+			# opc = True
+		# return opc
 
 	def open(self, bus0, line0, line1=None):
 		return self.switch("OPEN", bus0, line0, line1)
@@ -167,6 +182,7 @@ class Matrix:
 					try:
 						ops = self.opq.get(True, timeout)
 					except Queue.Empty:
+						#print "."
 						break
 
 				if last_opt is None:
@@ -190,8 +206,7 @@ class Matrix:
 				cmdline = ",".join(paras)
 				cmdline = "ROUTE %s (@%s)"%(last_opt, cmdline)
 				while True:
-					echo = self.query(cmdline, True)
-					ecode = self.retval(echo)
+					ecode = self.query(cmdline, True)
 					if ecode is 0:
 						ecode = None
 						break
@@ -200,8 +215,7 @@ class Matrix:
 					elif ecode is self.IRT_E_VM_OPQ_FULL:
 						continue #resend
 					else:
-						print echo
-						raise MatrixIoError(echo)
+						raise MatrixIoError(cmdline, self.echo)
 
 			#non-pipeline mode only run once
 			if not self.pipeline_enable:
@@ -209,28 +223,39 @@ class Matrix:
 		#return None or hv_ecodes
 		return ecode
 
-	def retval(self, echo):
-		match = re.search("^<[+-]\d*", echo)
-		if match is not None:
-			match = match.group()
-			if len(match) > 2:
-				ecode = int(match[1:])
-				return ecode
-		raise MatrixIoError(echo)
+	# def retval(self, echo):
+		# match = re.search("^<[+-]\d*", echo)
+		# if match is not None:
+			# match = match.group()
+			# if len(match) > 2:
+				# ecode = int(match[1:])
+				# return ecode
+
+		# raise MatrixIoError(echo)
 
 	def query(self, cmdline, echo=True):
+		timer = time.time()
 		self.lock.acquire()
 		self.uart.flushInput()
 		self.uart.write(cmdline + "\n\r")
-		print cmdline
 
-		line = None
+		retval = None
 		if echo:
 			#wait until echo back or timeout
 			line = self.uart.readline()
+			self.echo = line #for debug or exception purpose
+			match = re.search("^<[+-]\d*", line)
+			if match is not None:
+				match = match.group()
+				if len(match) > 2:
+					retval = int(match[1:])
+				else:
+					raise MatrixIoError(cmdline, echo)
 
 		self.lock.release()
-		return line
+		timer = time.time() - timer
+		#print "IRT: %s ... %.3f S" % (cmdline, timer)
+		return retval
 
 if __name__ == '__main__':
 	def cmd_query(matrix, argc, argv):
@@ -310,12 +335,38 @@ if __name__ == '__main__':
 		now = now * 1000 / 32 / 4 / 2 / loops
 		return "%.1fmS/operation\n\r"%now
 
+	def cmd_pscn(matrix, argc, argv):
+		sdelay = 0
+		loops = 1
+		if argc > 1:
+			loops = int(argv[1])
+		if argc > 2:
+			sdelay = float(argv[2])
+
+		ms = int(sdelay * 1000)
+		echo = matrix.query("ROUTE DELAY %d"%ms)
+		print "echo = %s" % echo
+
+		now = time.time()
+		matrix.pipeline(True)
+		for i in range(0, loops):
+			for line in range(0, 32):
+				for bus in range(0, 4):
+					matrix.scan(bus, line)
+
+			while not matrix.opc(): continue
+
+		matrix.pipeline(False)
+		now = time.time() - now
+		now = now * 1000 / 32 / 4 / loops
+		return "%.1fmS/operation\n\r"%now
+
 	def signal_handler(signal, frame):
 		sys.exit(0)
 
 	from shell import Shell
 	signal.signal(signal.SIGINT, signal_handler)
-	matrix = Matrix("COM20", 115200)
+	matrix = Matrix("COM3", 115200)
 	saddr = ('localhost', 10003)
 	shell = Shell(saddr)
 	shell.register("default", functools.partial(cmd_query, matrix), "query matrix")
@@ -324,6 +375,7 @@ if __name__ == '__main__':
 	shell.register("scan", functools.partial(cmd_switch, matrix), "relay scan")
 	shell.register("test", functools.partial(cmd_test, matrix), "test")
 	shell.register("pipe", functools.partial(cmd_pipe, matrix), "pipe")
+	shell.register("pscn", functools.partial(cmd_pscn, matrix), "pscn")
 
 	while True:
 		shell.update()
