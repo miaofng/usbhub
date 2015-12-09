@@ -46,18 +46,22 @@
 	</div>
 
 	<div id="panel">
+		<div id="panel_src">
+			<div id="model">model</div>
+			<div id="mask" style="display: none;" title="rect: pass/fail&#10;text: masked/enabled">
+				<div>
+					<input id="0" type="checkbox" checked="checked"/>
+					<label for="0">A</label>
+				</div>
+			</div>
+			<pre id="gft" readonly="readonly">
+			</pre>
+		</div>
 		<div id="panel_uut0">
 			<div id="status0">&nbsp;</div>
-				<div id="barcode0">&nbsp;</div>
+			<div id="barcode0">&nbsp;</div>
 			<div id="div_result0">
 				<pre id="result0"></pre>
-			</div>
-		</div>
-		<div id="panel_uut1">
-			<div id="status1">&nbsp;</div>
-			<div id="barcode1">&nbsp;</div>
-			<div id="div_result1">
-				<pre id="result1"></pre>
 			</div>
 		</div>
 		<div id="panel_ctrl">
@@ -65,36 +69,36 @@
 <!-- 			<div title="dbclick me to clear">Waste Count: <span id="wastes">&nbsp;</span></div>
  -->			<div>Today:
 				<span class="stat" id="num_total0">&nbsp;</span>
-				<span class="stat" id="num_total1">&nbsp;</span>
+				<!-- <span class="stat" id="num_total1">&nbsp;</span> -->
 			</div>
 			<div>OK:
 				<span class="stat" id="num_pass0">&nbsp;</span>
-				<span class="stat" id="num_pass1">&nbsp;</span>
+				<!-- <span class="stat" id="num_pass1">&nbsp;</span> -->
 			</div>
 			<div>NG:
 				<span class="stat" id="num_fail0">&nbsp;</span>
-				<span class="stat" id="num_fail1">&nbsp;</span>
+				<!-- <span class="stat" id="num_fail1">&nbsp;</span> -->
 			</div>
 			<div>OK Rate:
 				<span class="stat" id="passrate0">&nbsp;</span>
-				<span class="stat" id="passrate1">&nbsp;</span>
+				<!-- <span class="stat" id="passrate1">&nbsp;</span> -->
 			</div>
 			<div>NG Rate:
 				<span class="stat" id="failrate0">&nbsp;</span>
-				<span class="stat" id="failrate1">&nbsp;</span>
+				<!-- <span class="stat" id="failrate1">&nbsp;</span> -->
 			</div>
 			<div>Duration:
 				<span class="stat" id="duration0">&nbsp;</span>
-				<span class="stat" id="duration1">&nbsp;</span>
+				<!-- <span class="stat" id="duration1">&nbsp;</span> -->
 			</div>
 			<div>Date: <span id="date">2015/05/06</span></div>
 			<div>Time: <span id="time_cur">&nbsp;</span></div>
 <!-- 			<div>Run: <span id="time_run">&nbsp;</span></div> -->
-			<div>Fixture ID: <span id="fixture_id">&nbsp;</span></div>
-			<div>Pressed: <span id="fixture_pressed">&nbsp;</span></div>
+<!-- 			<div>Fixture ID: <span id="fixture_id">&nbsp;</span></div>
+			<div>Pressed: <span id="fixture_pressed">&nbsp;</span></div> -->
 			<div>IMS: <span id="ims_saddr">&nbsp;</span></div>
-			<div><input class="idleinput" id="button_file" type="file" accept="*.py"	nwworkingdir="C:\Windows" hidden="hidden"/></div>
-			<div id="model">Unknown</div>
+<!-- 			<div><input class="idleinput" id="button_file" type="file" accept="*.py"	nwworkingdir="C:\Windows" hidden="hidden"/></div>
+ -->			<!-- <div id="model">Unknown</div> -->
 			<div><input class="idleinput" id="button_model" type="button" value="MODEL"/></div>
 			<div><input class="idleinput" id="button_mode" type="button" value="AUTO" title="RUN Mode"/></div>
 			<div><input id="button_run" type="button" value="RUN" disabled="disabled"/></div>

@@ -17,6 +17,48 @@ var test = {
 	//show irt server status only when ui_status = 'READY'
 };
 
+function model_sub_redraw(nrow, ncol, nsub) {
+		$("#mask").hide();
+
+		var html = [];
+		var nsubs = nrow * ncol;
+		for(var i = 0; i < nsubs; i ++) {
+			var subname = String.fromCharCode("A".charCodeAt()+i);
+			var masked = test.mask & (1 << i);
+			var checked = (masked) ? '' : 'checked = "checked"';
+
+			var div = '\
+				<div id = "mask$i"> \
+					<input id="$i" type="checkbox" $checked disabled /> \
+					<label for="$i">$name</label> \
+				</div> \
+			';
+
+			div = div.replace(/\$i/g, i);
+			div = div.replace(/\$checked/g, checked);
+			div = div.replace(/\$name/g, subname);
+			//console.log(div);
+			html.push(div);
+		}
+
+		html = html.join("\n");
+		$("#mask").html(html);
+
+		$( "#mask input" ).button({
+			//disabled: true,
+		}).click(function(){
+			//alert(this.id + "=" + this.checked);
+			var sub = parseInt(this.id);
+			var checked = (this.checked) ? 0 : 1;
+			test.mask = (test.mask & ~(1 << sub)) | (checked << sub);
+		});
+
+		var w = 100/ncol + "%";
+		var h = 80/nrow + "%";
+		$("#mask div").removeAttr("width").removeAttr("height").css({"width":w, "height":h});
+		$("#mask").show();
+}
+
 function gft_load(gft) {
 	if(gft.length < 1) {
 		return;
@@ -29,6 +71,32 @@ function gft_load(gft) {
 			return;
 		}
 		else {
+			var i = 0;
+			content = content.replace(/\r/g, '');
+			content = content.replace(/^/gm, function(x) {
+				var span = "<span class='linenr'>"+i+"</span>  "
+				var span_bp = "<span class='linenr linenr_bp'>"+i+"</span>  "
+				span = (test.bplist[i.toString()]) ? span_bp : span;
+				i ++;
+				return span;
+			});
+			$('#gft').html(content+"\n\n");
+
+			//add event handle
+			$(".linenr").click(function(){
+				var line = $(this).html();
+				if(test.bplist[line] == null) {
+					//add break point
+					$(this).addClass("linenr_bp");
+					test.bplist[line] = true;
+				}
+				else {
+					//remove break point
+					$(this).removeClass("linenr_bp");
+					test.bplist[line] = null;
+				}
+			});
+
 			test.fname = gft;
 			var model = path.basename(gft, ".gft");
 			model = path.basename(model, ".py");
@@ -36,6 +104,18 @@ function gft_load(gft) {
 			irt.cfg_set("gft_last", path.relative(process.cwd(), gft));
 			test.model = model;
 			test.ui_status = "READY";
+
+			irt.model_get(model, function(model) {
+				$("#mask").hide();
+				if(model == null) {
+					test.ui_status = 'MODEL UNSUPPORTED';
+					return;
+				}
+
+				//test.model = model;
+				model_sub_redraw(model.nrow, model.ncol, model.nsub);
+				//test.ui_status = "READY";
+			});
 		}
 	});
 }
@@ -414,7 +494,7 @@ $(function() {
 	$("#button_model").click(function(){
 		var Dialog = new fdialogs.FDialog({
 			type: 'open',
-			accept: ['.py'],
+			accept: ['.gft'],
 			path: './gft'
 		});
 
@@ -428,7 +508,7 @@ $(function() {
 	$("#button_mode").val(test.mode);
 	$("#button_mode").click(function(){
 		if(test.mode == "AUTO") test.mode = "STEP";
-		else if(test.mode == "STEP") test.mode = "CAL"
+		else if(test.mode == "STEP") test.mode = "LEARN"
 		else test.mode = "AUTO";
 		$(this).val(test.mode);
 	});

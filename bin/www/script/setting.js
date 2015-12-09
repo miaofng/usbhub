@@ -9,6 +9,7 @@ var async = require('async')
 
 //to be stored in browser's session
 var settings = {
+	model: {},
 };
 
 function gcfg_load(){
@@ -18,6 +19,55 @@ function gcfg_load(){
 			callback();
 		});
 	});
+}
+
+function rules_load() {
+}
+
+function model_sub_redraw(nrow, ncol, nsub) {
+		$("#mask").hide();
+
+		var html = [];
+		var nsubs = nrow * ncol;
+		for(var i = 0; i < nsubs; i ++) {
+			var subname = String.fromCharCode("A".charCodeAt()+i);
+			var checked = 'checked = "checked"';
+			html[i] = '<div id="mask'+i+'"><input id="'+i+'" type="checkbox" ' + checked + ' />' +
+			'<label for="'+i+'">'+subname+'</label></div>';
+		}
+		html = html.join("\n");
+		$("#mask").html(html);
+		$( "#mask input" ).button({
+			//disabled: true,
+		});
+
+		var w = 100/ncol + "%";
+		var h = 100/nrow + "%";
+		$("#mask div").removeAttr("width").removeAttr("height").css({"width":w, "height":h});
+		$("#mask").show();
+}
+
+function model_show(model) {
+	if(model == null) {
+		model = {};
+		model.name = "";
+		model.nrow = "";
+		model.ncol = "";
+		model.nsub = "";
+		model.points = "";
+		model.offset = "";
+		model.barcode = '""';
+	}
+
+	$("#m_name").val(model.name);
+	$("#m_nrow").val(model.nrow);
+	$("#m_ncol").val(model.ncol);
+	$("#m_nsub").val(model.nsub);
+	$("#m_points").val(model.points);
+	$("#m_offset").val(model.offset);
+	model_sub_redraw(model.nrow, model.ncol, model.nsub);
+	$("#m_prn").html(JSON.parse(model.barcode));
+	$("#m_del").attr("disabled", model.id == null);
 }
 
 function model_load(fname) {
@@ -51,16 +101,22 @@ $(function() {
 		settings = JSON.parse(session.settings);
 	}
 
-	var editor = ace.edit("editor");
+/* 	var editor = ace.edit("editor");
 	editor.setTheme("ace/theme/chrome");
 	editor.getSession().setMode("ace/mode/python");
 	editor.setAutoScrollEditorIntoView(true);
-	editor.setOption("showPrintMargin", false);
+	editor.setOption("showPrintMargin", false); */
 
 	gcfg_load();
 	if(settings.fname) {
 		model_load(settings.fname);
 	}
+
+	model_sub_redraw(1,1,1);
+	$("#m_nrow, #m_ncol, #m_nsub").change(function(){
+		settings.model[this.id.substr(2)] = this.value;
+		model_sub_redraw(settings.model.nrow, settings.model.ncol, settings.model.nsub);
+	});
 
 	$("#gcfg_save").click(function(){
 		async.eachSeries($(".gcfg"), function (dom, callback) {
@@ -95,15 +151,15 @@ $(function() {
 		}
 	});
 
-	$("#m_open").click(function(){
+	$("#m_openzpl").click(function(){
 		var Dialog = new fdialogs.FDialog({
 			type: 'open',
-			accept: ['.py'],
-			path: './gft'
+			accept: ['.zpl'],
+			path: ''
 		});
 
 		Dialog.getFilePath(function (err, fname) {
-			model_load(fname);
+			//model_load(fname);
 		});
 	});
 

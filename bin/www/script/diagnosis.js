@@ -90,12 +90,62 @@ function tick_update()
 	});
 }
 
+function list_init()
+{
+	var html = []
+
+	//create table head
+	count = 0
+	for(slot = -1; slot < 32; slot ++) {
+		ul = []
+
+		if(slot < 0) {
+			ul.push('<ul class="head">')
+			ul.push('<li></li>')
+		}
+		else {
+			ul.push('<ul>')
+			n = slot + 1
+			ul.push('<li class="head">' + n + '</li>')
+		}
+
+		for(line = 0; line < 32; line ++) {
+			if(slot >= 0) {
+				n = slot * 32 + line
+				n = n + 1
+				ul.push('<li id="' + n + '">' + n + '</li>')
+			}
+			else {
+				n = line + 1
+				ul.push('<li>' + n + '</li>')
+			}
+		}
+
+		ul.push('</ul>')
+		html.push(ul.join(' '));
+	}
+
+	$('#list').html(html.join('\r\n'));
+
+/* 	for(id = 1; id <= 1024; id ++) {
+		$('#'+id).css("background-color", "#00aa00");
+	} */
+}
+
 $(function() {
 	irt.init();
 	var session = window.sessionStorage;
 	if(session.diagnosis != null) {
 		diagnosis = JSON.parse(session.diagnosis);
 	}
+
+	list_init()
+	$("#scan_type").change(function() {
+		$("#scan_slot").attr("disabled", this.value != "SLOT");
+	})
+	$("#meas_type").change(function() {
+		$("#meas_rly").attr("disabled", this.value[1] != "@");
+	})
 
 	$(".buttons").click(function(){
 		//console.log(this.id);
