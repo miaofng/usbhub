@@ -18,10 +18,14 @@
 				<select class="dinput" id="scan_type">
 					<option value ="PROBE">PROBE</option>
 					<option value ="SLOT">SLOT</option>
-					<option value ="ZIF1">ZIF1</option>
-					<option value ="ZIF2">ZIF2</option>
-					<option value ="ZIF3">ZIF3</option>
-					<option value ="ZIF4">ZIF4</option>
+					<option value ="ZIF 1">ZIF1</option>
+					<option value ="ZIF 2">ZIF2</option>
+					<option value ="ZIF 3">ZIF3</option>
+					<option value ="ZIF 4">ZIF4</option>
+					<option value ="FZF 1">FSCN_ZIF1</option>
+					<option value ="FZF 2">FSCN_ZIF2</option>
+					<option value ="FZF 3">FSCN_ZIF3</option>
+					<option value ="FZF 4">FSCN_ZIF4</option>
 				</select>
 				<select class="dinput" id="scan_slot" disabled>
 					<option value ="1">1# SLOT 01</option>
@@ -40,24 +44,24 @@
 					<option value ="14">1# SLOT 14</option>
 					<option value ="15">1# SLOT 15</option>
 					<option value ="16">1# SLOT 16</option>
-					<option value ="1">2# SLOT 01</option>
-					<option value ="2">2# SLOT 02</option>
-					<option value ="3">2# SLOT 03</option>
-					<option value ="4">2# SLOT 04</option>
-					<option value ="5">2# SLOT 05</option>
-					<option value ="6">2# SLOT 06</option>
-					<option value ="7">2# SLOT 07</option>
-					<option value ="8">2# SLOT 08</option>
-					<option value ="9">2# SLOT 09</option>
-					<option value ="10">2# SLOT 10</option>
-					<option value ="11">2# SLOT 11</option>
-					<option value ="12">2# SLOT 12</option>
-					<option value ="13">2# SLOT 13</option>
-					<option value ="14">2# SLOT 14</option>
-					<option value ="15">2# SLOT 15</option>
-					<option value ="16">2# SLOT 16</option>
+					<option value ="17">2# SLOT 01</option>
+					<option value ="18">2# SLOT 02</option>
+					<option value ="19">2# SLOT 03</option>
+					<option value ="20">2# SLOT 04</option>
+					<option value ="21">2# SLOT 05</option>
+					<option value ="22">2# SLOT 06</option>
+					<option value ="23">2# SLOT 07</option>
+					<option value ="24">2# SLOT 08</option>
+					<option value ="25">2# SLOT 09</option>
+					<option value ="26">2# SLOT 10</option>
+					<option value ="27">2# SLOT 11</option>
+					<option value ="28">2# SLOT 12</option>
+					<option value ="29">2# SLOT 13</option>
+					<option value ="30">2# SLOT 14</option>
+					<option value ="31">2# SLOT 15</option>
+					<option value ="32">2# SLOT 16</option>
 				</select>
-				<input class="dinput" id="RUN" type="button" value="RUN"/>
+				<input class="dinput" id="scan" type="button" value="RUN"/>
 			</div>
 			<div id="list_div">
 				<div id="list">
@@ -106,30 +110,44 @@
 				Type: <select class="minput" id="meas_type">
 					<option value ="R">RESISTOR</option>
 					<option value ="D">DIODE</option>
-					<option value ="R@RLY">RELAY > RESISTOR</option>
-					<option value ="D@RLY">RELAY > DIODE</option>
+					<option value ="L">LEAKAGE</option>
+<!-- 					<option value ="R@RLY">RELAY > RESISTOR</option>
+					<option value ="D@RLY">RELAY > DIODE</option> -->
 				</select>
 			</div>
 			<div>
 				I: <select class="minput" id="meas_mA">
-					<option value ="1">0mA</option>
-					<option value ="2">10mA</option>
-					<option value ="2">20mA</option>
+					<option value ="0">10mA</option>
+					<option value ="1">20mA</option>
 					<option value ="2">50mA</option>
-					<option value ="2">100mA</option>
-					<option value ="2">200mA</option>
-					<option value ="2">500mA</option>
-					<option value ="2">750mA</option>
-					<option value ="2">1000mA</option>
-					<option value ="2">1500mA</option>
+					<option value ="3">0.10A</option>
+					<option value ="4">0.20A</option>
+					<option value ="5">0.50A</option>
+					<option value ="6">0.75A</option>
+					<option value ="7">1.00A</option>
+					<option value ="8">1.50A</option>
+					<option value ="9">2.00A</option>
 				</select>
 			</div>
+			<div>
+				V: <select class="minput" id="meas_hv" disabled>
+					<option value ="0">28V</option>
+					<option value ="1">50V</option>
+					<option value ="2">100V</option>
+					<option value ="3">250V</option>
+					<option value ="4">500V</option>
+					<option value ="5">750V</option>
+					<option value ="6">1000V</option>
+				</select>
+			</div>
+			<div>RELAY:<input class="minput" id="meas_rly" type="text" value="" title="UxGy;U5G7.."/></div>
 			<div>A:<input class="minput" id="meas_A" type="text" value="1"/></div>
 			<div>B:<input class="minput" id="meas_B" type="text" value="2"/></div>
-			<div><input class="minput button" id="meas_rly" type="button" value="RELAY SWITCHING" disabled/></div>
-			<div><input class="minput button" id="meas_run" type="button" value="MEASURE"/></div>
+<!-- 			<div><input class="minput button" id="meas_rly" type="button" value="RELAY SWITCHING" disabled/></div> -->
+			<div><input class="button" id="meas_run" type="button" value="MEASURE"/></div>
 			<div>
 				Result: <div class="mlines">
+						<pre id="report"></pre>
 					</div>
 				</select>
 			</div>

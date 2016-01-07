@@ -7,56 +7,62 @@ var crc32 = require('crc-32')
 
 //to be stored in browser's session
 var test = {
-	"jid": null, //operator job id
-	"model": null,
+	"uid": null, //operator job id
 	"mode": "AUTO",
-	"bplist":{},
-	"fname": null,
 
-	"ui_status": 'Starting...', //'LOADING', 'READY', 'XXX ERROR'
-	//show irt server status only when ui_status = 'READY'
+	"tserv_ok": 5, //decrease to 0 => server died
+
+	"model_ok": false,
+	"model": null,
+	"fname": null,
+	"bplist":{},
+
+	/*dialog contents*/
+	"estop": false,
+	"ims": null,
+	"emsg": null,
 };
 
-function model_sub_redraw(nrow, ncol, nsub) {
+var settings = {
+	"mask": {},
+};
+
+function model_sub_redraw(nrow, ncol, mask) {
 		$("#mask").hide();
 
 		var html = [];
 		var nsubs = nrow * ncol;
 		for(var i = 0; i < nsubs; i ++) {
-			var subname = String.fromCharCode("A".charCodeAt()+i);
-			var masked = test.mask & (1 << i);
-			var checked = (masked) ? '' : 'checked = "checked"';
+			var name = String.fromCharCode("A".charCodeAt()+i);
+			var checked = (i in mask) ?  mask[i] : true;
+			checked = (checked) ? "checked" : "";
 
-			var div = '\
-				<div id = "mask$i"> \
-					<input id="$i" type="checkbox" $checked disabled /> \
-					<label for="$i">$name</label> \
-				</div> \
-			';
+			div = irt.mlstring(function(){/*
+				<div>
+					<input class="mask_checkbox" id="mask_$id" type="checkbox" $checked />
+					<label for="mask_$id">$name</label>
+				</div>
+			*/});
 
-			div = div.replace(/\$i/g, i);
-			div = div.replace(/\$checked/g, checked);
-			div = div.replace(/\$name/g, subname);
-			//console.log(div);
+			div = div.replace("$id", i);
+			div = div.replace("$id", i);
+			div = div.replace("$name", name);
+			div = div.replace("$checked", checked);
 			html.push(div);
 		}
 
 		html = html.join("\n");
 		$("#mask").html(html);
-
 		$( "#mask input" ).button({
-			//disabled: true,
-		}).click(function(){
-			//alert(this.id + "=" + this.checked);
-			var sub = parseInt(this.id);
-			var checked = (this.checked) ? 0 : 1;
-			test.mask = (test.mask & ~(1 << sub)) | (checked << sub);
+			disabled: true,
 		});
 
 		var w = 100/ncol + "%";
 		var h = 80/nrow + "%";
 		$("#mask div").removeAttr("width").removeAttr("height").css({"width":w, "height":h});
 		$("#mask").show();
+
+		$(".ui-state-disabled").removeClass('ui-state-disabled');
 }
 
 function gft_load(gft) {
@@ -73,6 +79,8 @@ function gft_load(gft) {
 		else {
 			var i = 0;
 			content = content.replace(/\r/g, '');
+			content = content.replace(/</g, '&lt;');
+			content = content.replace(/>/g, '&gt;');
 			content = content.replace(/^/gm, function(x) {
 				var span = "<span class='linenr'>"+i+"</span>  "
 				var span_bp = "<span class='linenr linenr_bp'>"+i+"</span>  "
@@ -102,87 +110,78 @@ function gft_load(gft) {
 			model = path.basename(model, ".py");
 			$('#model').html(model);
 			irt.cfg_set("gft_last", path.relative(process.cwd(), gft));
-			test.model = model;
-			test.ui_status = "READY";
 
+			test.model = model;
+			test.model_ok = false
+			$('#model').css("color", "#ff0000");
+			$('#model').attr("title", "setting of model '" + test.model + "' not found");
 			irt.model_get(model, function(model) {
 				$("#mask").hide();
 				if(model == null) {
-					test.ui_status = 'MODEL UNSUPPORTED';
 					return;
 				}
 
-				//test.model = model;
-				model_sub_redraw(model.nrow, model.ncol, model.nsub);
-				//test.ui_status = "READY";
+				test.model_ok = true;
+				$('#model').css("color", "#00ff00");
+				$('#model').attr("title", "");
+				model_sub_redraw(model.nrow, model.ncol, settings.mask);
 			});
 		}
 	});
 }
 
-function update_state(station, status, testing) {
-	//var state = status = (test.ui_status != "READY") ? test.ui_status : status;
-	var state = status = (testing) ? status : test.ui_status;
-	var bgcolor = "#ff0000";
+function update_uut_status(station, status) {
+	var bgcolor = "#ffff00";
+	state = status
 
-	switch(state) {
-	case "Starting...":
-		$("#button_run").attr("disabled", true);
-	case "SCANING":
-	case "LOADING":
-	case "LOADED":
-	case "TESTING":
-	case "IDLE":
-		bgcolor = "#ffff00";
-		break;
+	switch(status) {
 	case "READY":
 	case "PASS":
 		bgcolor = "#00ff00";
 		break;
-	case "INIT":
-		bgcolor = "#c0c0c0";
-		break;
 	case "ERROR":
-	case "FAULT":
-		$("#button_run").attr("disabled", true);
 	case "FAIL":
+		bgcolor = "#ff0000";
+		break;
 	case "WASTE":
-		status = "FAIL";
+		state = "FAIL"
+		bgcolor = "#ff0000";
+		break;
 	default:
 		break;
 	}
 
 	id_status = "#status"+station
-	id_result = "#result"+station
+	id_report = "#result"+station
 
-	$(id_status).html(status);
+	$(id_status).html(state);
 	$(id_status).css("background-color", bgcolor);
-	if(state == "SCANING") {
-		$(id_result).css("background-image", "url(img/scan.gif)");
-		$(id_result).css("background-size", "400px 250px");
-		$(id_result).css("background-repeat", "no-repeat");
-		$(id_result).css("background-position", "center top");
+	if(status == "SCANING") {
+		$(id_report).css("background-image", "url(img/scan.gif)");
+		$(id_report).css("background-size", "400px 250px");
+		$(id_report).css("background-repeat", "no-repeat");
+		$(id_report).css("background-position", "center top");
 	}
-	else if(state == "LOADING") {
-		$(id_result).css("background-image", "url(img/up.gif)");
-		$(id_result).css("background-size", "200px 150px");
-		$(id_result).css("background-repeat", "no-repeat");
-		$(id_result).css("background-position", "center top");
+	else if(status == "LOADING") {
+		$(id_report).css("background-image", "url(img/up.gif)");
+		$(id_report).css("background-size", "200px 150px");
+		$(id_report).css("background-repeat", "no-repeat");
+		$(id_report).css("background-position", "center top");
 	}
-	else if(state == "LOADED") {
-		$(id_result).css("background-image", "url(img/start.png)");
-		$(id_result).css("background-size", "400px 300px");
-		$(id_result).css("background-repeat", "no-repeat");
-		$(id_result).css("background-position", "center top");
+	else if(status == "LOADED") {
+		$(id_report).css("background-image", "url(img/start.png)");
+		$(id_report).css("background-size", "400px 300px");
+		$(id_report).css("background-repeat", "no-repeat");
+		$(id_report).css("background-position", "center top");
 	}
-	else if(state == "WASTE") {
-		$(id_result).css("background-image", "url(img/waste.gif)");
-		$(id_result).css("background-size", "400px 300px");
-		$(id_result).css("background-repeat", "no-repeat");
-		$(id_result).css("background-position", "center top");
+	else if(status == "WASTE") {
+		$(id_report).css("background-image", "url(img/waste.gif)");
+		$(id_report).css("background-size", "400px 300px");
+		$(id_report).css("background-repeat", "no-repeat");
+		$(id_report).css("background-position", "center top");
 	}
 	else {
-		$(id_result).css('background', 'transparent');
+		$(id_report).css('background', 'transparent');
 	}
 }
 
@@ -190,6 +189,9 @@ function update_state(station, status, testing) {
 var datafile_crc = [];
 
 function load_report(id, datafile) {
+	if (datafile == null)
+		return
+
 	fs.readFile(datafile, "ascii", function (err, content) {
 		if(err) {
 			content = ''
@@ -199,7 +201,7 @@ function load_report(id, datafile) {
 			if(crc == datafile_crc[id]) return;
 			else datafile_crc[id] = crc;
 
-			content = content.replace(/\[(\w+)\]/gi, function(x) {
+			content = content.replace(/(\[PASS\])|(\[FAIL\])/gi, function(x) {
 				if(x == "[PASS]") return "<span class='record_pass'>[PASS]</span>";
 				else return "<span class='record_fail'>[FAIL]</span>";
 			});
@@ -207,24 +209,22 @@ function load_report(id, datafile) {
 
 		var obj = $(id);
 		obj.html(content+"\n");
-		obj.scrollTop(obj[0].scrollHeight);
+		//obj.scrollTop(obj[0].scrollHeight);
+		div = obj.parent();
+		div.scrollTop(div[0].scrollHeight);
 	});
 }
 
-var estop = false
-var ims = null
-var emsg = null
-
 function update_status(status) {
-	var date = new Date();
+	//var date = new Date();
 	//var sdate = date.toLocaleDateString();
 	//$("#time_cur").html(date.toTimeString().substr(0, 8));
 	//$("#date").html(sdate);
-	$("#time_cur").html(status.time);
-	$("#date").html(status.date);
-
 	if(!status)
 		return;
+
+	$("#time_cur").html(status.time);
+	$("#date").html(status.date);
 
 	//fixture
 	$("#fixture_id").html(status.fixture_id);
@@ -236,38 +236,27 @@ function update_status(status) {
 	$("#time_run").html(status.runtime+"s");
 	$(".idleinput").attr("disabled", status.testing);
 	$("#button_run").val((status.testing) ? "STOP" : "RUN");
-	$("#button_run").attr("disabled", test.ui_status != "READY");
 
-	//barcode
-	$("#barcode0").html(status.barcode[0]);
-	$("#barcode1").html(status.barcode[1]);
-	$("#duration0").html(status.duration[0]);
-	$("#duration1").html(status.duration[1]);
-
-	//status update
-	update_state(0, status.status[0], status.testing);
-	update_state(1, status.status[1], status.testing);
-
-	//report update
-	load_report("#result0", status.datafile[0]);
-	load_report("#result1", status.datafile[1]);
-
-	if(status.emsg != emsg) {
-		emsg = status.emsg;
-		if(emsg.length > 0) {
-			$("#warn_txt").html(emsg);
-			$("#dialog_warn").dialog("open");
-		}
-		else {
-			$("#dialog_warn").dialog("close");
+	tests = status.test
+	for(i = 0; i < 2; i ++) {
+		if (i in tests) {
+			test_info = tests[i]
+			update_uut_status(i, test_info.status);
+			if(test_info.status != "READY") {
+				$("#barcode"+i).html(test_info.barcode);
+				$("#duration"+i).html(test_info.duration);
+				load_report("#result"+i, test_info.datafile);
+			}
 		}
 	}
 
-	if(test.jid) {
-		if(status.estop != estop) {
-			estop = status.estop;
-			if(estop) {
-				ims = null
+	MessageBox(status.emsg)
+
+	if(test.uid) {
+		if(status.estop != test.estop) {
+			test.estop = status.estop;
+			if(test.estop) {
+				test.ims = null
 				$("#estop_img").attr("src","img/estop.gif");
 				$("#estop_txt").html("Emergency Stop!!! Release it, Then Press Reset Button to Continue..")
 				$( "#dialog_estop" ).dialog("open");
@@ -278,10 +267,10 @@ function update_status(status) {
 		}
 
 		//ims stop?
-		if(!estop) {
-			if(status.ims != ims) {
-				ims = status.ims
-				if(ims == "StopOrder") {
+		if(!test.estop) {
+			if(status.ims != test.ims) {
+				test.ims = status.ims
+				if(test.ims == "StopOrder") {
 					$("#estop_img").attr("src","img/ims.png");
 					$("#estop_txt").html("IMS Stop!!! Tester Is Under Remote Control, Please Wait ...")
 					$( "#dialog_estop" ).dialog("open");
@@ -294,11 +283,39 @@ function update_status(status) {
 	}
 }
 
+function MessageBox(msg) {
+	if(test.emsg != msg) {
+		test.emsg = msg
+		if(msg.length > 0) {
+			$("#warn_txt").html(msg);
+			$("#dialog_warn").dialog("open");
+		}
+		else {
+			$("#dialog_warn").dialog("close");
+		}
+	}
+}
+
 function timer_tick_update() {
 	irt.query("status", function(status) {
+		test.tserv_ok = 5
 		status = JSON.parse(status);
 		update_status(status);
 	});
+
+	test.tserv_ok -= 1
+	if (test.tserv_ok < 0) {
+		test.tserv_ok = 0
+		emsg = "Test Server Died, Please Restart the Program"
+		MessageBox(emsg)
+	}
+
+	ready = test.uid != null
+	ready &= test.tserv_ok > 0
+	ready &= test.model_ok
+	//ready |= test.mode == "LEARN"
+	ready |= test.mode == "CAL"
+	$("#button_run").attr("disabled", !ready);
 }
 
 function wcl_update() {
@@ -365,6 +382,9 @@ $(function() {
 	if(session.test) {
 		test = JSON.parse(session.test);
 	}
+	if(session.settings != null) {
+		settings = JSON.parse(session.settings);
+	}
 
 	$( "#dialog_estop" ).dialog({
 		autoOpen: false,
@@ -383,8 +403,8 @@ $(function() {
 		}
 	});
 
-	$( "#dialog_jid" ).dialog({
-		autoOpen: !test.jid,
+	$( "#dialog_uid" ).dialog({
+		autoOpen: !test.uid,
 		closeOnEscape: false,
 		dialogClass: "no-close",
 		height: 250,
@@ -399,7 +419,7 @@ $(function() {
 	$( "#dialog_warn" ).dialog({
 		autoOpen: false,
 		closeOnEscape: true,
-		height: 250,
+		height: 280,
 		width: 500,
 		modal: false,
 		hide: {
@@ -408,29 +428,29 @@ $(function() {
 		}
 	});
 
-	$("#jid").dblclick(function(){
-		$("#jid_input").val("");
-		$( "#dialog_jid" ).dialog("open");
+	$("#uid").dblclick(function(){
+		$("#uid_input").val("");
+		$( "#dialog_uid" ).dialog("open");
 	})
 
-	$("#jid_input").bind('keydown', function(event){
+	$("#uid_input").bind('keydown', function(event){
 		var key = event.which;
 		if (key == 13) {
-			var jid = $("#jid_input").val();
-			if(jid.length > 3) {
-				test.jid = jid;
-				$("#jid").html(test.jid);
-				$("#dialog_jid").dialog("close");
+			var uid = $("#uid_input").val();
+			if(uid.length > 3) {
+				test.uid = uid;
+				$("#uid").html(test.uid);
+				$("#dialog_uid").dialog("close");
 			}
 		}
 	});
 
 	$("#button_login").click(function(){
-		var jid = $("#jid_input").val();
-		if(jid.length > 3) {
-			test.jid = jid;
-			$("#jid").html(test.jid);
-			$("#dialog_jid").dialog("close");
+		var uid = $("#uid_input").val();
+		if(uid.length > 3) {
+			test.uid = uid;
+			$("#uid").html(test.uid);
+			$("#dialog_uid").dialog("close");
 		}
 	});
 
@@ -488,8 +508,8 @@ $(function() {
 		});
 	})
 
-	//$("#jid_input").val(test.jid);
-	$("#jid").html(test.jid);
+	//$("#uid_input").val(test.uid);
+	$("#uid").html(test.uid);
 
 	$("#button_model").click(function(){
 		var Dialog = new fdialogs.FDialog({
@@ -499,7 +519,6 @@ $(function() {
 		});
 
 		Dialog.getFilePath(function (err, fname) {
-			test.ui_status = 'Starting...';
 			irt.query("reset", function(data) {});
 			gft_load(fname);
 		});
@@ -509,21 +528,36 @@ $(function() {
 	$("#button_mode").click(function(){
 		if(test.mode == "AUTO") test.mode = "STEP";
 		else if(test.mode == "STEP") test.mode = "LEARN"
+		else if(test.mode == "LEARN") test.mode = "CAL"
 		else test.mode = "AUTO";
 		$(this).val(test.mode);
 	});
 
 	$("#button_run").click(function(){
-		emsg = ""
+		test.emsg = ""
 		var run = $(this).val();
 		if(run == "RUN") {
 			irt.cfg_get('gft_last', function(fname) {
 				fname = path.resolve(process.cwd(), fname);
+				var mask = 0
+				for (var i in settings.mask) {
+					mask += (settings.mask[i]) ? 0 : (1 << i);
+				}
+
+				var tname = "gft";
+				var mode = "STEP";
+				if(test.mode == "CAL") tname = "cal";
+				else if(test.mode == "LEARN") tname = "learn";
+				else mode = test.mode;
+
 				cmdline = [];
-				cmdline.push("test");
-				cmdline.push("--mode=" + test.mode);
+				cmdline.push("test --test=" + tname);
+				cmdline.push("--mode=" + mode);
+				cmdline.push("--mask=" + mask);
+				cmdline.push('--user="'+ test.uid + '"')
 				cmdline.push('"'+fname+'"');
 				cmdline = cmdline.join(" ");
+				console.log(cmdline);
 				irt.query(cmdline, function(data) {});
 			});
 		}
@@ -541,8 +575,7 @@ $(function() {
 		gft_load(test.fname);
 	}
 
-	update_state(0, test.ui_status, 0);
-	update_state(1, test.ui_status, 0);
+	test.emsg = null
 
 	var timer_tick = setInterval("timer_tick_update()", 500);
 	var stimer = setInterval("timer_statistics_update()", 1000);

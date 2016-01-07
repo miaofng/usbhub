@@ -8,89 +8,88 @@ var sprintf = require('sprintf-js').sprintf
 
 //to be stored in browser's session
 var diagnosis = {
-	s_model: "",
-	id: null,
-	model: {},
+	scan_status: {},
+	minputs: null,
 };
 
-function update_status(status)
+var scan_status = null;
+
+function grid_clean(type)
 {
-	sensors = status.sensors;
-	control = status.control;
+	bpos = 0;
+	curr = 1024;
 
-	$(".indicators").each(function(){
-		val = null;
-		switch(this.id) {
-		case "LID": //3.07-3.04
-			regv = (sensors[3] >> 4) & 0x0f;
-			$(this).html(sprintf("%02d", regv));
-			break;
-		case "RID": //3.03-3.00
-			regv = (sensors[3] >> 0) & 0x0f;
-			$(this).html(sprintf("%02d", regv));
-			break;
-		case "SB": //0.00 0.01
-			val = sensors[0] & 0x03;
-			val = val == 0x03;
-			break;
-		default:
-			idx = Math.round(this.id);
-			bit = Math.round(this.id * 100) % 100;
-			val = (sensors[idx] >> bit) & 0x01;
-			break;
-		}
+	if(type == "delta") {
+		diag_status = diagnosis.scan_status;
+		if(diag_status != null) {
+			if(diag_status.mode == "PROBE") {
+				id = diag_status.curr + 1;
+				$('#'+id).css("background-color", "white");
+				diagnosis.scan_status = null;
+				return;
+			}
 
-		if(val != null) {
-			if(val) $(this).css("backgroundColor", "#00ff00");
-			else $(this).css("backgroundColor", "white");
+			bpos = diag_status.bpos;
+			curr = diag_status.curr;
 		}
-	});
+	}
 
-	$(".buttons").each(function(){
-		switch(this.id) {
-		case "TLDOOR": //100.00(open) 100.01(close) 100.05(lamp)
-			regv = (control[0] >> 5) & 0x01;
-			break;
-		case "TRDOOR": //100.02(open) 100.03(close) 100.04(lamp)
-			regv = (control[0] >> 4) & 0x01;
-			break;
-		case "TLPSFL": //103.02(R) 103.03(G)
-			regv = (control[3] >> 2) & 0x01;
-			break;
-		case "TRPSFL": //103.00(R) 103.01(G)
-			regv = (control[3] >> 0) & 0x01;
-			break;
-		default:
-			idx = Math.round(this.id) % 100;
-			bit = Math.round(this.id * 100) % 100;
-			regv = (control[idx] >> bit) & 0x01;
-		}
-
-		if(regv) {
-			//$(this).css("background-image", "url(img/fan.gif)");
-			//$(this).css("background-repeat","no-repeat");
-			//$(this).css("background-size","32px 32px");
-			//$(this).css("background-position","center left");
-			$(this).css("background-color", "#00ff00");
-			//$(this).css("color", "#00ff00");
-		}
-		else {
-			//$(this).css("background", "transparent");
-			$(this).css("background-color", "#ccc");
-			//$(this).css("color", "black");
-		}
-	});
+	diagnosis.scan_status = null;
+	for(i = 0; i <= curr; i ++) {
+		id = i + bpos + 1;
+		$('#'+id).css("background-color", "white");
+	}
 }
 
-function tick_update()
-{
-	irt.query("plc", function(data) {
-		data = JSON.parse(data);
-		update_status(data);
-	});
+function bit_get(bitm, bpos) {
+	word = Math.floor(i / 32);
+	bpos = i % 32;
+	v = bitm[word] >> bpos;//(1 << bpos);
+	v = (v & 1) ? true : false;
+	return v;
 }
 
-function list_init()
+function grid_show(scan_status, type)
+{
+	if(scan_status == null)
+		return;
+
+	//probe
+	if(scan_status.mode == "PROBE") {
+		grid_clean("delta");
+		id = scan_status.curr + 1;
+		$('#'+id).css("background-color", "#00FF00");
+		diagnosis.scan_status = scan_status;
+		return;
+	}
+
+	i = 0;
+	if(type == "delta") {
+		diag_status = diagnosis.scan_status;
+		if(diag_status != null) {
+			i = diag_status.curr;
+		}
+	}
+
+	bitm = scan_status.bitm;
+	bpos = scan_status.bpos;
+	curr = scan_status.curr;
+
+	for(; i <= curr; i ++) {
+		if(i >= 0) {
+			pass = bit_get(bitm, i);
+			id = i + bpos + 1;
+			if(pass)
+				$('#'+id).css("background-color", "#00ff00");
+			else
+				$('#'+id).css("background-color", "#ff0000");
+		}
+	}
+
+	diagnosis.scan_status = scan_status;
+}
+
+function grid_init()
 {
 	var html = []
 
@@ -126,10 +125,173 @@ function list_init()
 	}
 
 	$('#list').html(html.join('\r\n'));
+	grid_show(diagnosis.scan_status, "all")
+}
 
-/* 	for(id = 1; id <= 1024; id ++) {
-		$('#'+id).css("background-color", "#00aa00");
-	} */
+function trim(str)
+{
+	return str.replace(/(^\s*)|(\s*$)/g,"");
+}
+
+function meas_generate_file(cb)
+{
+	//save settings
+	ctrls = $(".minput")
+	minputs = {}
+	for(var i = 0; i < ctrls.length; i ++) {
+		ctrl = ctrls[i]
+		minputs[ctrl.id] = ctrl.value
+	}
+	diagnosis.minputs = minputs
+
+	bin_dir = process.cwd();
+	gft_path = path.join(bin_dir, "manual_measure.gft");
+	date = new Date();
+	type = minputs.meas_type
+	mA = minputs.meas_mA
+	hv = minputs.meas_hv
+	A = minputs.meas_A
+	B = minputs.meas_B
+	rly = trim(minputs.meas_rly)
+	if (rly.length > 0) {
+		rly = rly.replace(/;/g, "\r\n")
+		rly = "X\r\n" + rly + "\r\nW3\r\n"
+	}
+
+	A = parseInt(A);
+	B = parseInt(B);
+
+	err  = isNaN(A);
+	err |= isNaN(B);
+	err |= A <= 0;
+	err |= B <= 0;
+	err |= A > 1024;
+	err |= B > 1024;
+	if (err) {
+		alert("Illegal input value !!!");
+		return;
+	}
+
+	gft = [];
+	line = sprintf("//%s %s",
+		date.toLocaleDateString(),
+		date.toTimeString().substr(0, 8)
+	);
+	gft.push(line);
+	gft.push("O2,6,10,11 <Continuity & Leakage>");
+	gft.push("")
+
+	switch(type) {
+	case "D":
+		gft.push("[DIODE CHECK]");
+		//32mS, <1000ohm
+		line = sprintf("R01%s3001", mA);
+		gft.push(line);
+		if(rly.length > 0) {
+			gft.push(rly.toUpperCase());
+		}
+		line = sprintf("A%d", A);
+		gft.push(line);
+		line = sprintf("	B%d", B);
+		gft.push(line);
+		gft.push("[DIODE END]");
+		break;
+	case "R":
+		//32mS, <1000ohm
+		line = sprintf("R01%s3001", mA);
+		gft.push(line);
+		if(rly.length > 0) {
+			gft.push(rly.toUpperCase());
+		}
+		line = sprintf("A%d", A);
+		gft.push(line);
+		line = sprintf("	B%d", B);
+		gft.push(line);
+		break;
+	case "L":
+		//16mS, >1Mohm
+		line = sprintf("L00%s0001", hv);
+		gft.push(line);
+		if(rly.length > 0) {
+			gft.push(rly.toUpperCase());
+		}
+		line = sprintf("A%d", A);
+		gft.push(line);
+		line = sprintf("A%d", B);
+		gft.push(line);
+		break;
+	default:
+		break;
+	}
+
+	//gft.push("");
+	//gft.push("O2,10,11");
+	//gft.push("R0140010");
+	//gft.push("L0140010");
+	if(rly.length > 0) {
+		//gft.push("X");
+	}
+	gft.push("")
+	gft.push("<END OF PROGRAM>");
+
+	gft = gft.join("\r\n");
+	fs.writeFile(gft_path, gft, function (err) {
+		if (err) throw err;
+		cb(gft_path)
+	});
+}
+
+var datafile_crc = [];
+function load_report(id, datafile) {
+	if (datafile == null)
+		return
+
+	fs.readFile(datafile, "ascii", function (err, content) {
+		if(err) {
+			content = ''
+		}
+		else {
+			crc = crc32.str(content);
+			if(crc == datafile_crc[id]) return;
+			else datafile_crc[id] = crc;
+
+			content = content.replace(/.*\[FAIL\]$/gmi, function(x) {
+				return "<span class='record_fail'>"+x+"</span>";
+			});
+		}
+
+		var obj = $(id);
+		obj.html(content+"\n");
+		//obj.scrollTop(obj[0].scrollHeight);
+		div = obj.parent();
+		div.scrollTop(div[0].scrollHeight);
+	});
+}
+
+function tick_update()
+{
+	irt.query("status", function(data) {
+		data = JSON.parse(data);
+		load_report("#report", data.test[0].datafile)
+		if(data.testing) {
+			$("#scan").val("STOP");
+			$("#meas_run").attr("disabled", true);
+			$("#scan_type").attr("disabled", true);
+			$("#scan_slot").attr("disabled", true);
+		}
+		else {
+			$("#scan").val("RUN");
+			$("#meas_run").attr("disabled", false);
+			$("#scan_type").attr("disabled", false);
+			$("#scan_slot").attr("disabled", $("#scan_type").val() != "SLOT");
+		}
+
+	});
+
+	irt.query("scan", function(data) {
+		scan_status = JSON.parse(data);
+		grid_show(scan_status, "delta");
+	});
 }
 
 $(function() {
@@ -139,24 +301,62 @@ $(function() {
 		diagnosis = JSON.parse(session.diagnosis);
 	}
 
-	list_init()
+	minputs = diagnosis.minputs
+	if(minputs != null) {
+		for (ctrl_id in minputs) {
+			$("#"+ctrl_id).val(minputs[ctrl_id])
+		}
+	}
+
+	grid_init()
 	$("#scan_type").change(function() {
 		$("#scan_slot").attr("disabled", this.value != "SLOT");
+		grid_clean("all");
+	})
+	$("#scan_slot").change(function() {
+		grid_clean("all");
 	})
 	$("#meas_type").change(function() {
-		$("#meas_rly").attr("disabled", this.value[1] != "@");
+		//$("#meas_rly").attr("disabled", this.value[1] != "@");
+		$("#meas_mA").attr("disabled", this.value == "L");
+		$("#meas_hv").attr("disabled", this.value != "L");
 	})
 
-	$(".buttons").click(function(){
-		//console.log(this.id);
+	$("#meas_run").click(function(){
+		meas_generate_file(function(gft_path) {
+			//alert("ok");
+			cmdline = [];
+			cmdline.push("test");
+			cmdline.push("--test=gft");
+			cmdline.push("--mode=STEP");
+			cmdline.push('"$path"'.replace("$path", gft_path));
+			cmdline = cmdline.join(" ");
+			console.log(cmdline)
+			irt.query(cmdline, function(data) {});
+		});
+	});
+
+	$("#scan").click(function(){
 		cmdline = [];
-		cmdline.push("plc");
-		cmdline.push(this.id)
-		cmdline = cmdline.join(" ");
+		if($(this).val() == "RUN") {
+			grid_clean("delta");
+			scan_type = $("#scan_type").val();
+			scan_slot = $("#scan_slot").val();
+
+			cmdline.push("test");
+			cmdline.push("--test=scn");
+			cmdline.push(scan_type);
+			cmdline.push(scan_slot);
+			cmdline = cmdline.join(" ");
+		}
+		else {
+			cmdline.push("stop");
+		}
+
 		irt.query(cmdline, function(data) {});
 	});
 
-	var tick = setInterval("tick_update()", 500);
+	var tick = setInterval("tick_update()", 100);
 	$(window).unload(function(){
 		clearInterval(tick);
 		irt.exit();

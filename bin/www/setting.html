@@ -12,6 +12,49 @@
 <script src="script/setting.js"></script>
 </head>
 <body>
+	<div id="rule_dlg" title="Rule Properties">
+			<div style="display: none;">Type:
+				<select class="rule_input" id="rule_type"/>
+					<option value ="R">RESISTOR</option>
+					<option value ="D">DIODE</option>
+				</select>
+			</div>
+			<div>I:
+				<select class="rule_input" id="rule_i">
+					<option value ="0">10mA</option>
+					<option value ="1">20mA</option>
+					<option value ="2">50mA</option>
+					<option value ="3">0.10A</option>
+					<option value ="4">0.20A</option>
+					<option value ="5">0.50A</option>
+					<option value ="6">0.75A</option>
+					<option value ="7">1.00A</option>
+					<option value ="8">1.50A</option>
+					<option value ="9">2.00A</option>
+				</select>
+			</div>
+			<div>Range:
+				<select class="rule_input" id="rule_range">
+					<option value ="0">&le;</option>
+					<option value ="1">&ge;</option>
+					<option value ="2">±1%</option>
+					<option value ="3">±3%</option>
+					<option value ="4">±5%</option>
+					<option value ="5">±10%</option>
+					<option value ="6">±20%</option>
+					<option value ="7">±30%</option>
+					<option value ="8">±40%</option>
+					<option value ="9">±50%</option>
+				</select>
+			</div>
+			<div>Value:<input class="rule_input" id="rule_value" type="text" title="typical value, ohm or v"/></div>
+			<div>Name:<input class="rule_input" id="rule_name" type="text" /></div>
+			<div>
+				<input class="rule_button" id="rule_add" type="button" value="+" title="Add"/>
+				<input class="rule_button" id="rule_del" type="button" value="-" title="Del"/>
+				<input class="rule_button" id="rule_set" type="button" value="Save"/>
+			</div>
+	</div>
   <div id="panel">
 	<div id="panel_left">
 		<div class="panel_head">GLOBAL SETTINGS</div>
@@ -21,7 +64,13 @@
 				<option value ="0">Disable</option>
 			</select>
 		</div>
-		<div>Label:
+		<div>HV TEST:
+			<select class="gcfg" id="hvtest">
+				<option value ="1">Enable</option>
+				<option value ="0">Disable</option>
+			</select>
+		</div>
+		<div>Label Printer:
 			<select class="gcfg" id="Label">
 				<option value ="1">Enable</option>
 				<option value ="0">Disable</option>
@@ -33,7 +82,7 @@
 				<option value ="0">Disable</option>
 			</select>
 		</div>
-		<div>Data: <input class="gcfg" id="dat_dir" value="../../../data/"/></div>
+		<div>Report Path: <input class="gcfg" id="dat_dir" value="../../../data/"/></div>
 		<div>Admin Passwd: <input class="passwd" id="g_admin_passwd" type="PASSWORD"/></div>
 	  <div>Confirm: <input title="回车即录入" class="passwd" id="g_admin_confirm" type="PASSWORD"/></div>
 		<div>Waste Passwd: <input class="passwd" id="g_waste_passwd" type="PASSWORD"/></div>
@@ -42,17 +91,17 @@
     </div>
 
     <div id="panel_middle">
-		<div class="panel_head">LEARNING RULE -<span id="m_model">Not Named</span> </div>
+		<div class="panel_head">LEARNING RULES -<span id="m_model">Not Named</span> </div>
 		<div id="list_div">
 			<div id="list">
-				<ul>
-					<li class="list_head">ID</li>
-					<li class="list_head">NAME</li>
-					<li class="list_head">TYPE</li>
-					<li class="list_head">I(A)</li>
-					<li class="list_head">MIN</li>
-					<li class="list_head">MAX</li>
-					<li class="list_head">ENABLE</li>
+				<ul class="list_head">
+					<li>ID</li>
+					<li>NAME</li>
+					<li>TYPE</li>
+					<li>I(mA)</li>
+					<li>MIN</li>
+					<li>MAX</li>
+					<li>ENABLE</li>
 				</ul>
 			</div>
 		</div>
@@ -64,12 +113,13 @@
 		</div>
 		<div>ROWS: <input class="mcfg" id="m_nrow" value="1"/></div>
 		<div>COLS: <input class="mcfg" id="m_ncol" value="1"/></div>
-		<div>POINTS: <input class="mcfg" id="m_points" /></div>
-		<div>OFFSET: <input class="mcfg" id="m_offset" /></div>
-		<div>LABEL: <input class="mcfg"  id="m_openzpl" value="Load .zpl File ..." readonly="readonly"/></div>
+		<div>POINTS: <input class="mcfg" id="m_npts" value="256"/></div>
+		<div>OFFSET: <input class="mcfg" id="m_nofs" value="0" /></div>
+		<div>LABEL: <input class="mcfg" id="m_label" value="" title="33?714*"/></div>
+		<div>ZPL: <input class="mcfg"  id="m_openzpl" value="Load .zpl File ..." readonly="readonly"/></div>
 		<div><pre id="m_zpl" wrap="off" ></pre></div>
 		<div>
-			<input type="button" id="mcfg_save" value="Save" disabled />
+			<input type="button" id="mcfg_save" value="Save" />
 		</div>
 
 

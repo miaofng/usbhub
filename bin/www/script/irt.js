@@ -5,6 +5,11 @@ var spawn = require('child_process').spawn;
 
 var host = '127.0.0.1';
 var port = 10003;
+var db;
+
+exports.mlstring = function(f) {　
+    return f.toString().replace(/^[^\/]+\/\*!?\s?/, '').replace(/\*\/[^\/]+$/, '');
+}
 
 exports.cfg_get = function(name, cb) {
 	db.get("SELECT * FROM cfg WHERE name=?", name, function(err, row) {
@@ -19,6 +24,14 @@ exports.cfg_set = function(name, value) {
 		}
 	});
 };
+
+exports.db = function(){
+	return db;
+};
+
+exports.db_enum = function(sql, cb) {
+	db.all(sql, cb);
+}
 
 exports.model_get = function(model, cb) {
 	db.get("SELECT * FROM model WHERE name = ?", model, function(err, row) {
@@ -201,7 +214,7 @@ exports.start = function(cb) {
 		server.close();
 		console.log("starting server tester.py ...");
 
-		test_server = spawn('python', ['tester.py'], { stdio: 'pipe', cwd: 'www/tester/'});
+		test_server = spawn('python', ['irt.py'], { stdio: 'pipe', cwd: 'www/tester/'});
 		test_server.stdout.on('data', function(data) {
 			console.log(data.toString());
 		});
@@ -216,14 +229,15 @@ exports.stop = function() {
 }
 
 exports.query = function(cmdline, callback) {
-	tester = new net.Socket();
+	var tester = new net.Socket();
 	tester.connect(port, host, function() {
 		tester.write(cmdline+"\n\r");
 	});
 
 	tester.on('data', function(data) {
-		tester.destroy();
 		callback(data);
+		tester.destroy();
+		delete tester
 	});
 };
 
