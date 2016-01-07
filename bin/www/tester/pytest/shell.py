@@ -22,9 +22,10 @@ class Cmd:
 		self.cmd_list[name] = entry
 
 	def unregister(self, name):
-		if hasattr(self.cmd_list, name):
+		if name in self.cmd_list:
 			ref = self.cmd_list[name]["ref"]
-			self.cmd_list[name]["ref"] = ref - 1
+			ref -= 1
+			self.cmd_list[name]["ref"] = ref
 			if ref < 1:
 				del(self.cmd_list[name])
 
@@ -41,6 +42,9 @@ class Cmd:
 				name = argv[0]
 				if name in self.cmd_list:
 					func = self.cmd_list[name]["func"]
+					return func(argc, argv)
+				elif "default" in self.cmd_list:
+					func = self.cmd_list["default"]["func"]
 					return func(argc, argv)
 
 	def cmd_help(self, argc, argv):
@@ -100,6 +104,9 @@ class Shell(Cmd):
 
 	def response(self, sock, result):
 		if result is None:
+			#nothing to return, but we still need to close the socket
+			if self.mode_auto:
+				self._server.clear(sock)
 			return
 
 		if not isinstance(result, basestring):
@@ -111,6 +118,9 @@ class Shell(Cmd):
 					data.append("%s\t\t: %s\n\r"%(key, str(val)))
 				data = ''.join(data)
 		else:
+			if not self.mode_auto:
+				if result != "> ":
+					result += "\n\r"
 			data = result
 
 		req = {"sock": sock, "data": data}

@@ -6,10 +6,12 @@ import time
 import os
 import sys, signal
 import serial
+import serial.tools.list_ports
+from instrument import Instrument
 
 class ScannerException(Exception): pass
 
-class Scanner:
+class Scanner(Instrument):
 	uart = None
 	data = ''
 
@@ -18,13 +20,21 @@ class Scanner:
 			self.uart.close()
 			self.uart = None
 
-	def __init__(self, port, baud = 115200):
+	def __init__(self, port = None, baud = 115200):
 		self.uart = serial.Serial(port, baud)
 
 	def __del__(self):
 		self.release()
 
-	def read(self):
+	def search(self, key=""):
+		port_list = list(serial.tools.list_ports.comports())
+		for item in port_list:
+			port = item[0]
+			desc = item[1]
+			if key in desc:
+				return port
+
+	def _read(self):
 		nbytes = self.uart.inWaiting()
 		if nbytes > 0:
 			data = self.uart.read(nbytes)
@@ -38,6 +48,20 @@ class Scanner:
 		idx = idx + 1
 		self.data = self.data[idx:]
 		return data
+
+	def read(self, timeout = 0, count = 3):
+		if timeout is 0:
+			return self._read()
+
+		for tries in range(count):
+			if hasattr(self, "trig"):
+				self.trig()
+
+			deadline = time.time() + timeout
+			while time.time() < deadline:
+				barcode = self._read()
+				if barcode:
+					return barcode
 
 if __name__ == '__main__':
 	from shell import Shell

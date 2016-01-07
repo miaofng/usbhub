@@ -14,7 +14,7 @@ class Eloger:
 			self.log(stack)
 
 	def log(self, info = ""):
-		file = open("./log.txt", "a+")
+		file = open("../../log.txt", "a+")
 		line = "%s#  %s\n"%(time.strftime('%X'), info)
 		file.write(line)
 		file.close()

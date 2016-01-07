@@ -12,12 +12,15 @@
 import visa
 import threading
 import time
+from instrument import Instrument
+from eloger import Eloger
 
 class DmmIoError(Exception):
 	def __init__(self, echo):
 		self.echo = echo
+		print self.echo
 
-class Dmm:
+class Dmm(Instrument):
 	lock = threading.Lock()
 	rm = None
 	instr = None
@@ -32,12 +35,23 @@ class Dmm:
 	def query(self, cmdline):
 		timer = time.time()
 		self.lock.acquire()
+		n = 0
+		while True:
+			try:
+				result = None
+				if cmdline.find('?') != -1:
+					result = self.instr.query(cmdline)
+				else:
+					self.instr.write(cmdline)
+			except Exception,e:
+				Eloger(e)
+				n += 1
+				if n < 3:
+					continue
+				else:
+					raise e
 
-		result = None
-		if cmdline.find('?') != -1:
-			result = self.instr.query(cmdline)
-		else:
-			self.instr.write(cmdline)
+			break
 
 		self.lock.release()
 		timer = time.time() - timer
@@ -83,8 +97,10 @@ class Dmm:
 		else:
 			self.query('disp:window:text:clear')
 
-	def measure_res(self):
-		return self.query("meas:res?")
+	def measure_fres(self, cfg=""):
+		return self.query("meas:res? %s"%cfg)
+	def measure_res(self, cfg=""):
+		return self.query("meas:res? %s"%cfg)
 	def measure_dcv(self):
 		return self.query("meas:volt:dc?")
 	def measure_acv(self):
@@ -122,6 +138,7 @@ class Dmm:
 		self.query("TRIG:SOURCE EXT")
 		self.query("TRIG:COUNT INF")
 		self.query("INIT") #dmm internal buffer will be cleared here
+		#time.sleep(0.010)
 
 	def stop(self):
 		self.query("ABORT")

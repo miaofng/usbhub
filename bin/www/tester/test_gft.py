@@ -1,76 +1,96 @@
 #!/usr/bin/env python
 #coding:utf8
+#miaofng@2015-12-10
+#
 
-import io
-import time
-import sys, signal
-from test import Test
-import random
+import threading
 import os
-import json
-import imp
-import fnmatch
+import time
+import random
+import functools
+from pytest import *
 
-class GFTest(Test):
-	model = None
+class Db(Db):
+	def model_get(self, name):
+		sql = 'SELECT * FROM model WHERE name = "%s"'%name
+		records = self.query(sql)
+		if len(records) > 0:
+			record = records[0]
+			return record
 
-	def __init__(self, tester, model, station = 0):
-		Test.__init__(self, tester, station)
+class GFTst(Test):
+	def __init__(self, tester, opts):
+		Test.__init__(self, tester, opts)
+		#test --test=gft --mode=AUTO --mask=0 --user=nf xxx.gft
+		gft_path = opts["args"][0]
+		gft_fname = os.path.split(gft_path)[1]
+		[model, ext] = os.path.splitext(gft_fname)
+		self.gft = gft_path
 		self.model = model
-		#self.fpath = config["file"]
-		#self.config = imp.load_source("config", self.fpath)
-		# subdir = time.strftime("%Y-%m-%d")
-		# fname = "%d_%s"%(self.station, time.strftime("%H_%M.dat"))
-		# dataFile = self.tester.getPath(subdir, fname)
-		# self.log_start(dataFile)
 
-	def update(self):
-		Test.update(self)
-		#add specified update here
-		#...
+		mask = None
+		if "mask" in opts:
+			mask = int(opts["mask"])
 
-	# def verifyBarcode(self, barcode):
-		# if hasattr(self.model, "barcode"):
-			# template = self.model.barcode
-			# if not fnmatch.fnmatchcase(barcode, template):
-				# emsg = []
-				# emsg.append("Barcode Error")
-				# emsg.append("expect: %s", template)
-				# emsg.append("scaned: %s", barcode)
-				# emsg = '\n\r'.join(emsg)
-				# return emsg
+		self.mask = mask
 
-	def Record(self):
-		dat_dir = self.getPath()
-		dat_dir = os.path.abspath(dat_dir)
-		self.lock.acquire()
-		record = {}
-		record["model"] = self.model.name
-		record["barcode"] = self.barcode
-		record["failed"] = self.ecode
-		record["datafile"] = os.path.relpath(self.dfpath, dat_dir)
-		record["station"] = self.station
-		self.lock.release()
-		self.tester.db.get('test_add')(record)
+		self.scanner = tester.instrument_get("scanner")
+		#self.fixture = tester.instrument_get("fixture")
 
-	def Test(self):
-		self.mdelay(random.randint(0,500))
-		for i in range(0, 500):
-			self.mdelay(5)
-			err = random.random()
-			line = "R%04d = %.3fohm"%(i, err*10)
-			self.log(line, err<0.6)
+		self.gvm = gvm = Gvm(tester.db, mask)
+		self.dmm = tester.instrument_get("dmm")
+		self.irt = tester.instrument_get("irt")
+		gvm.Connect(self.irt, self.dmm)
 
-		if random.randint(0,1):
-			self.Pass()
+		def log(info, passed = None):
+			self.log(info, passed)
+		gvm.log = log
+
+	def onStart(self):
+		#wait for scan_ready signal
+		while True:
+			self.mdelay(0)
+			ready = self.fixture.scan_IsReady()
+			if ready:
+				break
+
+		barcode = self.scanner.read()
+
+		#compare the barcode with template ????
+		#in case not matched, abort the test to avoid tester destroy
+		if barcode:
+			self.set("barcode", barcode)
+			barcode = barcode
+
+		if barcode:
+			self.fixture.scan_Pass()
 		else:
-			self.Fail()
+			self.fixture.scan_Fail()
+			return
 
-#module self test
-if __name__ == '__main__':
-	test = GFTest("", {"gft":"*.gft", "mode":"AUTO", "mask":0})
+		#wait for tester ready signal
+		while True:
+			self.mdelay(0)
+			ready = self.fixture.IsReady()
+			if ready:
+				break
 
+	def onPass(self):
+		#wait until scan ready signal
+		while True:
+			self.mdelay(0)
+			ready = self.fixture.scan_IsReady()
+			if ready:
+				break
 
+	def onFail(self):
+		#wait until scan ready signal
+		while True:
+			self.mdelay(0)
+			ready = self.fixture.scan_IsReady()
+			if ready:
+				break
 
-
-
+	def Run(self):
+		self.gvm.load(self.gft)
+		return self.gvm.Run()

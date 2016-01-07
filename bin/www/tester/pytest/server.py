@@ -4,7 +4,7 @@
 import socket
 import select
 import Queue
-from time import sleep
+import time
 import sys
 
 class Server:
@@ -25,6 +25,21 @@ class Server:
 		for s in self._inputs:
 			s.close()
 
+	def clear(self, sock):
+		if sock is self._server:
+			return
+
+		if sock in self._inputs:
+			self._inputs.remove(sock)
+
+		if sock in self._outputs:
+			self._outputs.remove(sock)
+
+		sock.close()
+
+		del self.imsg[sock]
+		del self.omsg[sock]
+
 	def _update(self):
 		rs,ws,es = select.select(self._inputs, self._outputs, self._inputs, 0)
 		if not (rs or ws or es):
@@ -35,6 +50,13 @@ class Server:
 				conn,addr = s.accept()
 				#print 'connect by',addr
 				conn.setblocking(False)
+				if len(self._inputs) > 64:
+					print "inputs = %d"%len(self._inputs)
+					for sock in self._inputs[1:32]:
+						self.clear(sock)
+						if sock in ws:
+							ws.remove(sock)
+
 				self._inputs.append(conn)
 				self.imsg[conn] = Queue.Queue()
 				self.omsg[conn] = Queue.Queue()
@@ -50,14 +72,7 @@ class Server:
 					self.imsg[s].put(data)
 				else:
 					#socket close
-					if s in self._outputs:
-						self._outputs.remove(s)
-					#print 'remove rs: %d'%s.fileno()
-					self._inputs.remove(s)
-
-					s.close()
-					del self.imsg[s]
-					del self.omsg[s]
+					self.clear(s)
 					if s in ws:
 						ws.remove(s)
 
@@ -70,15 +85,7 @@ class Server:
 				s.send(msg)
 
 		for s in es:
-			#print 'except ',s.getpeername()
-			if s in self._inputs:
-				#print 'remove es: %d'%s.fileno()
-				self._inputs.remove(s)
-			if s in self._outputs:
-				self._outputs.remove(s)
-			s.close()
-			del self.imsg[s]
-			del self.omsg[s]
+			self.clear(s)
 
 	def recv(self):
 		self._update()
@@ -98,5 +105,6 @@ class Server:
 		self.omsg[s].put(req["data"])
 		if s not in self._outputs:
 			self._outputs.append(s)
+			#print "outputs = %d"%len(self._outputs)
 
 

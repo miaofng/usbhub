@@ -24,6 +24,9 @@ import functools
 import time
 import threading
 import Queue
+import copy
+import ctypes
+from instrument import Instrument
 
 class MatrixIoTimeout(Exception):pass
 class MatrixIoError(Exception):
@@ -32,9 +35,10 @@ class MatrixIoError(Exception):
 		print >> sys.stderr, "Q: %s"%cmdline
 		print >> sys.stderr, "A: %s"%echo
 
-class Matrix:
+class Matrix(Instrument):
 	lock = threading.Lock()
-	timeout = 5 #unit: S
+
+	timeout = 3 #unit: S
 	uart = None
 
 	#<+0, No Error
@@ -72,10 +76,20 @@ class Matrix:
 			self.uart.close()
 			self.uart = None
 
-	def __init__(self, port='COM6', baud=115200):
+	def __init__(self, port=None, baud=115200):
+		if port is None:
+			d2xx = ctypes.WinDLL("ftd2xx.dll")
+			handle = ctypes.c_void_p(None)
+			d2xx.FT_OpenEx("IRT", 2, ctypes.byref(handle))
+			port = ctypes.c_long(-1)
+			d2xx.FT_GetComPortNumber(handle, ctypes.byref(port))
+			d2xx.FT_Close(handle)
+			port = "COM%d"%port.value
+			print "IRMATRIX: port = %s" % port
+
 		self.uart = serial.Serial(port, baud, timeout = self.timeout)
 		self.query("shell -a", echo=False)
-		self.opq = Queue.Queue()
+		self.opq = Queue.Queue(500)
 		self.pipeline_enable = False
 		self.thread = None
 
@@ -84,9 +98,16 @@ class Matrix:
 		self.release()
 
 	def pipeline(self, enable=True):
-		assert self.opq.empty()
+		while not self.opq.empty():
+			ops = self.opq.get(True, 0.1)
+			print "opt.type = %s"%ops["opt"]
+			print "opt.bus = %s"%ops["bus0"]
+			print "opt.line0 = %s"%ops["line0"]
+			print "opt.line1 = %s"%ops["line1"]
+
 		self.pipeline_enable = enable
 		if enable:
+			assert(self.thread is None)
 			self.thread = threading.Thread(target=self.execute)
 			self.thread.setDaemon(True)
 			self.thread.start()
@@ -99,6 +120,9 @@ class Matrix:
 
 	def __reset__(self):
 		self.query("*RST", False)
+		time.sleep(0.2)
+		self.query("shell -a", echo=False)
+		self.mode("OFF")
 
 	def reset(self):
 		self.open(0, 0, 63)
@@ -122,6 +146,12 @@ class Matrix:
 			raise MatrixIoError(cmdline, self.echo)
 
 	def mode(self, md):
+		if md != "OFF":
+			cmdline = "MODE OFF"
+			ecode = self.query(cmdline)
+			if ecode:
+				raise MatrixIoError(cmdline, self.echo)
+
 		cmdline = "MODE %s"%md
 		ecode = self.query(cmdline)
 		if ecode:
@@ -142,6 +172,20 @@ class Matrix:
 			# opc = True
 		# return opc
 
+	def trig(self):
+		#2047 not exist, so it's a dummy scan(trig only)
+		self.scan(0, 2047)
+		self.scan(1, 2047)
+
+	def open_all_lines(self, bus = None):
+		if bus is None:
+			self.open(0, 0, 2047)
+			self.open(1, 0, 2047)
+			self.open(2, 0, 2047)
+			self.open(3, 0, 2047)
+		else:
+			self.open(bus, 0, 2047)
+
 	def open(self, bus0, line0, line1=None):
 		return self.switch("OPEN", bus0, line0, line1)
 
@@ -151,9 +195,15 @@ class Matrix:
 	def scan(self, bus0, line0, line1=None):
 		return self.switch("SCAN", bus0, line0, line1)
 
-	def switch(self, opt, bus0, line0, line1=None):
-		ops = {"opt": opt, "bus0": bus0, "line0": line0, "bus1": bus0, "line1": line1}
+	def fscn(self, bus0, line0, line1=None, bus1=None):
+		return self.switch("FSCN", bus0, line0, line1, bus1)
+
+	def switch(self, opt, bus0, line0, line1=None, bus1=None):
+		if bus1 is None:
+			bus1 = bus0
+		ops = {"opt": opt, "bus0": bus0, "line0": line0, "bus1": bus1, "line1": line1}
 		self.opq.put(ops)
+		#print "OPQPUT: %d"%ops["line0"]
 
 		#wait until matrix response or timeout exception
 		if not self.pipeline_enable:
@@ -179,11 +229,10 @@ class Matrix:
 			bytes = 16 #ROUTE CLOS (@)
 			while True:
 				if ops is None:
-					try:
-						ops = self.opq.get(True, timeout)
-					except Queue.Empty:
-						#print "."
+					if self.opq.empty():
+						time.sleep(0.001)
 						break
+					ops = self.opq.get(True, timeout)
 
 				if last_opt is None:
 					last_opt = ops["opt"]
@@ -243,6 +292,8 @@ class Matrix:
 		if echo:
 			#wait until echo back or timeout
 			line = self.uart.readline()
+			if len(line) == 0:
+				raise MatrixIoError(cmdline, "")
 			self.echo = line #for debug or exception purpose
 			match = re.search("^<[+-]\d*", line)
 			if match is not None:

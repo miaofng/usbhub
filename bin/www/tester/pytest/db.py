@@ -6,97 +6,95 @@ import time
 import sys, signal
 import sqlite3
 import threading
+from eloger import Eloger
 
 class Db:
 	lock = threading.Lock()
 	conn = None
+	cursor = None
 
 	def release(self):
 		if self.conn:
+			self.cursor.close()
 			self.conn.close()
-			self.conn = None
+			self.cursor = self.conn = None
 
-	def __init__(self):
-		self.conn = sqlite3.connect('irt.db', check_same_thread = False)
+	def __init__(self, db="irt.db"):
+		self.conn = sqlite3.connect(db, check_same_thread = False)
 		def dict_factory(cursor, row):
 			d = {}
 			for idx, col in enumerate(cursor.description):
 				d[col[0]] = row[idx]
 			return d
 		self.conn.row_factory = dict_factory
+		self.cursor = self.conn.cursor()
 
-	def __del__(self):
-		self.release()
+	def query(self, sql):
+		#Eloger().log(sql)
 
-	def get(self, attr_name, val_def = None):
-		if hasattr(self, attr_name):
-			self.lock.acquire()
-			obj = getattr(self, attr_name, val_def)
-			self.lock.release()
-			if hasattr(obj, "__call__"):
-				def deco(*args, **kwargs):
-					self.lock.acquire()
-					retval = obj(*args, **kwargs)
-					self.lock.release()
-					return retval
-				return deco
-		return obj
+		select = sql[:6].upper() == "SELECT"
+		records = None
 
-	def set(self, attr_name, value):
 		self.lock.acquire()
-		setattr(self, attr_name, value)
+		self.cursor.execute(sql)
+		if select:
+			records = self.cursor.fetchall()
+		else:
+			self.conn.commit()
 		self.lock.release()
+		return records
 
 	def cfg_get(self, name):
-		cursor = self.conn.cursor()
-		cursor.execute('SELECT * FROM cfg WHERE name=?', (name,))
-		record = cursor.fetchone()
-		if record:
+		sql = "SELECT * FROM cfg WHERE name='%s'"%name
+		records = self.query(sql)
+		if len(records) > 0:
+			record = records[0]
 			return record["value"]
 
 	def cfg_set(self, name, value):
-		cursor = self.conn.cursor()
-		cursor.execute('UPDATE cfg SET value=? WHERE name=?', (str(value), name, ))
-		self.conn.commit()
-
-	def fixture_get(self, id, col):
-		cursor = self.conn.cursor()
-		cursor.execute('SELECT * FROM fixture WHERE id=?', (id,))
-		record = cursor.fetchone()
-		if record:
-			return record[col]
-
-	def fixture_set(self, id, col, val):
-		cursor = self.conn.cursor()
-		sql = 'UPDATE fixture SET %s=%d WHERE id=%d'%(col, val, id)
-		cursor.execute(sql)
-		self.conn.commit()
-
-	def model_get(self, name):
-		cursor = self.conn.cursor()
-		cursor.execute('SELECT * FROM model WHERE name=?', (name,))
-		record = cursor.fetchone()
-		return record
+		sql = "UPDATE cfg SET value='%s' WHERE name='%s'"%(value, name)
+		self.query(sql)
 
 	def test_add(self, result):
-		cursor = self.conn.cursor()
 		cols = vals = ""
 		for key in result:
 			cols += key + ","
 			if isinstance(result[key], int):
 				vals += str(result[key]) + ","
 			else:
-				vals += '"%s",'%str(result[key])
+				vals += "'%s',"%str(result[key])
 
 		cols = cols + "time"
 		vals = vals + 'datetime("now", "localtime")'
 		sql = "INSERT INTO test(%s) VALUES(%s)"%(cols, vals)
-		cursor.execute(sql)
-		self.conn.commit()
+
+		self.query(sql)
 		return sql
 
+################################################
+	def fixture_get(self, id, col):
+		self.lock.acquire()
+		self.cursor.execute('SELECT * FROM fixture WHERE id=?', (id,))
+		record = self.cursor.fetchone()
+		self.lock.release()
+		if record:
+			return record[col]
+
+	def fixture_set(self, id, col, val):
+		sql = 'UPDATE fixture SET %s=%d WHERE id=%d'%(col, val, id)
+		self.lock.acquire()
+		self.cursor.execute(sql)
+		self.conn.commit()
+		self.lock.release()
+
+	def model_get(self, name):
+		self.lock.acquire()
+		self.cursor.execute('SELECT * FROM model WHERE name=?', (name,))
+		record = self.cursor.fetchone()
+		self.lock.release()
+		return record
+
 	def result_add(self, result):
-		cursor = self.conn.cursor()
 		cols = vals = ""
 		for key in result:
 			cols += key + ","
@@ -110,20 +108,23 @@ class Db:
 		cols = cols + "time"
 		vals = vals + 'datetime("now", "localtime")'
 		sql = "INSERT INTO result(%s) VALUES(%s)"%(cols, vals)
-		cursor.execute(sql)
+
+		self.lock.acquire()
+		self.cursor.execute(sql)
 		self.conn.commit()
+		self.lock.release()
 		return sql
 
 	def cal_get(self, model, station, name):
-		cursor = self.conn.cursor()
-		cursor.execute('SELECT * FROM cal WHERE model=? AND station=? AND name=? ORDER BY id DESC', (model, station, name))
-		record = cursor.fetchone()
+		self.lock.acquire()
+		self.cursor.execute('SELECT * FROM cal WHERE model=? AND station=? AND name=? ORDER BY id DESC', (model, station, name))
+		record = self.cursor.fetchone()
+		self.lock.release()
 		if record:
 			return record["value"]
 
 	def cal_add(self, record):
 		#add new cal record
-		cursor = self.conn.cursor()
 		cols = vals = ""
 		for key in record:
 			cols += key + ","
@@ -136,9 +137,12 @@ class Db:
 
 		cols = cols + "time"
 		vals = vals + 'datetime("now", "localtime")'
+
 		sql = "INSERT INTO cal(%s) VALUES(%s)"%(cols, vals)
-		cursor.execute(sql)
+		self.lock.acquire()
+		self.cursor.execute(sql)
 		self.conn.commit()
+		self.lock.release()
 		return sql
 
 #module self test
