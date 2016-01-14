@@ -10,12 +10,12 @@ import getopt #https://docs.python.org/2/library/getopt.html
 from shell import Shell
 
 class Tester:
-	#lock = threading.Lock()
 	instruments = {}
 	tests = {}
 
 	flag_estop = False
 	threads = {} #key is the station nr
+	elock = threading.Lock()
 	emsg = ''
 
 	def instrument_add(self, name, instrument):
@@ -31,6 +31,12 @@ class Tester:
 
 	def test_get(self, name):
 		return self.tests[name]
+
+	def alert(self, emsg = ''):
+		self.elock.acquire()
+		self.emsg = emsg
+		self.elock.release()
+		return emsg
 
 	def __init__(self, db):
 		self.time_start = time.time()
@@ -105,8 +111,7 @@ class Tester:
 
 	def cmd_test(self, argc, argv):
 		if self.IsTesting():
-			self.emsg = "test is busy now"
-			return self.emsg
+			return self.alert("test is busy now")
 
 		try:
 			opt_short = "t:m:x:u:"
@@ -114,8 +119,7 @@ class Tester:
 			opts, args = getopt.getopt(argv[1:], opt_short, opt_long)
 		except getopt.GetoptError as e:
 			cmdline = ' '.join(argv)
-			self.emsg = "cmd: %s .. para error"%cmdline
-			return self.emsg
+			return self.alert("cmd: %s .. para error"%cmdline)
 
 		if (len(args) > 0) and (args[0] == "help"):
 			return 'test --test=gft --mode=AUTO --mask=0 --user=nf xxx.gft'
@@ -136,8 +140,7 @@ class Tester:
 
 		if name not in self.tests:
 			cmdline = ' '.join(argv)
-			self.emsg = "cmd: %s .. --test=???"%cmdline
-			return self.emsg
+			return self.alert("cmd: %s .. --test=???"%cmdline)
 
 		if 0 in self.threads:
 			oldtest = self.threads[0]

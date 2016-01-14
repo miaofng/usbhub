@@ -9,6 +9,7 @@ from ctypes import *
 from comtypes.client import *
 from instrument import Instrument
 import time
+import threading
 
 # def enum(**enums):
 	# return type('Enum', (), enums)
@@ -17,6 +18,8 @@ import time
 
 
 class Pci1761(Instrument):
+	lock = threading.Lock()
+
 	def __init__(self, brd = 0):
 		Instrument.__init__(self)
 		self.di = di = CreateObject("BDaqOcx.InstantDiCtrl.1")
@@ -33,6 +36,8 @@ class Pci1761(Instrument):
 			self.do = None
 
 	def query(self, **arg):
+		self.lock.acquire()
+		retval = None
 		type = arg["type"]
 		port = arg["port"]
 		bit = arg["bit"]
@@ -42,7 +47,9 @@ class Pci1761(Instrument):
 		else:
 			data = c_ubyte(0)
 			self.di.ReadBit(port, bit, data)
-			return data.value
+			retval = data.value
+		self.lock.release()
+		return retval
 
 	def get(self, signal):
 		return self.query(type="r", port=0, bit=signal)

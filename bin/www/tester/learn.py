@@ -20,6 +20,7 @@ class Learn(Test):
 		Test.__init__(self, tester, opts)
 		#test --test=learn --user=nf xxx.gft
 		gft_path = opts["args"][0]
+		gft_path = gft_path.replace(".learn.gft", ".gft")
 		gft_fname = os.path.split(gft_path)[1]
 		[model, ext] = os.path.splitext(gft_fname)
 		self.gft = gft_path
@@ -32,7 +33,7 @@ class Learn(Test):
 		self.gvm = gvm = Gvm()
 		gvm.Connect(self.irt, self.dmm)
 
-		def log(info, passed = None):
+		def log(info, passed = None, eol = "\n"):
 			self.log(info)
 		gvm.log = log
 
@@ -75,7 +76,7 @@ class Learn(Test):
 				"type"	: "R",
 				"i"		: "3", #100mA
 				"range"	: "0", #<
-				"value"	: 0.0,
+				"value"	: 10.0, # = Rmax
 				"min"	: None,
 				"max"	: 10.0,
 			}
@@ -110,7 +111,7 @@ class Learn(Test):
 
 	def Generate(self, df, path):
 		gft = open(path, 'w')
-		now = time.strftime("%Y/%m/%d %H:%I:%S")
+		now = time.strftime("%Y/%m/%d %H:%M:%S")
 		gft.write("//%s"%now + "\n")
 		self.log("//%s"%now)
 		gft.write("O2,6,10,11 <Continuity & Leakage>" + "\n")
@@ -133,7 +134,7 @@ class Learn(Test):
 			m = "\nR%s%s%s0%03d"%(rule["range"], ms_def, rule["i"], int(rule["value"]))
 
 			a = "A%d"%a
-			b = "	B%d		//%.1fohm, %s(%.0fohm)"%(b, record["ohm"], rule["name"], rule["value"])
+			b = "	B%d		<%.1fohm, %s(%.0fohm)>"%(b, record["ohm"], rule["name"], rule["value"])
 
 			if m != M:
 				M = m
@@ -155,7 +156,7 @@ class Learn(Test):
 
 		#isolate points
 		for line in self.isolate:
-			a = "A%d"%line
+			a = "A%d"%(line + 1)
 			gft.write(a + "\n")
 			self.log(a)
 
@@ -186,25 +187,33 @@ class Learn(Test):
 		lines = defined_A + lines
 		#print lines
 
+		ngrp = 0
+		npts = 0
 		groups = self.gvm.Learn(lines)
 		self.log("")
 		for idx, group in enumerate(groups):
 			A = group["A"]
 			B = group["B"]
-			self.log("{A: %d,	B: %s}"%(A+1, str(np.array(B) + 1)))
+			self.log("{A: %3d, B: %s}"%(A+1, str(np.array(B) + 1)))
 
 			N = len(B)
 			if N == 0:
+				npts += 1
 				if not hasattr(self, "isolate"):
 					self.isolate = []
 				self.isolate.append(A)
 			else:
+				npts += N + 1
+				ngrp += 1
 				R = []
 				for line in B:
 					R.append(self.ohms[A][line])
 
 				#parse resistor into components
 				self.Parse(group, R)
+
+		self.log("Found %d Groups(%d points) In Total"%(ngrp, npts))
+		self.log("")
 
 		if hasattr(self, "df"):
 			self.log("")
@@ -213,7 +222,7 @@ class Learn(Test):
 			df = df.sort_values(["Rtyp", "A"])
 			#self.log(repr(df))
 
-			gft = self.gft + ".temp"
+			gft = self.gft.replace(".gft", ".learn.gft")
 			self.Generate(df, gft)
 			self.log("")
 			self.log("Writing to ... %s"%gft)

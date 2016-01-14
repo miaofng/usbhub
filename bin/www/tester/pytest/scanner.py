@@ -62,6 +62,7 @@ class Scanner(Instrument):
 				barcode = self._read()
 				if barcode:
 					return barcode
+		return ''
 
 if __name__ == '__main__':
 	from shell import Shell

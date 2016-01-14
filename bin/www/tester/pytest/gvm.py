@@ -25,7 +25,7 @@ import numpy as np
 #0.06NPLC	1.5ppm*RANGE	1000reads/s<1.0mS>
 # 0.2NPLC	0.7ppm*RANGE	0300reads/s<3.3mS>
 #   1NPLC	0.3ppm*RANGE	0050reads/s<020mS>
-ppm = 1.4
+ppm = 0.3
 
 #according to rut board design
 bus_mp = 0 #measure
@@ -91,11 +91,11 @@ gftp = re.compile(r"""
 		(?P<xx>//\S*).*								#//A405
 		|
 		(
-			(?P<i0>[OLRABXUW])(?P<p0>[\d,N]*)		#LN or A5 or L0140010 or O2,6,10,11
+			(?P<i0>[OLRABXUW])(?P<p0>[\d,NX]*)		#LN or A5 or L0140010 or O2,6,10,11
 			((?P<i1>G)(?P<p1>[\d]*)|)				#U143G71
 		)
 		(
-			\s*(?P<q1>[\[<].*[>\]])\s*$				#...	<K10>
+			\s*(?P<q1>[\[{<].*[>}\]])\s*$				#...	<K10>
 			|
 			\s*$									#...
 		)
@@ -109,7 +109,7 @@ class GvmSyntaxError(Exception):pass
 
 class Gvm():
 	#16mS->4mS, 32mS->8mS
-	ms_fast_factor = 0.25
+	ms_fast_factor = 1
 	passed = True
 
 	hwen = False #hardware enable
@@ -138,7 +138,7 @@ class Gvm():
 			dpsCal = self.db.cfg_get("dpsCal")
 			self.dpsCal = json.loads(dpsCal)
 			hven = self.db.cfg_get("hvtest")
-			self.hven = int(hven)
+			self.hven &= int(hven)
 
 		self.mask = mask
 		self.executers = {}
@@ -237,31 +237,46 @@ class Gvm():
 		#bank not found :(
 		raise GvmPwrError
 
-	def AddMeasure(self):
+	def AddMeasure(self, ofs = 0):
+		A = self.A
+		B = self.B
+
+		if isinstance(A, list):
+			A = np.array(A) + ofs
+			A = A.tolist()
+		else:
+			A = A + ofs
+
+		if isinstance(B, list):
+			B = np.array(B) + ofs
+			B = B.tolist()
+		else:
+			B = B + ofs
+
 		measure = self.M
-		measure["A"] = self.A
-		measure["B"] = self.B
+		measure["A"] = A
+		measure["B"] = B
 		measure = copy.copy(measure)
 		self.dmem.put(measure)
 
 		if not self.hwen:
 			return
 
-		if isinstance(self.B, list):
+		if isinstance(B, list):
 			#to avoid change ARM, static switch method is used
 			#so we need to open all first
 			self.irt.open_all_lines(bus_mp)
 			self.irt.open_all_lines(bus_mn)
-			for line in self.A:
+			for line in A:
 				self.irt.switch("CLOS", bus_mp, line)
-			for line in self.B:
+			for line in B:
 				self.irt.switch("CLOS", bus_mn, line)
 			#self.irt.trig()
-			self.irt.switch("SCAN", bus_mp, self.A[0])
-			self.irt.switch("SCAN", bus_mn, self.B[0])
+			self.irt.switch("SCAN", bus_mp, A[0])
+			self.irt.switch("SCAN", bus_mn, B[0])
 		else:
-			self.irt.switch("SCAN", bus_mp, self.A)
-			self.irt.switch("SCAN", bus_mn, self.B)
+			self.irt.switch("SCAN", bus_mp, A)
+			self.irt.switch("SCAN", bus_mn, B)
 
 	def mode(self):
 		if not self.M:
@@ -334,11 +349,14 @@ class Gvm():
 		self.N = {}
 
 	def ex_O(self, instr):
+		p0 = instr.group("p0")
+		self.hven &= "11" in p0
 		return True
 
 	def ex_L(self, instr):
 		#L0(over)1(mS)4(hv)0(exp)010(Mohm)
 		p0 = instr.group("p0")
+		q1 = instr.group("q1")
 		if p0 == "N":
 			self.L["LN"] = True
 			return True
@@ -349,6 +367,11 @@ class Gvm():
 			hv = p0[2]
 			hv = dict_v[hv]
 			Mohm = int(p0[4:7])
+
+			if q1 and q1[0] is "{":
+				modifier = json.loads(q1)
+				if "HV" in modifier:
+					hv = modifier["HV"] * 1.0
 		except:
 			self.log_instr_exception(instr)
 
@@ -381,8 +404,9 @@ class Gvm():
 		return True
 
 	def ex_R(self, instr):
-		#R0(range)1(mS)2(mA)0(exp)020(value)
+		#R0(range)1(mS)2(mA)0(exp)020(value) {"IS": 0.010, "LV": 12.0}
 		p0 = instr.group("p0")
+		q1 = instr.group("q1")
 		try:
 			sr = p0[0] #spec range
 			sr = dict_range[sr]
@@ -392,6 +416,15 @@ class Gvm():
 			mA = dict_mA[mA]
 			exp = int(p0[3])
 			val = int(p0[4:7])
+
+			if q1 and q1[0] is "{":
+				modifier = json.loads(q1)
+				if "IS" in modifier:
+					mA = modifier["IS"] * 1000
+				if "LV" in modifier:
+					lv = modifier["LV"] * 1.0
+					self.N["lv"] = lv
+
 		except:
 			self.log_instr_exception(instr)
 
@@ -458,6 +491,8 @@ class Gvm():
 		self.A = pin
 		if not self.L["LN"]:
 			self.apin.append(pin)
+			for sub in self.subs:
+				self.apin.append(pin + sub["ofs"])
 
 		return True
 
@@ -472,6 +507,8 @@ class Gvm():
 
 		self.B = pin
 		self.AddMeasure()
+		for sub in self.subs:
+			self.AddMeasure(sub["ofs"])
 		return True
 
 	def ex_X(self, instr):
@@ -497,9 +534,44 @@ class Gvm():
 		if self.hwen:
 			self.irt.switch("CLOS", bus_up, line_pwr)
 			self.irt.switch("CLOS", bus_un, line_gnd)
+			for sub in self.subs:
+				self.irt.switch("CLOS", bus_up, line_pwr + sub["ofs"])
+				self.irt.switch("CLOS", bus_un, line_gnd + sub["ofs"])
 		return True
 
 	def ex_W(self, instr):
+		p0 = instr.group("p0")
+		q1 = instr.group("q1")
+		try:
+			ms = p0[0]
+			ms = dict_ms[ms]
+			if q1 and q1[0] is "{":
+				modifier = json.loads(q1)
+				if "WAIT" in modifier:
+					ms = modifier["WAIT"] * 1000
+		except:
+			self.log_instr_exception(instr)
+
+		deadline = time.time() + ms / 1000.0
+		self.readall()
+		tick = 0
+		waitpoint = False
+		while time.time() < deadline:
+			time.sleep(0.016)
+			tick += 0.016
+			if waitpoint is False:
+				if tick > 1.5:
+					tick -= 1.5
+					waitpoint = True
+					self.log("waiting ....", None, "")
+			else:
+				if tick > 0.5:
+					tick -= 0.5
+					self.log(".", None, "")
+
+		if waitpoint:
+			self.log("")
+
 		return True
 
 	def Run(self):
@@ -513,17 +585,18 @@ class Gvm():
 		passed = self.passed;
 
 		if self.hven:
+			self.passed = True
 			if "type" in self.L:
 				self.log("")
 				self.PassTest(self.L, self.apin)
 				self.readall()
-				passed = self.passed;
 
 				#hv test fail??
-				if not passed:
+				if not self.passed:
 					self.log("Search For Leakage Failed Pins:")
 					self.Travel(self.L, self.apin)
 
+		passed &= self.passed
 		self.stop()
 		self.log("Test Finished", passed)
 		return passed
@@ -695,8 +768,25 @@ class Gvm():
 				elif square[0] == "[":
 					self.log_instr_exception(instr)
 
-	def load(self, path):
+	def load(self, path, model = None):
 		#return None when success or last error
+		subs = []
+		if model:
+			#load settings from db
+			model = self.db.model_get(model)
+			nrow = model["nrow"]
+			ncol = model["ncol"]
+			nofs = model["nofs"]
+			npts = model["npts"]
+			nsub = int(nrow) * int(ncol)
+
+			for isub in range(nsub):
+				if isub > 0:
+					ofs = isub * int(npts) + int(nofs)
+					sub = {"ofs": ofs}
+					subs.append(sub)
+
+		self.subs = subs
 		self.pmem = []
 
 		emsg = None
@@ -840,14 +930,14 @@ class Gvm():
 		if isinstance(A, list): #hv pass test display
 			A = np.array(A) + 1
 			B = np.array(B) + 1
-			if type == "L":
+			if measure["type"] == "L":
 				self.log("A(+): %s"%", ".join(map(str, A)))
 				self.log("B(-): %s"%", ".join(map(str, B)))
 				line = "R(A, B) = %6.01f %-4s"%(v, unit)
 				line += "  <@%04dV, %6s, %6s>"%(measure["hv"], min_str, max_str)
 				self.log(line, passed)
 				self.log("")
-			elif type == "R":
+			elif measure["type"] == "R":
 				if 0:
 					self.log("A(+): %s"%", ".join(map(str, A)))
 					self.log("B(-): %s"%", ".join(map(str, B)))
@@ -869,7 +959,7 @@ class Gvm():
 				line += "  <@%04dV, %6s, %6s>"%(measure["hv"], min_str, max_str)
 			self.log(line, passed)
 
-	def log(self, info, passed = None):
+	def log(self, info, passed = None, eol = "\n"):
 		line = "%-64s"%info
 		if passed == True:
 			line = line + " [PASS]"
@@ -877,7 +967,7 @@ class Gvm():
 			line = line + " [FAIL]"
 		else:
 			pass
-		line = line + "\n"
+		line = line + eol
 		print line ,
 
 	def log_instr_exception(self, instr, emsg = None):
@@ -1098,9 +1188,11 @@ if __name__ == "__main__":
 				fname = argv[2]
 
 			gvm.load(fname)
-			#gvm.dump_pmem()
+			if subcmd == "try":
+				gvm.dump_pmem()
+				sys.exit(0)
 			timer = time.time()
-			gvm.Run(subcmd == "run")
+			gvm.Run()
 			timer = time.time() - timer
 			print "Test Finished In %.1f S"%(timer)
 			sys.exit(0)

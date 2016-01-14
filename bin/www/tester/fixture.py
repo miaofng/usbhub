@@ -3,27 +3,55 @@
 #miaofng@2015-12-10
 #
 
+import time
 from pytest import Pci1761
 
+def enum(**enums):
+	return type('Enum', (), enums)
+
+di = enum(
+	test_start = 0,
+	scan_start = 1
+)
+
+do = enum(
+	test_end = 0,
+	test_ng = 1,
+	scan_end = 2,
+	scan_ng = 3
+)
+
 class Fixture(Pci1761):
-	def IsReady(self):
-		return self.get(0) #in 0
-		
-	def Pass(self):
-		self.set(0, 1) #out 0
-		self.set(1, 0)
-		
-	def Fail(self): #out 1
-		self.set(0, 0)
-		self.set(1, 1)
+	def IsReadyForTest(self):
+		return self.get(di.test_start)
 
-	def scan_IsReady(self):
-		return self.get(1) #in 1
-		
-	def scan_Pass(self):
-		self.set(2, 1) #out 2
-		self.set(3, 0)
+	def IsReadyForScan(self):
+		return self.get(di.scan_start)
 
-	def scan_Fail(self):
-		self.set(2, 0)
-		self.set(3, 1) #out 3
+	def test_reset(self):
+		self.set(do.test_ng, 0)
+		self.set(do.test_end, 0)
+		
+	def test_pass(self):
+		self.set(do.test_ng, 0)
+		time.sleep(0.010)
+		self.set(do.test_end, 1)
+
+	def test_fail(self):
+		self.set(do.test_ng, 1)
+		time.sleep(0.010)
+		self.set(do.test_end, 1)
+		
+	def scan_reset(self):
+		self.set(do.scan_ng, 0)
+		self.set(do.scan_end, 0)
+
+	def scan_pass(self):
+		self.set(do.scan_ng, 0)
+		time.sleep(0.010)
+		self.set(do.scan_end, 1)
+
+	def scan_fail(self):
+		self.set(do.scan_ng, 1)
+		time.sleep(0.010)
+		self.set(do.scan_end, 1)

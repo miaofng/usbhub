@@ -5,9 +5,12 @@ import threading
 import traceback
 import time
 import os, sys
+import fnmatch
 
 class eTestStop(Exception):pass
 class Test(threading.Thread):
+	max_line_char = 58
+
 	lock = threading.Lock()
 	ecode = 0 #useful when sub board exist
 	status = 'READY'
@@ -104,26 +107,37 @@ class Test(threading.Thread):
 			os.makedirs(dir)
 		self.log_file = open(path, 'w')
 
-	def log(self, info, passed=None):
+	def log(self, info="", passed=None, eol = "\n"):
 		#line = "%s#  %-48s"%(time.strftime('%X'), info)
 		#line = "%s#  %-48s"%(self.getDuration(), info)
-		line = "%-64s"%info
-		if passed == True:
-			line = line + " [PASS]"
-		elif passed == False:
-			line = line + " [FAIL]"
-		else:
-			pass
-		line = line + "\n"
+
+		while True:
+			suffix = ""
+			line = info[:self.max_line_char]
+			info = info[self.max_line_char:]
+			if len(info) == 0:
+				suffix = {None: '', True: "    [PASS]", False: "    [FAIL]"}
+				suffix = suffix[passed]
+
+				if len(suffix) > 0:
+					#line = "%-64s"%info
+					format = "%%-%ds"%self.max_line_char
+					line = format % line
+
+			line = line + suffix + eol
+			if self.log_file:
+				self.log_file.write(line)
+			else:
+				print line,
+
+			if len(info) == 0:
+				break
 
 		if self.log_file:
-			self.log_file.write(line)
 			self.log_file.flush()
-		else:
-			print line ,
 
 	def Init(self):
-		self.set("status", "READY")
+		self.set("status", "Waiting ...")
 		self.set("barcode", '')
 		self.set("dfpath", None)
 
@@ -139,7 +153,7 @@ class Test(threading.Thread):
 		path = dfpath
 		if path is None:
 			subdir = self.model + "/" + time.strftime("%Y-%m-%d")
-			fname = time.strftime("%H-%M-%S_")+barcode+".dat"
+			fname = time.strftime("%H-%M-%S_")+barcode.replace(":", "-")+".dat"
 			path = self.getPath(subdir, fname)
 
 		self.set("dfpath", os.path.abspath(path))
@@ -160,7 +174,9 @@ class Test(threading.Thread):
 		self.set("start_time", 0)
 
 	def Prompt(self, status):
+		old = self.get("status")
 		self.set("status", status)
+		return old
 
 	def Record(self):
 		dat_dir = self.getPath()
