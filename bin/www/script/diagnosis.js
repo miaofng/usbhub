@@ -215,10 +215,23 @@ function meas_generate_file(cb)
 		if(rly.length > 0) {
 			gft.push(rly.toUpperCase());
 		}
-		line = sprintf("A%d", A);
-		gft.push(line);
-		line = sprintf("A%d", B);
-		gft.push(line);
+
+		cnt = 0
+		Apoints = minputs.meas_A.split(";")
+		for(i in Apoints) {
+			pin = parseInt(Apoints[i])
+			if(pin > 0) {
+				line = sprintf("A%d", pin);
+				gft.push(line);
+				cnt ++;
+			}
+		}
+
+		if (cnt < 2) {
+			alert("number of Apoint < 2, too less!");
+			return;
+		}
+
 		break;
 	default:
 		break;
@@ -306,6 +319,9 @@ $(function() {
 		for (ctrl_id in minputs) {
 			$("#"+ctrl_id).val(minputs[ctrl_id])
 		}
+		$("#meas_mA").attr("disabled", minputs["meas_type"] == "L");
+		$("#meas_hv").attr("disabled", minputs["meas_type"] != "L");
+		$("#meas_B").attr("disabled", minputs["meas_type"] == "L");
 	}
 
 	grid_init()
@@ -320,6 +336,7 @@ $(function() {
 		//$("#meas_rly").attr("disabled", this.value[1] != "@");
 		$("#meas_mA").attr("disabled", this.value == "L");
 		$("#meas_hv").attr("disabled", this.value != "L");
+		$("#meas_B").attr("disabled", this.value == "L");
 	})
 
 	$("#meas_run").click(function(){

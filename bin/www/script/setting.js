@@ -80,9 +80,10 @@ function model_load() {
 		$("#m_ncol").val(row.ncol);
 		$("#m_npts").val(row.npts);
 		$("#m_nofs").val(row.nofs);
+		$("#m_barcode").val(row.barcode);
 		model_sub_redraw(row.nrow, row.ncol, settings.mask);
-		if(row.barcode.length > 2)
-			$("#m_zpl").html(JSON.parse(row.barcode));
+		if(row.zpl.length > 2)
+			$("#m_zpl").html(JSON.parse(row.zpl));
 	});
 }
 
@@ -91,14 +92,20 @@ function rule_list_all()
 	var html = []
 	header = irt.mlstring(function(){/*
 		<ul class="list_head">
-			<li>TYPE</li>
-			<li>I(mA)</li>
-			<li>TYP</li>
-			<li>MIN</li>
-			<li>MAX</li>
-			<li><a class="rule" href="#" title="Create New Rule">+</a>&nbsp;NAME<input type="checkbox" id="rule_checkall"/></li>
+			<li>$type</li>
+			<li>$i</li>
+			<li>$typical</li>
+			<li>$min</li>
+			<li>$max</li>
+			<li><a class="rule" href="#" title="Create New Rule">+</a>&nbsp;$name<input type="checkbox" id="rule_checkall"/></li>
 		</ul>
 	*/});
+	header = header.replace("$type", language_string.type)
+	header = header.replace("$i", language_string.i)
+	header = header.replace("$typical", language_string.typical)
+	header = header.replace("$min", language_string.min)
+	header = header.replace("$max", language_string.max)
+	header = header.replace("$name", language_string.name)
 	html.push(header);
 	irt.db().all("SELECT * FROM rule", function(err, rows){
 		if(err) {
@@ -237,6 +244,9 @@ $(function() {
 		test = JSON.parse(session.test);
 	}
 
+	language_string = session.language_string
+	language_string = JSON.parse(language_string)
+
 	$("#g_admin_confirm").bind('keydown', function(event){
 		var key = event.which;
 		if (key == 13) {
@@ -263,11 +273,34 @@ $(function() {
 		}
 	});
 
+	$( "#dialog_warn" ).dialog({
+		autoOpen: false,
+		closeOnEscape: true,
+		height: 280,
+		width: 500,
+		modal: false,
+		hide: {
+			effect: "explode",
+			duration: 500
+		}
+	});
+
+	$("#warn_ok").click(function(){
+		irt.db().run("DELETE FROM test", function(err){
+			if(err) alert(err);
+			else $("#dialog_warn").dialog("close");
+		})
+	});
+
 	$("#gcfg_save").click(function(){
 		async.eachSeries($(".gcfg"), function (dom, callback) {
 			irt.cfg_set(dom.id, $(dom).val());
 			callback();
 		});
+	});
+
+	$("#gcfg_clear").click(function(){
+		$("#dialog_warn").dialog("open");
 	});
 
 	$("#m_nrow, #m_ncol").change(function(){
@@ -295,6 +328,8 @@ $(function() {
 		ncol = $("#m_ncol").val();
 		npts = $("#m_npts").val();
 		nofs = $("#m_nofs").val();
+		barcode = $("#m_barcode").val().trim()
+
 		zpl = $("#m_zpl").html();
 		zpl = JSON.stringify(zpl);
 
@@ -330,13 +365,14 @@ $(function() {
 		irt.db().get(sql, function(err, row){
 			var sql_upd = irt.mlstring(function(){/*
 				UPDATE model SET nrow = $nrow, ncol = $ncol,
-				npts = $npts, nofs = $nofs, barcode = '$zpl',
-				rules = '$rules' WHERE id = $id
+				npts = $npts, nofs = $nofs, zpl = '$zpl',
+				rules = '$rules', barcode='$barcode'
+				WHERE id = $id
 			*/});
 
 			var sql_ins = irt.mlstring(function(){/*
-				INSERT INTO model(nrow, ncol, npts, nofs, barcode, rules, name)
-				VALUES($nrow, $ncol, $npts, $nofs, '$zpl', '$rules', '$model')
+				INSERT INTO model(nrow, ncol, npts, nofs, zpl, barcode, rules, name)
+				VALUES($nrow, $ncol, $npts, $nofs, '$zpl', '$barcode', '$rules', '$model')
 			*/});
 
 			var sql = sql_ins;
@@ -351,6 +387,7 @@ $(function() {
 			sql = sql.replace("$nofs", nofs);
 			sql = sql.replace("$rules", rules);
 			sql = sql.replace("$zpl", zpl);
+			sql = sql.replace("$barcode", barcode);
 			sql = sql.replace("$model", test.model);
 			console.log(sql);
 

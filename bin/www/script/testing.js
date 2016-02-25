@@ -5,6 +5,9 @@ var path = require('path');
 var fdialogs = require('node-webkit-fdialogs')
 var crc32 = require('crc-32')
 
+var mode_string = {}
+var cwd = null
+
 //to be stored in browser's session
 var test = {
 	"uid": null, //operator job id
@@ -71,7 +74,7 @@ function gft_load(gft) {
 	}
 
 	test.fname = null;
-	fs.readFile(path.resolve(process.cwd(), gft), "ascii", function (err, content) {
+	fs.readFile(path.resolve(cwd, gft), "ascii", function (err, content) {
 		if(err) {
 			alert(err.message);
 			return;
@@ -108,8 +111,9 @@ function gft_load(gft) {
 			test.fname = gft;
 			var model = path.basename(gft, ".gft");
 			model = path.basename(model, ".py");
-			$('#model').html(model);
-			irt.cfg_set("gft_last", path.relative(process.cwd(), gft));
+			model = model.replace(".learn", "")
+			$('#model').html(path.basename(gft, ".gft"));
+			irt.cfg_set("gft_last", path.relative(cwd, gft));
 
 			test.model = model;
 			test.model_ok = false
@@ -189,8 +193,11 @@ function update_uut_status(station, status) {
 var datafile_crc = [];
 
 function load_report(id, datafile) {
-	if (datafile == null)
+	if (datafile == null) {
+		$(id).html("\n");
 		return
+	}
+
 
 	fs.readFile(datafile, "ascii", function (err, content) {
 		if(err) {
@@ -242,11 +249,17 @@ function update_status(status) {
 		if (i in tests) {
 			test_info = tests[i]
 			update_uut_status(i, test_info.status);
-			if(test_info.status != "READY") {
-				$("#barcode"+i).html(test_info.barcode);
-				$("#duration"+i).html(test_info.duration);
-				load_report("#result"+i, test_info.datafile);
+			$("#barcode"+i).html(test_info.barcode);
+			$("#duration"+i).html(test_info.duration);
+			if("TestStart" in test_info) {
+				$("#TestStart"+i).html(test_info.TestStart);
+				$("#ScanStart"+i).html(test_info.ScanStart);
 			}
+			else {
+				$("#TestStart"+i).html("&nbsp;");
+				$("#ScanStart"+i).html("&nbsp;");
+			}
+			load_report("#result"+i, test_info.datafile);
 		}
 	}
 
@@ -306,7 +319,7 @@ function timer_tick_update() {
 	test.tserv_ok -= 1
 	if (test.tserv_ok < 0) {
 		test.tserv_ok = 0
-		emsg = "Test Server Died, Please Restart the Program"
+		emsg = "Tester Exception, Please Restart the Program"
 		MessageBox(emsg)
 	}
 
@@ -379,12 +392,17 @@ function timer_statistics_update() {
 $(function() {
 	irt.init();
 	var session = window.sessionStorage;
+	cwd = session.cwd
 	if(session.test) {
 		test = JSON.parse(session.test);
 	}
 	if(session.settings != null) {
 		settings = JSON.parse(session.settings);
 	}
+
+	language_string = session.language_string
+	language_string = JSON.parse(language_string)
+	mode_string = language_string.mode
 
 	$( "#dialog_estop" ).dialog({
 		autoOpen: false,
@@ -524,13 +542,13 @@ $(function() {
 		});
 	});
 
-	$("#button_mode").val(test.mode);
+	$("#button_mode").val(mode_string[test.mode]);
 	$("#button_mode").click(function(){
 		if(test.mode == "AUTO") test.mode = "STEP";
 		else if(test.mode == "STEP") test.mode = "LEARN"
 		else if(test.mode == "LEARN") test.mode = "CAL"
 		else test.mode = "AUTO";
-		$(this).val(test.mode);
+		$(this).val(mode_string[test.mode]);
 	});
 
 	$("#button_run").click(function(){
@@ -538,7 +556,7 @@ $(function() {
 		var run = $(this).val();
 		if(run == "RUN") {
 			irt.cfg_get('gft_last', function(fname) {
-				fname = path.resolve(process.cwd(), fname);
+				fname = path.resolve(cwd, fname);
 				var mask = 0
 				for (var i in settings.mask) {
 					mask += (settings.mask[i]) ? 0 : (1 << i);

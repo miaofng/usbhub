@@ -21,7 +21,7 @@ def signal_handler(signal, frame):
 
 signal.signal(signal.SIGINT, signal_handler)
 
-db = IRDb()
+db = IRDb("../../../data/data.db")
 dmm = Dmm()
 irt = Matrix()
 fixture = Fixture()

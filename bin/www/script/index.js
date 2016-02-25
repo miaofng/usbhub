@@ -18,10 +18,31 @@ function shutdown_timer_func() {
 
 $(function() {
 	var session = window.sessionStorage;
+	session.cwd = process.cwd()
 	delete(session.test);
 	delete(session.server_error);
 
 	var win = gui.Window.get();
+	irt.init()
+	irt.cfg_get("language", function(language) {
+		switch(language) {
+		case "cn":
+			window.topFrame.location.href = "cn/header.html";
+			window.mainFrame.location.href = "cn/testing.html";
+			document.title = cn.title
+			session.language = "cn"
+			session.language_string = JSON.stringify(cn);
+			break
+		default:
+			window.topFrame.location.href = "en/header.html";
+			window.mainFrame.location.href = "en/testing.html";
+			document.title = en.title
+			session.language = "en"
+			session.language_string = JSON.stringify(en);
+			break
+		}
+	})
+
 	win.show();
 	win.on('close', function() {
 		// Pretend obama appears
@@ -37,6 +58,6 @@ $(function() {
 
 	irt.start(function(err){
 		session.server_error = err;
-		window.mainFrame.location.href = "about.html";
+		window.mainFrame.location.href = session.language + "/about.html";
 	});
 });

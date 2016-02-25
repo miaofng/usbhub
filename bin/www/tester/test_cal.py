@@ -109,9 +109,12 @@ class IRCal(Test):
 		sumsq = (delta * delta).sum()/len(vset_list)
 		sumsq = pow(sumsq, 0.5)
 
-		passed = abs(equal) < max(vset_list)*0.01;
-		passed &= sumsq < max(vset_list)*0.01;
-		self.log("%s: equal = %.3f A, sumsq = %.3f A"%(prefix, equal, sumsq), passed)
+		err_equal = abs(equal) / max(vset_list)
+		err_sumsq = sumsq / max(vset_list)
+
+		passed = err_equal <= 0.02
+		passed &= err_sumsq <= 0.03
+		self.log("%s: error_equal = %.3f%%, error_sumsq = %.3f%%"%(prefix, err_equal*100, err_sumsq * 100), passed)
 		self.coeff[prefix + "_passed"] = passed + 0
 		return passed;
 

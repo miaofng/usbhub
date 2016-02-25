@@ -116,6 +116,7 @@ class Gvm():
 	pmem = []
 	dmem = None
 	apin = None #pins for hv test
+	pins = [] #missed pin search
 	#epin = {} #bad apins of hv
 
 	#dps
@@ -167,6 +168,7 @@ class Gvm():
 		self.N = {}
 		self.dmem = Queue.Queue()
 		self.apin = []
+		self.pins = []
 		#self.epin = {}
 
 		if not self.hwen:
@@ -489,6 +491,7 @@ class Gvm():
 			self.log_instr_exception(instr)
 
 		self.A = pin
+		self.pins.append(pin)
 		if not self.L["LN"]:
 			self.apin.append(pin)
 			for sub in self.subs:
@@ -506,6 +509,7 @@ class Gvm():
 			self.log_instr_exception(instr)
 
 		self.B = pin
+		self.pins.append(pin)
 		self.AddMeasure()
 		for sub in self.subs:
 			self.AddMeasure(sub["ofs"])
@@ -531,6 +535,8 @@ class Gvm():
 		except:
 			self.log_instr_exception(instr)
 
+		self.pins.append(line_pwr)
+		self.pins.append(line_gnd)
 		if self.hwen:
 			self.irt.switch("CLOS", bus_up, line_pwr)
 			self.irt.switch("CLOS", bus_un, line_gnd)
@@ -598,6 +604,11 @@ class Gvm():
 
 		passed &= self.passed
 		self.stop()
+
+		pins = list(set(self.pins))
+		pins = np.array(pins) + 1
+		pins = pins.tolist()
+		self.log("%d pins in total: %s"%(len(pins), str(pins)))
 		self.log("Test Finished", passed)
 		return passed
 
