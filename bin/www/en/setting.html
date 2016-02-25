@@ -3,15 +3,22 @@
 <head>
 <meta charset="utf-8">
 <title>INSULATION RESISTOR TESTER - E2XX</title>
-<link rel="stylesheet" href="jquery-ui/jquery-ui.min.css">
-<link rel="stylesheet" href="jquery-ui/jquery-ui.theme.min.css">
-<link rel="stylesheet" href="css/setting.css">
-<script src="jquery-ui/external/jquery/jquery.js"></script>
-<script src="jquery-ui/jquery-ui.min.js"></script>
+<link rel="stylesheet" href="../jquery-ui/jquery-ui.min.css">
+<link rel="stylesheet" href="../jquery-ui/jquery-ui.theme.min.css">
+<link rel="stylesheet" href="../css/setting.css">
+<script src="../jquery-ui/external/jquery/jquery.js"></script>
+<script src="../jquery-ui/jquery-ui.min.js"></script>
 <!-- <script src="ace-builds/src-noconflict/ace.js" type="text/javascript" charset="utf-8"></script> -->
-<script src="script/setting.js"></script>
+<script src="../script/setting.js"></script>
 </head>
 <body>
+	<div id="dialog_warn" title="WARNING">
+			<div><img id="warn_img" src="../img/warn.png" height="150px"/></div>
+			<div>
+				<div id="warn_txt">All records will be removed and not recoverable! Continue?</div>
+				<div><input id="warn_ok" type="button" value="OK"/></div>
+			</div>
+	</div>
 	<div id="rule_dlg" title="Rule Properties">
 			<div style="display: none;">Type:
 				<select class="rule_input" id="rule_type"/>
@@ -58,6 +65,12 @@
   <div id="panel">
 	<div id="panel_left">
 		<div class="panel_head">GLOBAL SETTINGS</div>
+		<div>LANGURAGE:
+			<select class="gcfg" id="language">
+				<option value ="cn">中文</option>
+				<option value ="en">ENGLISH</option>
+			</select>
+		</div>
 		<div>IMS:
 			<select class="gcfg" id="IMS">
 				<option value ="1">Enable</option>
@@ -76,13 +89,16 @@
 				<option value ="0">Disable</option>
 			</select>
 		</div>
-		<div>WasteBox:
+		<div>Test Records:
+			<input id="gcfg_clear" type="button" value="Dump">
+		</div>
+<!-- 		<div>WasteBox:
 			<select class="gcfg" id="WasteBox">
 				<option value ="1">Enable</option>
 				<option value ="0">Disable</option>
 			</select>
 		</div>
-		<div>Report Path: <input class="gcfg" id="dat_dir" value="../../../data/"/></div>
+		<div>Report Path: <input class="gcfg" id="dat_dir" value="../../../data/"/></div> -->
 		<div>Admin Passwd: <input class="passwd" id="g_admin_passwd" type="PASSWORD"/></div>
 	  <div>Confirm: <input title="回车即录入" class="passwd" id="g_admin_confirm" type="PASSWORD"/></div>
 		<div>Waste Passwd: <input class="passwd" id="g_waste_passwd" type="PASSWORD"/></div>

@@ -254,7 +254,7 @@ exports.waste_query = function(cmdline, callback) {
 };
 
 exports.init = function() {
-	db = new sqlite3.Database('www/tester/irt.db', function(err){
+	db = new sqlite3.Database('../data/data.db', function(err){
 		if(err) {
 			console.log("open database, err: "+err);
 		}

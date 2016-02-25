@@ -88,13 +88,18 @@ function test_list() {
 
 	irt.test_enum(cnds, function(rows){
 		var html = [];
-		html.push('\
-			<ul class="list_head">\
-				<li>DATE</li>\
-				<li>MODEL</li>\
-				<li>BARCODE</li>\
-			</ul>\
-		');
+		ul = irt.mlstring(function(){/*
+			<ul class="list_head">
+				<li>$date</li>
+				<li>$model</li>
+				<li>$barcode</li>
+			</ul>
+		*/});
+		ul = ul.replace("$date", language_string.date)
+		ul = ul.replace("$model", language_string.model)
+		ul = ul.replace("$barcode", language_string.barcode)
+		html.push(ul)
+
 		rows.forEach(function(row, index){
 			var ul = [];
 			ul.push('<ul title="'+row.datafile+'">');
@@ -126,6 +131,15 @@ $(function() {
 	if(session.records != null) {
 		records = JSON.parse(session.records);
 	}
+
+	language_string = session.language_string
+	language_string = JSON.parse(language_string)
+
+	sql = "SELECT count(*) AS cnt FROM test"
+	irt.db().get(sql, function(err, row){
+		if(err) alert(err);
+		else $("#total").val(row["cnt"]);
+	})
 
 	$("#search").click(function(){
 		records.s_start = $("#s_start").val();

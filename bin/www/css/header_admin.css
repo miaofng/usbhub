@@ -64,6 +64,11 @@
 
 .menu li:nth-child(4) a {
 	border-left: none;
+	background: url(../img/docs.png) no-repeat 6px center;
+}
+
+.menu li:nth-child(5) a {
+	border-left: none;
 	background: url(../img/diagnosis.png) no-repeat 6px center;
 }
 

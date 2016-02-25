@@ -3,15 +3,15 @@
 <head>
 <meta charset="utf-8">
 <title>INSULATION RESISTOR TESTER - E2XX</title>
-<link rel="stylesheet" href="jquery-ui/jquery-ui.min.css">
-<link rel="stylesheet" href="css/testing.css">
-<script src="jquery-ui/external/jquery/jquery.js"></script>
-<script src="jquery-ui/jquery-ui.min.js"></script>
-<script src="script/testing.js"></script>
+<link rel="stylesheet" href="../jquery-ui/jquery-ui.min.css">
+<link rel="stylesheet" href="../css/testing.css">
+<script src="../jquery-ui/external/jquery/jquery.js"></script>
+<script src="../jquery-ui/jquery-ui.min.js"></script>
+<script src="../script/testing.js"></script>
 </head>
 <body>
 	<div id="dialog_uid" title="Login">
-			<div><img src="img/lock.png" height="150px"/></div>
+			<div><img src="../img/lock.png" height="150px"/></div>
 			<div>
 				<div>Please Enter your Job ID Before Testing</div>
 				<div><input id="uid_input" type="text" /></div>
@@ -20,7 +20,7 @@
 	</div>
 
 	<div id="dialog_wcl" title="WasteBox">
-			<div><img id="wcl_image" src="img/box_lock.png" width="128px" height="196px"/></div>
+			<div><img id="wcl_image" src="../img/box_lock.png" width="128px" height="196px"/></div>
 			<div>
 				<div>WasteBox Password:</div>
 				<div><input id="wcl_passwd" type="password" /></div>
@@ -32,14 +32,14 @@
 	</div>
 
 	<div id="dialog_estop" title="WARNING">
-			<div><img id="estop_img" src="img/estop.gif" height="150px"/></div>
+			<div><img id="estop_img" src="../img/estop.gif" height="150px"/></div>
 			<div>
 				<div id="estop_txt"></div>
 			</div>
 	</div>
 
 	<div id="dialog_warn" title="WARNING">
-			<div><img id="warn_img" src="img/warn.png" height="150px"/></div>
+			<div><img id="warn_img" src="../img/warn.png" height="150px"/></div>
 			<div>
 				<div id="warn_txt"></div>
 			</div>
@@ -99,6 +99,14 @@
 			<div>IMS: <span id="ims_saddr">&nbsp;</span></div>
 <!-- 			<div><input class="idleinput" id="button_file" type="file" accept="*.py"	nwworkingdir="C:\Windows" hidden="hidden"/></div>
  -->			<!-- <div id="model">Unknown</div> -->
+			<div>ScanStart Signal:
+				<span class="stat" id="ScanStart0">&nbsp;</span>
+				<!-- <span class="stat" id="num_pass1">&nbsp;</span> -->
+			</div>
+			<div>TestStart Signal:
+				<span class="stat" id="TestStart0">&nbsp;</span>
+				<!-- <span class="stat" id="num_pass1">&nbsp;</span> -->
+			</div>
 			<div><input class="idleinput" id="button_model" type="button" value="MODEL"/></div>
 			<div><input class="idleinput" id="button_mode" type="button" value="AUTO" title="RUN Mode"/></div>
 			<div><input id="button_run" type="button" value="RUN" disabled="disabled"/></div>

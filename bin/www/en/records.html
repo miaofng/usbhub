@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>INSULATION RESISTOR TESTER - E2XX</title>
+<link rel="stylesheet" href="../jquery-ui/jquery-ui.min.css">
+<link rel="stylesheet" href="../jquery-ui/jquery-ui.theme.min.css">
+<link rel="stylesheet" href="../css/records.css">
+<script src="../jquery-ui/external/jquery/jquery.js"></script>
+<script src="../jquery-ui/jquery-ui.min.js"></script>
+<script src="../script/records.js"></script>
+</head>
+<body>
+  <div id="panel">
+    <div id="panel_uut">
+	  <div id="status"></div>
+      <div id="barcode"></div>
+	  <div id="div_result">
+	    <pre id="result"></pre>
+      </div>
+	</div>
+    <div id="panel_ctrl">
+		  <div>TOTAL: <input class="search" id="total" value="0" disabled/></div>
+	    <div>MODEL: <input class="search" id="s_model" value=""/></div>
+      <div>BARCODE: <input class="search" id="s_barcode" value=""/></div>
+      <div>START DATE: <input class="search" id="s_start" value="2015-06-16"/></div>
+      <div>END DATE: <input class="search" id="s_end" value="2015-06-16"/></div>
+      <div><input id="search" type="button" value="Search!" title="list 128 results at most"/></div>
+      <div id="list" wrap="off" readonly="readonly">
+		<div id="s_result">
+		  <ul>
+			<li>record time</li>
+			<li>model</li>
+			<li>barcode</li>
+		  </ul>
+        </div>
+	  </div>
+    </div>
+  </div>
+</body>

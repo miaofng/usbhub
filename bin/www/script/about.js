@@ -10,6 +10,6 @@ $(function() {
 	if (session.server_error) {
 		$("#error").html(session.server_error);
 		$("#error").css("border-color", "red");
-		$("#photo").attr("src","img/ohno.jpg");
+		$("#photo").attr("src","../img/ohno.jpg");
 	}
 });

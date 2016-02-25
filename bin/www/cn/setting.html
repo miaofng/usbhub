@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>INSULATION RESISTOR TESTER - E2XX</title>
+<link rel="stylesheet" href="../jquery-ui/jquery-ui.min.css">
+<link rel="stylesheet" href="../jquery-ui/jquery-ui.theme.min.css">
+<link rel="stylesheet" href="../css/setting.css">
+<script src="../jquery-ui/external/jquery/jquery.js"></script>
+<script src="../jquery-ui/jquery-ui.min.js"></script>
+<!-- <script src="ace-builds/src-noconflict/ace.js" type="text/javascript" charset="utf-8"></script> -->
+<script src="../script/setting.js"></script>
+</head>
+<body>
+	<div id="dialog_warn" title="警告">
+			<div><img id="warn_img" src="../img/warn.png" height="150px"/></div>
+			<div>
+				<div id="warn_txt">此操作将删除所有测试记录且无法恢复！是否要继续？</div>
+				<div><input id="warn_ok" type="button" value="OK"/></div>
+			</div>
+	</div>
+	<div id="rule_dlg" title="学习规则">
+			<div style="display: none;">元件类型:
+				<select class="rule_input" id="rule_type"/>
+					<option value ="R">RESISTOR</option>
+					<option value ="D">DIODE</option>
+				</select>
+			</div>
+			<div>测量电流:
+				<select class="rule_input" id="rule_i">
+					<option value ="0">10mA</option>
+					<option value ="1">20mA</option>
+					<option value ="2">50mA</option>
+					<option value ="3">0.10A</option>
+					<option value ="4">0.20A</option>
+					<option value ="5">0.50A</option>
+					<option value ="6">0.75A</option>
+					<option value ="7">1.00A</option>
+					<option value ="8">1.50A</option>
+					<option value ="9">2.00A</option>
+				</select>
+			</div>
+			<div>区间:
+				<select class="rule_input" id="rule_range">
+					<option value ="0">&le;</option>
+					<option value ="1">&ge;</option>
+					<option value ="2">±1%</option>
+					<option value ="3">±3%</option>
+					<option value ="4">±5%</option>
+					<option value ="5">±10%</option>
+					<option value ="6">±20%</option>
+					<option value ="7">±30%</option>
+					<option value ="8">±40%</option>
+					<option value ="9">±50%</option>
+				</select>
+			</div>
+			<div>典型值:<input class="rule_input" id="rule_value" type="text" title="单位：欧姆"/></div>
+			<div>名称:<input class="rule_input" id="rule_name" type="text" /></div>
+			<div>
+				<input class="rule_button" id="rule_add" type="button" value="添" title="Add"/>
+				<input class="rule_button" id="rule_del" type="button" value="删" title="Del"/>
+				<input class="rule_button" id="rule_set" type="button" value="保存"/>
+			</div>
+	</div>
+  <div id="panel">
+	<div id="panel_left">
+		<div class="panel_head">全局设定</div>
+		<div>语言:
+			<select class="gcfg" id="language">
+				<option value ="cn">中文</option>
+				<option value ="en">ENGLISH</option>
+			</select>
+		</div>
+		<div>IMS服务器:
+			<select class="gcfg" id="IMS">
+				<option value ="1">打开</option>
+				<option value ="0">关闭</option>
+			</select>
+		</div>
+		<div>绝缘测试:
+			<select class="gcfg" id="hvtest">
+				<option value ="1">打开</option>
+				<option value ="0">关闭</option>
+			</select>
+		</div>
+		<div>打印条码:
+			<select class="gcfg" id="Label">
+				<option value ="1">打开</option>
+				<option value ="0">关闭</option>
+			</select>
+		</div>
+		<div>测试记录:
+			<input id="gcfg_clear" type="button" value="清空">
+		</div>
+<!-- 		<div>废料箱:
+			<select class="gcfg" id="WasteBox">
+				<option value ="1">Enable</option>
+				<option value ="0">Disable</option>
+			</select>
+		</div> -->
+		<!-- <div>报告路径: <input class="gcfg" id="dat_dir" value="../../../data/" readonly/></div> -->
+		<div>管理员密码: <input class="passwd" id="g_admin_passwd" type="PASSWORD"/></div>
+	  <div>密码确认: <input title="回车即录入" class="passwd" id="g_admin_confirm" type="PASSWORD"/></div>
+<!-- 		<div>废料箱密码: <input class="passwd" id="g_waste_passwd" type="PASSWORD"/></div>
+	  <div>密码确认: <input title="回车即录入" class="passwd" id="g_waste_confirm" type="PASSWORD"/></div> -->
+		<div><input id="gcfg_save" type="button" value="保存"></div>
+    </div>
+
+    <div id="panel_middle">
+		<div class="panel_head">自学习规则设定 -<span id="m_model">产品型号不存在</span> </div>
+		<div id="list_div">
+			<div id="list">
+				<ul class="list_head">
+					<li>类型</li>
+					<li>测量电流(mA)</li>
+					<li>典型值(Ω)</li>
+					<li>下限(Ω)</li>
+					<li>上限(Ω)</li>
+					<li>名称</li>
+				</ul>
+			</div>
+		</div>
+	</div>
+	<div id="panel_right">
+		<div class="panel_head">型号设定</div>
+		<div class="panel_head1" id="mask">
+			<div><input id="0" type="checkbox" checked="checked"/><label for="0">...</label></div>
+		</div>
+		<div>拼版行数: <input class="mcfg" id="m_nrow" value="1"/></div>
+		<div>拼版列数: <input class="mcfg" id="m_ncol" value="1"/></div>
+		<div>点数: <input class="mcfg" id="m_npts" value="256"/></div>
+		<div>偏移: <input class="mcfg" id="m_nofs" value="0" /></div>
+		<div>条码: <input class="mcfg" id="m_barcode" value="*" title="例如：33?714* 其中?匹配一个任意字符;*匹配0或多个任意字符"/></div>
+		<div>标签: <input class="mcfg"  id="m_openzpl" value="打开.zpl文件 ..." readonly="readonly"/></div>
+		<div><pre id="m_zpl" wrap="off" ></pre></div>
+		<div>
+			<input type="button" id="mcfg_save" value="保存" />
+		</div>
+
+
+    </div>
+
+  </div>
+
+</body>

@@ -3,20 +3,20 @@
 <head>
 <meta charset="utf-8">
 <title>INSULATION RESISTOR TESTER - E2XX</title>
-<link rel="stylesheet" href="jquery-ui/jquery-ui.min.css">
-<link rel="stylesheet" href="jquery-ui/jquery-ui.theme.min.css">
-<link rel="stylesheet" href="css/diagnosis.css">
-<script src="jquery-ui/external/jquery/jquery.js"></script>
-<script src="jquery-ui/jquery-ui.min.js"></script>
-<script src="script/diagnosis.js"></script>
+<link rel="stylesheet" href="../jquery-ui/jquery-ui.min.css">
+<link rel="stylesheet" href="../jquery-ui/jquery-ui.theme.min.css">
+<link rel="stylesheet" href="../css/diagnosis.css">
+<script src="../jquery-ui/external/jquery/jquery.js"></script>
+<script src="../jquery-ui/jquery-ui.min.js"></script>
+<script src="../script/diagnosis.js"></script>
 </head>
 <body>
 	<div id="panel">
 		<div id="panel_left">
-			<div class="panel_head">AUTO SCAN</div>
+			<div class="panel_head">扫描测试</div>
 			<div id="dcfg">
 				<select class="dinput" id="scan_type">
-					<option value ="PROBE">PROBE</option>
+					<option value ="PROBE">打点</option>
 					<option value ="SLOT">SLOT</option>
 					<option value ="ZIF 1">ZIF1</option>
 					<option value ="ZIF 2">ZIF2</option>
@@ -105,18 +105,18 @@
 		</div>
 
 		<div id="panel_right">
-			<div class="panel_head">MANUAL MODE</div>
+			<div class="panel_head">手动测试</div>
 			<div>
-				Type: <select class="minput" id="meas_type">
-					<option value ="R">RESISTOR</option>
-					<option value ="D">DIODE</option>
-					<option value ="L">LEAKAGE</option>
+				类型: <select class="minput" id="meas_type">
+					<option value ="R">电阻</option>
+					<option value ="L">绝缘</option>
+					<option value ="D">二极管</option>
 <!-- 					<option value ="R@RLY">RELAY > RESISTOR</option>
 					<option value ="D@RLY">RELAY > DIODE</option> -->
 				</select>
 			</div>
 			<div>
-				I: <select class="minput" id="meas_mA">
+				电流: <select class="minput" id="meas_mA">
 					<option value ="0">10mA</option>
 					<option value ="1">20mA</option>
 					<option value ="2">50mA</option>
@@ -130,7 +130,7 @@
 				</select>
 			</div>
 			<div>
-				V: <select class="minput" id="meas_hv" disabled>
+				高压: <select class="minput" id="meas_hv" disabled>
 					<option value ="0">28V</option>
 					<option value ="1">50V</option>
 					<option value ="2">100V</option>
@@ -140,13 +140,13 @@
 					<option value ="6">1000V</option>
 				</select>
 			</div>
-			<div>RELAY:<input class="minput" id="meas_rly" type="text" value="" title="UxGy;U5G7.."/></div>
-			<div>A:<input class="minput" id="meas_A" type="text" value="1"/></div>
-			<div>B:<input class="minput" id="meas_B" type="text" value="2"/></div>
+			<div>继电器:<input class="minput" id="meas_rly" type="text" value="" title="UxGy;U5G7.."/></div>
+			<div>阳极(A):<input class="minput" id="meas_A" type="text" value="1" title="绝缘测试：1;2;.."/></div>
+			<div>阴极(B):<input class="minput" id="meas_B" type="text" value="2"/></div>
 <!-- 			<div><input class="minput button" id="meas_rly" type="button" value="RELAY SWITCHING" disabled/></div> -->
-			<div><input class="button" id="meas_run" type="button" value="MEASURE"/></div>
+			<div><input class="button" id="meas_run" type="button" value="RUN"/></div>
 			<div>
-				Result: <div class="mlines">
+				报告: <div class="mlines">
 						<pre id="report"></pre>
 					</div>
 				</select>

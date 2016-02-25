@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>INSULATION RESISTOR TESTER - E2XX</title>
+<link rel="stylesheet" href="../jquery-ui/jquery-ui.min.css">
+<link rel="stylesheet" href="../css/testing.css">
+<script src="../jquery-ui/external/jquery/jquery.js"></script>
+<script src="../jquery-ui/jquery-ui.min.js"></script>
+<script src="../script/testing.js"></script>
+<script src="../script/language.js"></script>
+</head>
+<body>
+	<div id="dialog_uid" title="登录">
+			<div><img src="../img/lock.png" height="150px"/></div>
+			<div>
+				<div>&nbsp;您的工号：</div>
+				<div><input id="uid_input" type="text" /></div>
+				<div><input id="button_login" type="button" value="OK"/></div>
+			</div>
+	</div>
+
+	<div id="dialog_wcl" title="WasteBox">
+			<div><img id="wcl_image" src="../img/box_lock.png" width="128px" height="196px"/></div>
+			<div>
+				<div>WasteBox Password:</div>
+				<div><input id="wcl_passwd" type="password" /></div>
+				<div>
+					<input id="wcl_lock" type="button" value="Lock" disabled/>
+					<input id="wcl_unlock" type="button" value="Unlock" disabled/>
+				</div>
+			</div>
+	</div>
+
+	<div id="dialog_estop" title="急停">
+			<div><img id="estop_img" src="../img/estop.gif" height="150px"/></div>
+			<div>
+				<div id="estop_txt"></div>
+			</div>
+	</div>
+
+	<div id="dialog_warn" title="警告">
+			<div><img id="warn_img" src="../img/warn.png" height="150px"/></div>
+			<div>
+				<div id="warn_txt"></div>
+			</div>
+	</div>
+
+	<div id="panel">
+		<div id="panel_src">
+			<div id="model">产品型号</div>
+			<div id="mask" style="display: none;" title="rect: pass/fail&#10;text: masked/enabled">
+				<div>
+					<input id="0" type="checkbox" checked="checked"/>
+					<label for="0">A</label>
+				</div>
+			</div>
+			<pre id="gft" readonly="readonly">
+			</pre>
+		</div>
+		<div id="panel_uut0">
+			<div id="status0">INIT</div>
+			<div id="barcode0">&nbsp;</div>
+			<div id="div_result0">
+				<pre id="result0"></pre>
+			</div>
+		</div>
+		<div id="panel_ctrl">
+			<div title="双击可修改">工号: <span id="uid">&nbsp;</span></div>
+<!-- 			<div title="dbclick me to clear">Waste Count: <span id="wastes">&nbsp;</span></div>
+ -->			<div>产量:
+				<span class="stat" id="num_total0">&nbsp;</span>
+				<!-- <span class="stat" id="num_total1">&nbsp;</span> -->
+			</div>
+			<div>OK:
+				<span class="stat" id="num_pass0">&nbsp;</span>
+				<!-- <span class="stat" id="num_pass1">&nbsp;</span> -->
+			</div>
+			<div>NG:
+				<span class="stat" id="num_fail0">&nbsp;</span>
+				<!-- <span class="stat" id="num_fail1">&nbsp;</span> -->
+			</div>
+			<div>%OK:
+				<span class="stat" id="passrate0">&nbsp;</span>
+				<!-- <span class="stat" id="passrate1">&nbsp;</span> -->
+			</div>
+			<div>%NG:
+				<span class="stat" id="failrate0">&nbsp;</span>
+				<!-- <span class="stat" id="failrate1">&nbsp;</span> -->
+			</div>
+			<div>周期:
+				<span class="stat" id="duration0">&nbsp;</span>
+				<!-- <span class="stat" id="duration1">&nbsp;</span> -->
+			</div>
+			<div>日期: <span id="date">2015/05/06</span></div>
+			<div>时间: <span id="time_cur">&nbsp;</span></div>
+<!-- 			<div>Run: <span id="time_run">&nbsp;</span></div> -->
+<!-- 			<div>Fixture ID: <span id="fixture_id">&nbsp;</span></div>
+			<div>Pressed: <span id="fixture_pressed">&nbsp;</span></div> -->
+			<div>IMS服务器: <span id="ims_saddr">&nbsp;</span></div>
+<!-- 			<div><input class="idleinput" id="button_file" type="file" accept="*.py"	nwworkingdir="C:\Windows" hidden="hidden"/></div>
+ -->			<!-- <div id="model">Unknown</div> -->
+			<div>扫码信号:
+				<span class="stat" id="ScanStart0">&nbsp;</span>
+				<!-- <span class="stat" id="num_pass1">&nbsp;</span> -->
+			</div>
+			<div>测试信号:
+				<span class="stat" id="TestStart0">&nbsp;</span>
+				<!-- <span class="stat" id="num_pass1">&nbsp;</span> -->
+			</div>
+			<div><input class="idleinput" id="button_model" type="button" value="型号"/></div>
+			<div><input class="idleinput" id="button_mode" type="button" value="AUTO" title="RUN Mode"/></div>
+			<div><input id="button_run" type="button" value="RUN" disabled="disabled"/></div>
+		</div>
+	</div>
+</body>
