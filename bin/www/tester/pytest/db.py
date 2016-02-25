@@ -32,7 +32,7 @@ class Db:
 	def query(self, sql):
 		#Eloger().log(sql)
 
-		select = sql[:6].upper() == "SELECT"
+		select = sql.upper().find("SELECT") >= 0
 		records = None
 
 		self.lock.acquire()

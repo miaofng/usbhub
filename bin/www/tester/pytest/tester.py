@@ -17,13 +17,16 @@ class Tester:
 	threads = {} #key is the station nr
 	elock = threading.Lock()
 	emsg = ''
+	ecode = 0
 
 	def instrument_add(self, name, instrument):
 		assert name not in self.instruments
 		self.instruments[name] = instrument
+		instrument.on_event_add(self, name)
 
 	def instrument_get(self, name):
-		return self.instruments[name]
+		if name in self.instruments:
+			return self.instruments[name]
 
 	def test_add(self, name, test):
 		assert name not in self.tests
@@ -32,9 +35,10 @@ class Tester:
 	def test_get(self, name):
 		return self.tests[name]
 
-	def alert(self, emsg = ''):
+	def alert(self, emsg = '', ecode = 0):
 		self.elock.acquire()
 		self.emsg = emsg
+		self.ecode = ecode
 		self.elock.release()
 		return emsg
 
@@ -62,7 +66,9 @@ class Tester:
 		self.shell.update()
 		for name in self.instruments:
 			instrument = self.instruments[name]
-			instrument.update()
+			ecodes = instrument.update(self, name)
+			if ecodes:
+				self.alert(name, ecodes)
 		for station in self.threads:
 			test = self.threads[station]
 			if test:
@@ -107,6 +113,8 @@ class Tester:
 		status["test"] = test_info
 		status["ims_saddr"] = "off"
 		status["emsg"] = self.emsg
+		status["ecode"] = self.ecode
+		self.alert()
 		return status
 
 	def cmd_test(self, argc, argv):

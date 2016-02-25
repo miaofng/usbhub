@@ -11,6 +11,8 @@ from matrix import Matrix
 from dmm import Dmm
 from gvm import Gvm, dict_mA, dict_range
 from scanner_fs36 import Fs36
+from omron import Hostlink
+from printer import Printer
 
 __all__ = [
 	"Eloger",
@@ -23,4 +25,6 @@ __all__ = [
 	"Dmm",
 	"Gvm", "dict_mA", "dict_range",
 	"Fs36",
+	"Hostlink",
+	"Printer",
 ]

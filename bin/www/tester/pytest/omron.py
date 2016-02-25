@@ -11,6 +11,7 @@ import time
 import io
 import random
 import threading
+from instrument import Instrument
 
 class PlcIoError(Exception):
 	emsg = {
@@ -43,29 +44,10 @@ class PlcIoError(Exception):
 		print(self.emsg[code])
 		Exception.__init__(self)
 
-class Plc:
+class Hostlink(Instrument):
 	lock = threading.Lock()
 	timeout = 1 #unit: S
 	uart = None
-
-	def get(self, attr_name, val_def = None):
-		if hasattr(self, attr_name):
-			self.lock.acquire()
-			obj = getattr(self, attr_name, val_def)
-			self.lock.release()
-			if hasattr(obj, "__call__"):
-				def deco(*args, **kwargs):
-					self.lock.acquire()
-					retval = obj(*args, **kwargs)
-					self.lock.release()
-					return retval
-				return deco
-		return obj
-
-	def set(self, attr_name, value):
-		self.lock.acquire()
-		setattr(self, attr_name, value)
-		self.lock.release()
 
 	def release(self):
 		if self.uart:
@@ -115,12 +97,15 @@ class Plc:
 		fcs = self.__cksum__(''.join(cmd))
 		cmd.append("%02X*\r"%fcs)
 		cmdline = ''.join(cmd)
+
+		self.lock.acquire()
 		#self.uart.flushInput()
 		#self.sio.readall()
 		self.sio.write(unicode(cmdline))
-
 		#"@00WR??FcsFcs*\r"
 		echo = self.sio.readline()
+		self.lock.release()
+
 		if len(echo) != 11:
 			print("echo = '%s'"%echo)
 			raise PlcIoError("EACK")
@@ -145,12 +130,15 @@ class Plc:
 		fcs = self.__cksum__(''.join(cmd))
 		cmd.append("%02X*\r"%fcs)
 		cmdline = ''.join(cmd)
+
+		self.lock.acquire()
 		#self.uart.flushInput()
 		#self.sio.readall()
 		self.sio.write(unicode(cmdline))
-
 		#"@00WR??DAT0DAT1....FcsFcs*\r"
 		echo = self.sio.readline()
+		self.lock.release()
+
 		if len(echo) != 11+4*N:
 			print("echo = '%s'"%echo)
 			raise PlcIoError("EACK")
@@ -192,12 +180,15 @@ class Plc:
 		fcs = self.__cksum__(''.join(cmd))
 		cmd.append("%02X*\r"%fcs)
 		cmdline = ''.join(cmd)
+
+		self.lock.acquire()
 		#self.uart.flushInput()
 		#self.sio.readall()
 		self.sio.write(unicode(cmdline))
-
 		#"@00WR??FcsFcs*\r"
 		echo = self.sio.readline()
+		self.lock.release()
+
 		if len(echo) != 11:
 			print("echo = '%s'"%echo)
 			raise PlcIoError("EACK")
@@ -213,7 +204,42 @@ class Plc:
 				print("echo = '%s'"%echo)
 				raise PlcIoError(EndCode)
 
-class Fixture(Plc):
+	def get(self, reg):
+		#reg = "D96.05" or "D95"
+		#re.compile("((?P<typ>[DR])|)(?P<reg>\d+)(.(?P<bit>\d+)|)").match("D96.05").group("typ")
+		pattern = re.compile("((?P<typ>[DR])|)(?P<reg>\d+)(.(?P<bit>\d+)|)")
+		matched = pattern.match(reg)
+		assert(matched is not None)
+		typ = matched.group("typ")
+		reg = matched.group("reg")
+		bit = matched.group("bit")
+
+		if typ is None:
+			typ = "R"
+		hdr = "R" + typ
+		val = self.__read__(int(reg), 1, hdr)
+		if bit:
+			bit = int(bit)
+			val = (val >> bit) & 0x01
+
+		return val
+
+	def set(self, reg, val):
+		#reg = "D96.05" or "D95"
+		#re.compile("((?P<typ>[DR])|)(?P<reg>\d+)(.(?P<bit>\d+)|)").match("D96.05").group("typ")
+		pattern = re.compile("((?P<typ>[DR])|)(?P<reg>\d+)(.(?P<bit>\d+)|)")
+		matched = pattern.match(reg)
+		assert(matched is not None)
+		typ = matched.group("typ")
+		reg = matched.group("reg")
+		bit = matched.group("bit")
+
+		if typ is None:
+			typ = "R"
+		hdr = "W" + typ
+		self.__write__(int(reg), val, hdr)
+
+class Fixture(Hostlink):
 	def GetID(self, station):
 		id = self.cio_read(3)
 		if station is 0:

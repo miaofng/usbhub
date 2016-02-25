@@ -15,7 +15,7 @@ class Fs36(Scanner):
 			self.uart = None
 
 	def __init__(self, port = None, baud = 115200):
-		if port is None:
+		if port is None or port == "AUTO":
 			port = self.search("Honeywell N5600")
 
 		Scanner.__init__(self, port, baud)

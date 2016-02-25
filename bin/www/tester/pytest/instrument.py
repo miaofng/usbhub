@@ -18,5 +18,8 @@ class Instrument:
 	def __init__(self):
 		pass
 
-	def update(self):
+	def on_event_add(self, tester, name):
+		pass
+
+	def update(self, tester, name):
 		pass

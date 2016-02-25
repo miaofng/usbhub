@@ -590,7 +590,7 @@ class Gvm():
 		self.readall()
 		passed = self.passed;
 
-		if self.hven:
+		if self.hven and len(self.apin) > 0:
 			self.passed = True
 			if "type" in self.L:
 				self.log("")

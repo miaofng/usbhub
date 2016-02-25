@@ -68,6 +68,10 @@ class Test(threading.Thread):
 		self.opts = opts
 		self.mode = opts["mode"]
 
+		self.printer = tester.instrument_get("printer")
+		self.scanner = tester.instrument_get("scanner")
+		self.fixture = tester.instrument_get("fixture")
+
 	def update(self):
 		#to be called by main thread
 		self.elock.acquire()
@@ -108,6 +112,9 @@ class Test(threading.Thread):
 		self.log_file = open(path, 'w')
 
 	def log(self, info="", passed=None, eol = "\n"):
+		if self.printer:
+			self.printer.print_line(info, passed)
+
 		#line = "%s#  %-48s"%(time.strftime('%X'), info)
 		#line = "%s#  %-48s"%(self.getDuration(), info)
 
