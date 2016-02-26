@@ -133,7 +133,7 @@ class IRCal(Test):
 		#self.coeff["passed"] = passed + 0
 		dpsCal = json.dumps(self.coeff)
 		self.tester.db.cfg_set("dpsCal", dpsCal)
-		self.log("CALIBRATION FINISHED", passed)
+		self.log("Test Finished", passed)
 
 		return passed
 

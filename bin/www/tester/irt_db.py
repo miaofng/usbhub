@@ -14,6 +14,31 @@ class IRDb(Db):
 			record = records[0]
 			return record
 
+	def sn_get(self, model):
+		sql = """
+			SELECT id, sn, sn_date, date("now", "localtime") as date FROM model
+			WHERE name = "%s"
+		"""
+		records = self.query(sql % model)
+		assert len(records) > 0
+		model = records[0]
+
+		sn = model["sn"]
+		if not isinstance(sn, int):
+			sn = 0
+
+		if model["sn_date"] != model["date"]:
+			sn = 0
+		else:
+			sn = sn + 1
+
+		sql = """
+			UPDATE model SET sn=%d, sn_date=date("now", "localtime")
+			WHERE id = %d
+		"""
+		self.query(sql%(sn, model["id"]))
+		return sn
+
 	def rule_get(self, id):
 		sql = 'SELECT * FROM rule WHERE id = %d'%id
 		records = self.query(sql)

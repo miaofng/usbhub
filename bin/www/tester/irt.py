@@ -22,16 +22,28 @@ def signal_handler(signal, frame):
 signal.signal(signal.SIGINT, signal_handler)
 
 db = IRDb("../../../data/data.db")
-dmm = Dmm()
-irt = Matrix()
-fixture = Fixture()
-scanner = Fs36()
-
 tester = Tester(db)
+
+dmm = Dmm()
 tester.instrument_add("dmm", dmm)
+
+irt = Matrix()
 tester.instrument_add("irt", irt)
-tester.instrument_add("scanner", scanner)
+
+port_fixture = db.cfg_get("port_plc")
+fixture = Fixture(str(port_fixture))
 tester.instrument_add("fixture", fixture)
+
+port_scanner = db.cfg_get("port_scanner")
+if port_scanner != "OFF":
+	scanner = Scanner(str(port_scanner))
+	tester.instrument_add("scanner", scanner)
+
+port_printer = db.cfg_get("port_printer")
+if port_printer != "OFF":
+	printer = Printer(str(port_printer))
+	tester.instrument_add("printer", printer)
+
 tester.test_add("gft", GFTst)
 tester.test_add("cal", IRCal)
 tester.test_add("scn", IRScn)
