@@ -27,14 +27,14 @@ $(function() {
 	irt.cfg_get("language", function(language) {
 		switch(language) {
 		case "cn":
-			window.topFrame.location.href = "cn/header.html";
+			window.topFrame.location.href = "cn/header_admin.html";
 			window.mainFrame.location.href = "cn/testing.html";
 			document.title = cn.title
 			session.language = "cn"
 			session.language_string = JSON.stringify(cn);
 			break
 		default:
-			window.topFrame.location.href = "en/header.html";
+			window.topFrame.location.href = "en/header_admin.html";
 			window.mainFrame.location.href = "en/testing.html";
 			document.title = en.title
 			session.language = "en"

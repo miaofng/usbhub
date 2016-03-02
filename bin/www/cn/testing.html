@@ -97,12 +97,11 @@
 <!-- 			<div>Run: <span id="time_run">&nbsp;</span></div> -->
 <!-- 			<div>Fixture ID: <span id="fixture_id">&nbsp;</span></div>
 			<div>Pressed: <span id="fixture_pressed">&nbsp;</span></div> -->
-			<div>IMS服务器: <span id="ims_saddr">&nbsp;</span></div>
+<!-- 			<div>IMS: <span id="ims_saddr">&nbsp;</span></div> -->
 <!-- 			<div><input class="idleinput" id="button_file" type="file" accept="*.py"	nwworkingdir="C:\Windows" hidden="hidden"/></div>
  -->			<!-- <div id="model">Unknown</div> -->
 			<div>扫码信号:
 				<span class="stat" id="ScanStart0">&nbsp;</span>
-				<!-- <span class="stat" id="num_pass1">&nbsp;</span> -->
 			</div>
 			<div>测试信号:
 				<span class="stat" id="TestStart0">&nbsp;</span>
@@ -111,6 +110,17 @@
 			<div><input class="idleinput" id="button_model" type="button" value="型号"/></div>
 			<div><input class="idleinput" id="button_mode" type="button" value="AUTO" title="RUN Mode"/></div>
 			<div><input id="button_run" type="button" value="RUN" disabled="disabled"/></div>
+			<div id="joystick" style="display: none;">
+				<img id="img_joystick" src="../img/joystick.png" height="200px" usemap="#map" hidefocus="true"/>
+				<map name="map" id="map">
+					<area shape="circle" coords="100,29,25" class="plc" id="D1103" href="#"/> <!--u-->
+					<area shape="circle" coords="100,174,26" class="plc" id="D1102" href="#"/> <!--d-->
+					<area shape="circle" coords="27,101,25" class="plc" id="D1100" href ="#"/> <!--f-->
+					<area shape="circle" coords="173,101,26" class="plc" id="D1101" href="#"/> <!--b-->
+					<area shape="circle" coords="100,102,36" id="plc_status" href="#"/> <!--L-->
+				</map>
+				&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+			</div>
 		</div>
 	</div>
 </body>

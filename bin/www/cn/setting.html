@@ -83,10 +83,81 @@
 				<option value ="0">关闭</option>
 			</select>
 		</div>
-		<div>打印条码:
-			<select class="gcfg" id="Label">
-				<option value ="1">打开</option>
+		<div>夹具控制:
+			<select class="gcfg" id="port_plc">
+				<option value ="OFF">关闭</option>
+				<option value ="AUTO">自动</option>
+				<option value ="COM1">COM1</option>
+				<option value ="COM2">COM2</option>
+				<option value ="COM3">COM3</option>
+				<option value ="COM4">COM4</option>
+				<option value ="COM5">COM5</option>
+				<option value ="COM6">COM6</option>
+				<option value ="COM7">COM7</option>
+				<option value ="COM8">COM8</option>
+				<option value ="COM9">COM9</option>
+				<option value ="COM10">COM10</option>
+				<option value ="COM11">COM11</option>
+				<option value ="COM12">COM12</option>
+				<option value ="COM13">COM13</option>
+				<option value ="COM14">COM14</option>
+				<option value ="COM15">COM15</option>
+				<option value ="COM16">COM16</option>
+			</select>
+		</div>
+		<div>扫码枪:
+			<select class="gcfg" id="port_scanner">
+				<option value ="OFF">关闭</option>
+				<option value ="AUTO">自动</option>
+				<option value ="COM1">COM1</option>
+				<option value ="COM2">COM2</option>
+				<option value ="COM3">COM3</option>
+				<option value ="COM4">COM4</option>
+				<option value ="COM5">COM5</option>
+				<option value ="COM6">COM6</option>
+				<option value ="COM7">COM7</option>
+				<option value ="COM8">COM8</option>
+				<option value ="COM9">COM9</option>
+				<option value ="COM10">COM10</option>
+				<option value ="COM11">COM11</option>
+				<option value ="COM12">COM12</option>
+				<option value ="COM13">COM13</option>
+				<option value ="COM14">COM14</option>
+				<option value ="COM15">COM15</option>
+				<option value ="COM16">COM16</option>
+			</select>
+		</div>
+		<div>打印机:
+			<select class="gcfg" id="port_printer">
+				<option value ="OFF">关闭</option>
+				<option value ="AUTO">自动</option>
+				<option value ="COM1">COM1</option>
+				<option value ="COM2">COM2</option>
+				<option value ="COM3">COM3</option>
+				<option value ="COM4">COM4</option>
+				<option value ="COM5">COM5</option>
+				<option value ="COM6">COM6</option>
+				<option value ="COM7">COM7</option>
+				<option value ="COM8">COM8</option>
+				<option value ="COM9">COM9</option>
+				<option value ="COM10">COM10</option>
+				<option value ="COM11">COM11</option>
+				<option value ="COM12">COM12</option>
+				<option value ="COM13">COM13</option>
+				<option value ="COM14">COM14</option>
+				<option value ="COM15">COM15</option>
+				<option value ="COM16">COM16</option>
+			</select>
+		</div>
+		<div>出错打印:
+			<select class="gcfg" id="print_elines">
 				<option value ="0">关闭</option>
+				<option value ="999999">全部错误信息</option>
+				<option value ="5">前5行</option>
+				<option value ="10">前10行</option>
+				<option value ="20">前20行</option>
+				<option value ="50">前50行</option>
+				<option value ="100">前100行</option>
 			</select>
 		</div>
 		<div>测试记录:
@@ -103,7 +174,7 @@
 	  <div>密码确认: <input title="回车即录入" class="passwd" id="g_admin_confirm" type="PASSWORD"/></div>
 <!-- 		<div>废料箱密码: <input class="passwd" id="g_waste_passwd" type="PASSWORD"/></div>
 	  <div>密码确认: <input title="回车即录入" class="passwd" id="g_waste_confirm" type="PASSWORD"/></div> -->
-		<div><input id="gcfg_save" type="button" value="保存"></div>
+		<div><input id="gcfg_save" type="button" value="保存" title="保存到数据库, 新的设置重启后才会生效"></div>
     </div>
 
     <div id="panel_middle">
@@ -130,13 +201,19 @@
 		<div>拼版列数: <input class="mcfg" id="m_ncol" value="1"/></div>
 		<div>点数: <input class="mcfg" id="m_npts" value="256"/></div>
 		<div>偏移: <input class="mcfg" id="m_nofs" value="0" /></div>
-		<div>条码: <input class="mcfg" id="m_barcode" value="*" title="例如：33?714* 其中?匹配一个任意字符;*匹配0或多个任意字符"/></div>
-		<div>标签: <input class="mcfg"  id="m_openzpl" value="打开.zpl文件 ..." readonly="readonly"/></div>
+		<div>轨道宽度: <input class="mcfg" id="m_track" value="0" /></div>
+		<div>条码设定:
+			<select class="mcfg" id="m_printlabel">
+				<option value ="1">生成并打印</option>
+				<option value ="0">扫描条码</option>
+			</select>
+		</div>
+		<div>条码格式: <input class="mcfg" id="m_barcode" value="*" title="例如：33?714* 其中?匹配一个任意字符;*匹配0或多个任意字符"/></div>
+		<div>标签格式: <input class="mcfg"  id="m_openzpl" value="打开.zpl文件 ..." readonly="readonly"/></div>
 		<div><pre id="m_zpl" wrap="off" ></pre></div>
 		<div>
-			<input type="button" id="mcfg_save" value="保存" />
+			<input type="button" id="mcfg_save" value="保存"/>
 		</div>
-
 
     </div>
 

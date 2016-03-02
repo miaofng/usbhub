@@ -8,6 +8,7 @@
 <script src="../jquery-ui/external/jquery/jquery.js"></script>
 <script src="../jquery-ui/jquery-ui.min.js"></script>
 <script src="../script/testing.js"></script>
+<script src="../script/language.js"></script>
 </head>
 <body>
 	<div id="dialog_uid" title="Login">
@@ -65,7 +66,7 @@
 			</div>
 		</div>
 		<div id="panel_ctrl">
-			<div title="dbclick me to change uid">Operator ID: <span id="uid">&nbsp;</span></div>
+			<div title="dbclick to change uid">Operator ID: <span id="uid">&nbsp;</span></div>
 <!-- 			<div title="dbclick me to clear">Waste Count: <span id="wastes">&nbsp;</span></div>
  -->			<div>Today:
 				<span class="stat" id="num_total0">&nbsp;</span>
@@ -79,11 +80,11 @@
 				<span class="stat" id="num_fail0">&nbsp;</span>
 				<!-- <span class="stat" id="num_fail1">&nbsp;</span> -->
 			</div>
-			<div>OK Rate:
+			<div>%OK:
 				<span class="stat" id="passrate0">&nbsp;</span>
 				<!-- <span class="stat" id="passrate1">&nbsp;</span> -->
 			</div>
-			<div>NG Rate:
+			<div>%NG:
 				<span class="stat" id="failrate0">&nbsp;</span>
 				<!-- <span class="stat" id="failrate1">&nbsp;</span> -->
 			</div>
@@ -101,7 +102,6 @@
  -->			<!-- <div id="model">Unknown</div> -->
 			<div>ScanStart Signal:
 				<span class="stat" id="ScanStart0">&nbsp;</span>
-				<!-- <span class="stat" id="num_pass1">&nbsp;</span> -->
 			</div>
 			<div>TestStart Signal:
 				<span class="stat" id="TestStart0">&nbsp;</span>
@@ -110,6 +110,17 @@
 			<div><input class="idleinput" id="button_model" type="button" value="MODEL"/></div>
 			<div><input class="idleinput" id="button_mode" type="button" value="AUTO" title="RUN Mode"/></div>
 			<div><input id="button_run" type="button" value="RUN" disabled="disabled"/></div>
+			<div id="joystick" style="display: none;">
+				<img id="img_joystick" src="../img/joystick.png" height="200px" usemap="#map" hidefocus="true"/>
+				<map name="map" id="map">
+					<area shape="circle" coords="100,29,25" class="plc" id="D1103" href="#"/> <!--u-->
+					<area shape="circle" coords="100,174,26" class="plc" id="D1102" href="#"/> <!--d-->
+					<area shape="circle" coords="27,101,25" class="plc" id="D1100" href ="#"/> <!--f-->
+					<area shape="circle" coords="173,101,26" class="plc" id="D1101" href="#"/> <!--b-->
+					<area shape="circle" coords="100,102,36" id="plc_status" href="#"/> <!--L-->
+				</map>
+				&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+			</div>
 		</div>
 	</div>
 </body>

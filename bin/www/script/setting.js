@@ -84,6 +84,13 @@ function model_load() {
 		model_sub_redraw(row.nrow, row.ncol, settings.mask);
 		if(row.zpl.length > 2)
 			$("#m_zpl").html(JSON.parse(row.zpl));
+
+		$("#m_track").val(row.track);
+		row.printlabel = (row.printlabel == "1") ? "1" : "0";
+		$("#m_printlabel").val(row.printlabel);
+		$("#m_barcode").attr("disabled", row.printlabel == "1");
+		$("#m_openzpl").attr("disabled", row.printlabel != "1");
+		$("#m_zpl").attr("disabled", row.printlabel != "1");
 	});
 }
 
@@ -312,7 +319,7 @@ $(function() {
 	$("#m_openzpl").click(function(){
 		var Dialog = new fdialogs.FDialog({
 			type: 'open',
-			accept: ['.zpl'],
+			accept: ['.prn'],
 			path: ''
 		});
 
@@ -329,6 +336,7 @@ $(function() {
 		npts = $("#m_npts").val();
 		nofs = $("#m_nofs").val();
 		barcode = $("#m_barcode").val().trim()
+		printlabel = $("#m_printlabel").val();
 
 		zpl = $("#m_zpl").html();
 		zpl = JSON.stringify(zpl);
@@ -366,13 +374,13 @@ $(function() {
 			var sql_upd = irt.mlstring(function(){/*
 				UPDATE model SET nrow = $nrow, ncol = $ncol,
 				npts = $npts, nofs = $nofs, zpl = '$zpl',
-				rules = '$rules', barcode='$barcode'
+				rules = '$rules', printlabel = '$printlabel', barcode = '$barcode'
 				WHERE id = $id
 			*/});
 
 			var sql_ins = irt.mlstring(function(){/*
-				INSERT INTO model(nrow, ncol, npts, nofs, zpl, barcode, rules, name)
-				VALUES($nrow, $ncol, $npts, $nofs, '$zpl', '$barcode', '$rules', '$model')
+				INSERT INTO model(nrow, ncol, npts, nofs, printlabel, zpl, barcode, rules, name)
+				VALUES($nrow, $ncol, $npts, $nofs, '$printlabel', '$zpl', '$barcode', '$rules', '$model')
 			*/});
 
 			var sql = sql_ins;
@@ -386,6 +394,7 @@ $(function() {
 			sql = sql.replace("$npts", npts);
 			sql = sql.replace("$nofs", nofs);
 			sql = sql.replace("$rules", rules);
+			sql = sql.replace("$printlabel", printlabel);
 			sql = sql.replace("$zpl", zpl);
 			sql = sql.replace("$barcode", barcode);
 			sql = sql.replace("$model", test.model);
@@ -489,6 +498,12 @@ $(function() {
 			}
 		});
 	});
+
+	$("#m_printlabel").change(function() {
+		$("#m_barcode").attr("disabled", this.value == "1");
+		$("#m_openzpl").attr("disabled", this.value != "1");
+		$("#m_zpl").attr("disabled", this.value != "1");
+	})
 
 	gcfg_load();
 	model_load();

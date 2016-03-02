@@ -78,7 +78,7 @@ body{
 	border-color: red; */
 }
 
-#dialog_estop>div>div, #dialog_warn>div>div, #dialog_uid>div>div, #dialog_wcl>div>div {
+#dialog_estop>div>div, #dialog_uid>div>div, #dialog_wcl>div>div {
 	margin-left: 10px;
 	margin-bottom: 10px;
 	display: flex;
@@ -221,6 +221,7 @@ body{
 	flex-shrink: 1;
 	flex-grow: 1;
 
+	min-height: 500px;
 	//margin-left: 0px;
 	margin-top: 0px;
 	margin-bottom: 0px;
@@ -258,7 +259,7 @@ body{
 }
 
 #panel_ctrl>div:not(#mask) {
-	margin-top: 15px;
+	margin-top: 10px;
 	margin-right: 10px;
 	margin-left: 10px;
 	text-align: right;
@@ -342,9 +343,9 @@ body{
 	margin-left: 2%;
 	//margin-top: 5px;
 	width: 96%;
-	height: 60px;
+	height: 50px;
 	font-family: Helvetica, Arial, sans-serif;
-	font-size: 30px;
+	font-size: 28px;
 	font-weight: bold;
 	text-shadow: 1px 1px 1px rgba(0,0,0,.6);
 

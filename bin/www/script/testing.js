@@ -24,6 +24,7 @@ var test = {
 	"estop": false,
 	"ims": null,
 	"emsg": null,
+	"emsg_alive": 0,
 };
 
 var settings = {
@@ -134,11 +135,11 @@ function gft_load(gft) {
 	});
 }
 
-function update_uut_status(station, status) {
+function update_uut_status(station, info) {
 	var bgcolor = "#ffff00";
-	state = status
+	state = info.status
 
-	switch(status) {
+	switch(info.status) {
 	case "READY":
 	case "PASS":
 		bgcolor = "#00ff00";
@@ -160,25 +161,30 @@ function update_uut_status(station, status) {
 
 	$(id_status).html(state);
 	$(id_status).css("background-color", bgcolor);
-	if(status == "SCANING") {
-		$(id_report).css("background-image", "url(img/scan.gif)");
-		$(id_report).css("background-size", "400px 250px");
-		$(id_report).css("background-repeat", "no-repeat");
-		$(id_report).css("background-position", "center top");
+	if(info.status.substring(0,4).toUpperCase() == "WAIT") {
+		if ((info.barcode.length >= 0) && (info.ScanStart == 1)) {
+			$(id_report).css("background-image", "url(../img/scan.gif)");
+			$(id_report).css("background-size", "400px 250px");
+			$(id_report).css("background-repeat", "no-repeat");
+			$(id_report).css("background-position", "center top");
+		}
+		else {
+			$(id_report).css('background', 'transparent');
+		}
 	}
-	else if(status == "LOADING") {
+	else if(info.status == "LOADING") {
 		$(id_report).css("background-image", "url(img/up.gif)");
 		$(id_report).css("background-size", "200px 150px");
 		$(id_report).css("background-repeat", "no-repeat");
 		$(id_report).css("background-position", "center top");
 	}
-	else if(status == "LOADED") {
+	else if(info.status == "LOADED") {
 		$(id_report).css("background-image", "url(img/start.png)");
 		$(id_report).css("background-size", "400px 300px");
 		$(id_report).css("background-repeat", "no-repeat");
 		$(id_report).css("background-position", "center top");
 	}
-	else if(status == "WASTE") {
+	else if(info.status == "WASTE") {
 		$(id_report).css("background-image", "url(img/waste.gif)");
 		$(id_report).css("background-size", "400px 300px");
 		$(id_report).css("background-repeat", "no-repeat");
@@ -248,7 +254,7 @@ function update_status(status) {
 	for(i = 0; i < 2; i ++) {
 		if (i in tests) {
 			test_info = tests[i]
-			update_uut_status(i, test_info.status);
+			update_uut_status(i, test_info);
 			$("#barcode"+i).html(test_info.barcode);
 			$("#duration"+i).html(test_info.duration);
 			if("TestStart" in test_info) {
@@ -263,7 +269,7 @@ function update_status(status) {
 		}
 	}
 
-	MessageBox(status.emsg)
+	MessageBox(status.emsg, status.ecode)
 
 	if(test.uid) {
 		if(status.estop != test.estop) {
@@ -296,20 +302,74 @@ function update_status(status) {
 	}
 }
 
-function MessageBox(msg) {
-	if(test.emsg != msg) {
+function ecode_translate(src, ecodes) {
+	lines = []
+	ecodes_table = language_string.ecodes[src]
+
+	line = "$src"
+	line = line.replace("$src", src)
+	lines.push(line)
+
+	for(item in ecodes) {
+		val = ecodes[item]
+		if(val == 0) continue
+
+		line = "$mem = 0x$val"
+		line = line.replace("$mem", item)
+		line = line.replace("$val", val.toString(16))
+		//lines.push("")
+		//lines.push(line)
+
+		if (ecodes_table) {
+			for(i = 0; i < 16; i ++) {
+				bit = (val >> i) & 0x01
+				if(bit) { //error bit founded
+					emsg = ecodes_table[item][i]
+					line = '$mem.$i: $emsg'
+					line = line.replace("$mem", item)
+					line = line.replace("$i", i)
+					line = line.replace("$emsg", emsg)
+					lines.push(line)
+				}
+			}
+		}
+	}
+
+	emsg = lines.join("<br>")
+	return emsg
+}
+
+function MessageBox(msg, ecode) {
+	if(ecode) {
+		msg = ecode_translate(msg, ecode);
+	}
+
+	if(msg != test.emsg) {
+		if(test.emsg_alive > 0) return
 		test.emsg = msg
 		if(msg.length > 0) {
 			$("#warn_txt").html(msg);
 			$("#dialog_warn").dialog("open");
+			test.emsg_alive = 1
 		}
-		else {
+/* 		else {
 			$("#dialog_warn").dialog("close");
-		}
+		} */
+	}
+	else {
+		if(msg.length > 0)
+			test.emsg_alive = 1
 	}
 }
 
 function timer_tick_update() {
+	if(test.emsg_alive > 0) {
+		test.emsg_alive -= 0.5
+		if(test.emsg_alive <= 0) {
+			$("#dialog_warn").dialog("close");
+		}
+	}
+
 	irt.query("status", function(status) {
 		test.tserv_ok = 5
 		status = JSON.parse(status);
@@ -319,7 +379,7 @@ function timer_tick_update() {
 	test.tserv_ok -= 1
 	if (test.tserv_ok < 0) {
 		test.tserv_ok = 0
-		emsg = "Tester Exception, Please Restart the Program"
+		emsg = "Tester Died, Please Restart Or Check About Page For Details"
 		MessageBox(emsg)
 	}
 
@@ -473,7 +533,7 @@ $(function() {
 	});
 
 	var wcl_timer;
-	$("#wastes").dblclick(function(){
+	$("#plc_status").dblclick(function(){
 		mode_nxt = $("#button_run").val()
 		//alert(mode_nxt)
 		if(mode_nxt == "RUN") {
@@ -516,14 +576,20 @@ $(function() {
 	});
 
 	$("#wcl_unlock").click(function(){
-		//plc 301.02 0
-		irt.waste_query("plc waste_door unlock", function(data) {
-		});
+		cmdline = [];
+		cmdline.push("plcw");
+		cmdline.push("D1201")
+		cmdline.push("0")
+		cmdline = cmdline.join(" ");
+		irt.query(cmdline, function(data) {});
 	})
 	$("#wcl_lock").click(function(){
-		//plc 301.02 1
-		irt.waste_query("plc waste_door lock", function(data) {
-		});
+		cmdline = [];
+		cmdline.push("plcw");
+		cmdline.push("D1201")
+		cmdline.push("1")
+		cmdline = cmdline.join(" ");
+		irt.query(cmdline, function(data) {});
 	})
 
 	//$("#uid_input").val(test.uid);
@@ -543,13 +609,45 @@ $(function() {
 	});
 
 	$("#button_mode").val(mode_string[test.mode]);
+	if(test.mode == "STEP") $("#joystick").show();
+	else $("#joystick").hide();
+
 	$("#button_mode").click(function(){
-		if(test.mode == "AUTO") test.mode = "STEP";
-		else if(test.mode == "STEP") test.mode = "LEARN"
-		else if(test.mode == "LEARN") test.mode = "CAL"
-		else test.mode = "AUTO";
+		switch(test.mode) {
+		case "AUTO":
+			test.mode = "STEP"
+			$("#joystick").show();
+			//irt.query("wd 1007 1", function(){})
+			break;
+		case "STEP":
+			test.mode = "LEARN"
+			$("#joystick").show();
+			//irt.query("wd 1007 1", function(){})
+			break
+		case "LEARN":
+			test.mode = "CAL"
+			$("#joystick").show();
+			//irt.query("wd 1007 1", function(){})
+			break
+		default:
+			test.mode = "AUTO"
+			$("#joystick").hide();
+			//irt.query("wd 1007 2", function(){})
+			break
+		}
+
 		$(this).val(mode_string[test.mode]);
 	});
+
+	$(".plc").click(function(){
+		//console.log("this.id")
+		cmdline = [];
+		cmdline.push("plcw");
+		cmdline.push(this.id)
+		cmdline.push("1")
+		cmdline = cmdline.join(" ");
+		irt.query(cmdline, function(data) {});
+	})
 
 	$("#button_run").click(function(){
 		test.emsg = ""
@@ -594,6 +692,7 @@ $(function() {
 	}
 
 	test.emsg = null
+	//MessageBox("fixture", {D98: 255, D99: 255})
 
 	var timer_tick = setInterval("timer_tick_update()", 500);
 	var stimer = setInterval("timer_statistics_update()", 1000);

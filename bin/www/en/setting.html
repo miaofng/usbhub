@@ -83,14 +83,85 @@
 				<option value ="0">Disable</option>
 			</select>
 		</div>
-		<div>Label Printer:
-			<select class="gcfg" id="Label">
-				<option value ="1">Enable</option>
-				<option value ="0">Disable</option>
+		<div>Fixture:
+			<select class="gcfg" id="port_plc">
+				<option value ="OFF">OFF</option>
+				<option value ="AUTO">AUTO</option>
+				<option value ="COM1">COM1</option>
+				<option value ="COM2">COM2</option>
+				<option value ="COM3">COM3</option>
+				<option value ="COM4">COM4</option>
+				<option value ="COM5">COM5</option>
+				<option value ="COM6">COM6</option>
+				<option value ="COM7">COM7</option>
+				<option value ="COM8">COM8</option>
+				<option value ="COM9">COM9</option>
+				<option value ="COM10">COM10</option>
+				<option value ="COM11">COM11</option>
+				<option value ="COM12">COM12</option>
+				<option value ="COM13">COM13</option>
+				<option value ="COM14">COM14</option>
+				<option value ="COM15">COM15</option>
+				<option value ="COM16">COM16</option>
 			</select>
 		</div>
-		<div>Test Records:
-			<input id="gcfg_clear" type="button" value="Dump">
+		<div>SCANNER:
+			<select class="gcfg" id="port_scanner">
+				<option value ="OFF">OFF</option>
+				<option value ="AUTO">AUTO</option>
+				<option value ="COM1">COM1</option>
+				<option value ="COM2">COM2</option>
+				<option value ="COM3">COM3</option>
+				<option value ="COM4">COM4</option>
+				<option value ="COM5">COM5</option>
+				<option value ="COM6">COM6</option>
+				<option value ="COM7">COM7</option>
+				<option value ="COM8">COM8</option>
+				<option value ="COM9">COM9</option>
+				<option value ="COM10">COM10</option>
+				<option value ="COM11">COM11</option>
+				<option value ="COM12">COM12</option>
+				<option value ="COM13">COM13</option>
+				<option value ="COM14">COM14</option>
+				<option value ="COM15">COM15</option>
+				<option value ="COM16">COM16</option>
+			</select>
+		</div>
+		<div>PRINTER:
+			<select class="gcfg" id="port_printer">
+				<option value ="OFF">OFF</option>
+				<option value ="AUTO">AUTO</option>
+				<option value ="COM1">COM1</option>
+				<option value ="COM2">COM2</option>
+				<option value ="COM3">COM3</option>
+				<option value ="COM4">COM4</option>
+				<option value ="COM5">COM5</option>
+				<option value ="COM6">COM6</option>
+				<option value ="COM7">COM7</option>
+				<option value ="COM8">COM8</option>
+				<option value ="COM9">COM9</option>
+				<option value ="COM10">COM10</option>
+				<option value ="COM11">COM11</option>
+				<option value ="COM12">COM12</option>
+				<option value ="COM13">COM13</option>
+				<option value ="COM14">COM14</option>
+				<option value ="COM15">COM15</option>
+				<option value ="COM16">COM16</option>
+			</select>
+		</div>
+		<div>ERR PRINT:
+			<select class="gcfg" id="print_elines">
+				<option value ="0">OFF</option>
+				<option value ="999999">ALL</option>
+				<option value ="5">FIRST 5 LINES</option>
+				<option value ="10">FIRST 10 LINES</option>
+				<option value ="20">FIRST 20 LINES</option>
+				<option value ="50">FIRST 50 LINES</option>
+				<option value ="100">FIRST 100 LINES</option>
+			</select>
+		</div>
+		<div>RECORDS:
+			<input id="gcfg_clear" type="button" value="DUMP">
 		</div>
 <!-- 		<div>WasteBox:
 			<select class="gcfg" id="WasteBox">
@@ -100,9 +171,9 @@
 		</div>
 		<div>Report Path: <input class="gcfg" id="dat_dir" value="../../../data/"/></div> -->
 		<div>Admin Passwd: <input class="passwd" id="g_admin_passwd" type="PASSWORD"/></div>
-	  <div>Confirm: <input title="回车即录入" class="passwd" id="g_admin_confirm" type="PASSWORD"/></div>
+	  <div>Confirm: <input title="Takes Effect Immediately" class="passwd" id="g_admin_confirm" type="PASSWORD"/></div>
 		<div>Waste Passwd: <input class="passwd" id="g_waste_passwd" type="PASSWORD"/></div>
-	  <div>Confirm: <input title="回车即录入" class="passwd" id="g_waste_confirm" type="PASSWORD"/></div>
+	  <div>Confirm: <input title="Takes Effect Immediately" class="passwd" id="g_waste_confirm" type="PASSWORD"/></div>
 		<div><input id="gcfg_save" type="button" value="SAVE"></div>
     </div>
 
@@ -111,13 +182,12 @@
 		<div id="list_div">
 			<div id="list">
 				<ul class="list_head">
-					<li>ID</li>
-					<li>NAME</li>
 					<li>TYPE</li>
-					<li>I(mA)</li>
+					<li>mA</li>
+					<li>VAL</li>
 					<li>MIN</li>
 					<li>MAX</li>
-					<li>ENABLE</li>
+					<li>NAME</li>
 				</ul>
 			</div>
 		</div>
@@ -131,13 +201,19 @@
 		<div>COLS: <input class="mcfg" id="m_ncol" value="1"/></div>
 		<div>POINTS: <input class="mcfg" id="m_npts" value="256"/></div>
 		<div>OFFSET: <input class="mcfg" id="m_nofs" value="0" /></div>
-		<div>LABEL: <input class="mcfg" id="m_label" value="" title="33?714*"/></div>
+		<div>TRACK WIDTH: <input class="mcfg" id="m_track" value="0" title="Track Width"/></div>
+		<div>BARCODE:
+			<select class="mcfg" id="m_printlabel">
+				<option value ="1">Generate & Print</option>
+				<option value ="0">Scan</option>
+			</select>
+		</div>
+		<div>FORMAT: <input class="mcfg" id="m_barcode" value="" title="33?714*   '?':match 1 char, '*'match 0 or any nr of char"/></div>
 		<div>ZPL: <input class="mcfg"  id="m_openzpl" value="Load .zpl File ..." readonly="readonly"/></div>
 		<div><pre id="m_zpl" wrap="off" ></pre></div>
 		<div>
 			<input type="button" id="mcfg_save" value="Save" />
 		</div>
-
 
     </div>
 
