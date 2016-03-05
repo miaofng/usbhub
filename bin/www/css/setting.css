@@ -453,13 +453,13 @@
     opacity: 1;
 	//filter:Alpha(Opacity=99);
 }
-
 #mask .ui-button.ui-state-hover .ui-button-text {
     //color: blue;
     //background-color: #FFFF80;
 }
 #mask .ui-button.ui-state-active .ui-button-text {
-    color: #00ff00;
+    color: #000000;
+	font-weight: bold;
     //background-color: pink;
 	//border: 1px solid #00ff00;
 	border: none;

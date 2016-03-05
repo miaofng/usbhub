@@ -24,6 +24,11 @@ signal.signal(signal.SIGINT, signal_handler)
 db = IRDb("../../../data/data.db")
 tester = Tester(db)
 
+ims_cfg = db.cfg_get("IMS")
+if ims_cfg == "1":
+	ims = IMS("127.0.0.1")
+	tester.instrument_add("ims", ims)
+
 dmm = Dmm()
 tester.instrument_add("dmm", dmm)
 

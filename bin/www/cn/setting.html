@@ -68,7 +68,7 @@
 		<div>语言:
 			<select class="gcfg" id="language">
 				<option value ="cn">中文</option>
-				<option value ="en">ENGLISH</option>
+				<option value ="en">英文</option>
 			</select>
 		</div>
 		<div>IMS服务器:
@@ -79,6 +79,12 @@
 		</div>
 		<div>绝缘测试:
 			<select class="gcfg" id="hvtest">
+				<option value ="1">打开</option>
+				<option value ="0">关闭</option>
+			</select>
+		</div>
+		<div>绝缘查错:
+			<select class="gcfg" id="hvtravel">
 				<option value ="1">打开</option>
 				<option value ="0">关闭</option>
 			</select>
@@ -201,16 +207,60 @@
 		<div>拼版列数: <input class="mcfg" id="m_ncol" value="1"/></div>
 		<div>点数: <input class="mcfg" id="m_npts" value="256"/></div>
 		<div>偏移: <input class="mcfg" id="m_nofs" value="0" /></div>
-		<div>轨道宽度: <input class="mcfg" id="m_track" value="0" /></div>
+		<div>轨道宽度: <input class="mcfg" id="m_track" value="" title="单位: mm, 有效范围: 80-300mm"/></div>
 		<div>条码设定:
 			<select class="mcfg" id="m_printlabel">
-				<option value ="1">生成并打印</option>
-				<option value ="0">扫描条码</option>
+				<option value ="1">扫描条码</option>
+				<option value ="2">打印条码</option>
+				<option value ="3">扫描并打印</option>
 			</select>
 		</div>
 		<div>条码格式: <input class="mcfg" id="m_barcode" value="*" title="例如：33?714* 其中?匹配一个任意字符;*匹配0或多个任意字符"/></div>
 		<div>标签格式: <input class="mcfg"  id="m_openzpl" value="打开.zpl文件 ..." readonly="readonly"/></div>
-		<div><pre id="m_zpl" wrap="off" ></pre></div>
+		<div title="关键词替换语法: {tag:exp} 或 {exp}
+tag: 标签,可选参数
+	'0d', '1d', '2d' 将形如{2d:%%04d}替换为4位数字的序列号
+	'mdl'	将形如 {mdl}替换为型号名称
+	'wsn'	将形如 {wsn} 替换为工位号
+	'sub'	将形如 {sub} 替换为子板编号 A/B/C/...
+exp: 语法参考strftime() and printf()
+	%a 星期几的简写
+	%A 星期几的全称
+	%b 月份的简写
+	%B 月份的全称
+	%c 标准的日期的时间串
+	%C 年份的前两位数字
+	%d 十进制表示的每月的第几天
+	%D 月/天/年
+	%e 在两字符域中，十进制表示的每月的第几天
+	%F 年-月-日
+	%g 年份的后两位数字，使用基于周的年
+	%G 年份，使用基于周的年
+	%h 简写的月份名
+	%H 24小时制的小时
+	%I 12小时制的小时
+	%j 十进制表示的每年的第几天
+	%m 十进制表示的月份
+	%M 十时制表示的分钟数
+	%n 新行符
+	%p 本地的AM或PM的等价显示
+	%r 12小时的时间
+	%R 显示小时和分钟：hh:mm
+	%S 十进制的秒数
+	%t 水平制表符
+	%T 显示时分秒：hh:mm:ss
+	%u 每周的第几天，星期一为第一天 （值从1到7，星期一为1）
+	%U 第年的第几周，把星期日作为第一天（值从0到53）
+	%V 每年的第几周，使用基于周的年
+	%w 十进制表示的星期几（值从0到6，星期天为0）
+	%W 每年的第几周，把星期一做为第一天（值从0到53）
+	%x 标准的日期串
+	%X 标准的时间串
+	%y 不带世纪的十进制年份（值从0到99）
+	%Y 带世纪部分的十制年份
+	%z，%Z 时区名称，如果不能得到时区名称则返回空字符。
+	%% 百分号
+		"><pre id="m_zpl" wrap="off" ></pre></div>
 		<div>
 			<input type="button" id="mcfg_save" value="保存"/>
 		</div>

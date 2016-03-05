@@ -107,23 +107,29 @@ class GFTst(Test):
 		#fetch the patterns from zpl line
 		barcode = "%d" % sn
 		zpl = json.loads(zpl)
-		quotes = re.compile("{\S+}").findall(zpl)
+		quotes = re.compile("\{[^{}]+}").findall(zpl)
 		for quote in quotes:
-			matched = pattern.match(quote)
-			if matched:
-				tag = matched.group("tag")
-				exp = matched.group("exp")
-				str = time.strftime(exp)
+			if quote not in ["{sub}"]:
+				matched = pattern.match(quote)
+				if matched:
+					tag = matched.group("tag")
+					exp = matched.group("exp")
+					s = time.strftime(exp)
 
-				if tag == "0d":
-					barcode = str = str % sn
-				if tag == "1d":
-					barcode = str = str % sn
-				if tag == "2d":
-					barcode = str = str % sn
+					if tag == "0d":
+						barcode = s = s % sn
+					if tag == "1d":
+						barcode = s = s % sn
+					if tag == "2d":
+						barcode = s = s % sn
 
-				#replace all
-				zpl = re.compile(quote).subn(str, zpl)[0]
+					if exp == "mdl":
+						s = self.model
+					if exp == "wsn": #work station number
+						s = "090"
+
+					#replace all
+					zpl = re.compile(quote).subn(s, zpl)[0]
 
 		self.label = zpl
 		self.set("barcode", barcode)
@@ -137,16 +143,17 @@ class GFTst(Test):
 
 		self.wait("IsReadyForScan")
 		#self.tester.alert()
-		if self.dbmodel["printlabel"] == "1":
-			sn = self.tester.db.sn_get(self.model)
-			zpl = self.dbmodel["zpl"]
-			barcode = self.barcode_generate(zpl, sn)
-		else:
+		label_setting = int(self.dbmodel["printlabel"])
+		if label_setting & 0x01 == 0x01:
 			while True:
 				self.mdelay(0)
 				barcode = self.barcode_scan()
 				if barcode:
 					break
+		if label_setting & 0x02 == 0x02:
+			sn = self.tester.db.sn_get(self.model)
+			zpl = self.dbmodel["zpl"]
+			barcode = self.barcode_generate(zpl, sn)
 
 		if barcode is not None:
 			self.fixture.scan_pass()
@@ -166,8 +173,15 @@ class GFTst(Test):
 		self.fixture.test_pass()
 		self.wait("IsReadyForTest", False)
 		self.fixture.test_reset()
-		if self.dbmodel["printlabel"] == "1" and self.printer:
-			self.printer.print_label(self.label)
+		label_setting = int(self.dbmodel["printlabel"])
+		if (label_setting & 0x02 == 0x02) and self.printer:
+			nrow = self.dbmodel["nrow"]
+			ncol = self.dbmodel["ncol"]
+			nsub = int(nrow) * int(ncol)
+			for i in range(nsub):
+				sub_name = chr(ord('A')+i)
+				label = re.compile("{sub}").subn(sub_name, self.label)[0]
+				self.printer.print_label(label)
 		self.wait("IsReadyForScan")
 
 	def onFail(self):

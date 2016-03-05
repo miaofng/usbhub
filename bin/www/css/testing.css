@@ -512,7 +512,8 @@ body{
     //background-color: #FFFF80;
 }
 #mask .ui-button.ui-state-active .ui-button-text {
-    color: #00ff00;
+    color: #000000;
+	font-weight: bold;
     //background-color: pink;
 	//border: 1px solid #00ff00;
 	border: none;

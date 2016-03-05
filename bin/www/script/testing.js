@@ -44,14 +44,13 @@ function model_sub_redraw(nrow, ncol, mask) {
 			div = irt.mlstring(function(){/*
 				<div>
 					<input class="mask_checkbox" id="mask_$id" type="checkbox" $checked />
-					<label for="mask_$id">$name</label>
+					<label id="mask_label_$id" for="mask_$id">$name</label>
 				</div>
 			*/});
 
-			div = div.replace("$id", i);
-			div = div.replace("$id", i);
-			div = div.replace("$name", name);
-			div = div.replace("$checked", checked);
+			div = div.replace(/\$id/g, i)
+			div = div.replace(/\$name/g, name);
+			div = div.replace(/\$checked/g, checked);
 			html.push(div);
 		}
 
@@ -138,21 +137,42 @@ function gft_load(gft) {
 function update_uut_status(station, info) {
 	var bgcolor = "#ffff00";
 	state = info.status
+	ecode = -(info.ecode + 1)
 
 	switch(info.status) {
 	case "READY":
+		bgcolor = "#00ff00";
+		$("#mask div label span").css("background-color", "white")
+		break
 	case "PASS":
 		bgcolor = "#00ff00";
+		$("#mask div label span").css("background-color", "#00ff00")
+		for (var i in settings.mask) {
+			if(settings.mask[i]) {
+				obj = "#mask_label_$id span".replace("$id", i)
+				$(obj).removeAttr("background-color")
+			}
+		}
 		break;
 	case "ERROR":
+		bgcolor = "#ff0000";
+		$("#mask div label span").css("background-color", "white")
+		break;
 	case "FAIL":
 		bgcolor = "#ff0000";
+		for(i = 0; i < 16; i ++) {
+			if(ecode & (1 << i)) {
+				obj = "#mask_label_$id span".replace("$id", i)
+				$(obj).css("background-color", "#ff0000")
+			}
+		}
 		break;
 	case "WASTE":
 		state = "FAIL"
 		bgcolor = "#ff0000";
 		break;
 	default:
+		$("#mask div label span").css("background-color", "white")
 		break;
 	}
 
@@ -251,7 +271,7 @@ function update_status(status) {
 	$("#button_run").val((status.testing) ? "STOP" : "RUN");
 
 	tests = status.test
-	for(i = 0; i < 2; i ++) {
+	for(i = 0; i < 1; i ++) {
 		if (i in tests) {
 			test_info = tests[i]
 			update_uut_status(i, test_info);
@@ -269,7 +289,20 @@ function update_status(status) {
 		}
 	}
 
-	MessageBox(status.emsg, status.ecode)
+	if(status.emsg == "ims") {
+		if(test.ims != status.ecode) {
+			test.ims = status.ecode
+			if(test.ims == "StopOrder") {
+				$("#estop_img").attr("src","img/ims.png");
+				$("#estop_txt").html("IMS Stop!!! Tester Is Under Remote Control, Please Wait ...")
+				$( "#dialog_estop" ).dialog("open");
+			}
+			else {
+				$( "#dialog_estop" ).dialog("close");
+			}
+		}
+	}
+	else MessageBox(status.emsg, status.ecode)
 
 	if(test.uid) {
 		if(status.estop != test.estop) {
