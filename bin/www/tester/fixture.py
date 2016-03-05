@@ -10,33 +10,18 @@ def enum(**enums):
 	return type('Enum', (), enums)
 
 mr = enum(
-	wastecount = "D95",
-	ready4test	= "D96.01",
-	ready4scan	= "D96.03",
-	estop = "D96.05",
-	raster = "D96.06",
-	wastefull = "D96.07",
+	ready4test	= "D1007",
+	ready4scan	= "D1006",
 )
 
 mw = enum(
-	scan_ng		= "D1000",
-	scan_end	= "D1001",
+	track		= "D0162", #unit: mm
+	mode		= "D1000", #4=>Adjust Track Width
+	#scan_ng	= "D1000",
+	scan_end	= "D1001", #1 ok, 2 ng
 
-	test_ng		= "D1002",
-	test_end	= "D1003",
-
-	#cyclinder action
-	mode		= "D1007", #1 => manual ctrl, 2 => auto
-	forward		= "D1100",
-	backward	= "D1101",
-	down		= "D1102",
-	up			= "D1103",
-
-	point		= "D1104",
-	point_back	= "D1105",
-
-	light		= "D1200",
-	waste_door	= "D1201",
+	test_end	= "D1002",
+	test_ok		= "D1003",
 )
 
 class Fixture(Hostlink):
@@ -47,7 +32,6 @@ class Fixture(Hostlink):
 
 	def cmd_plc_write(self, argc, argv):
 		assert(argc == 3)
-		self.mode("manual")
 		reg = argv[1]
 		val = int(argv[2])
 		self.set(reg, val)
@@ -71,19 +55,17 @@ class Fixture(Hostlink):
 		if D98 or D99:
 			return {"D98": D98, "D99": D99}
 
-	_mode_ = ""
-	def mode(self, mode = "auto"):
-		if mode != "auto":
-			mode = "manual"
+	def track(self, width_mm):
+		width_mm = (float)(width_mm)
+		assert((width_mm >= 80.0) and (width_mm <= 300.0))
 
-		if self._mode_ != mode:
-			self._mode_ = mode
-			modes = {"auto": 2, "manual": 1}
-			self.set(mw.mode, modes[mode])
+		#convert unit from mm
+		width = int(width_mm * 10)
+		self.set(mw.track, width)
+		self.set(mw.mode, 4)
 
 	def __init__(self, port="COM1", baud=115200):
 		Hostlink.__init__(self, port, baud)
-		self.mode("auto")
 
 	def IsReadyForTest(self):
 		return self.get(mr.ready4test)
@@ -92,29 +74,34 @@ class Fixture(Hostlink):
 		return self.get(mr.ready4scan)
 
 	def test_reset(self):
-		self.set(mw.test_ng, 0)
+		#self.set(mw.test_ng, 0)
 		self.set(mw.test_end, 0)
 
 	def test_pass(self):
-		self.set(mw.test_ng, 0)
+		#self.set(mw.test_ng, 0)
+		self.set(mw.test_ok, 1)
 		time.sleep(0.010)
 		self.set(mw.test_end, 1)
 
 	def test_fail(self):
-		self.set(mw.test_ng, 1)
+		#self.set(mw.test_ng, 1)
+		self.set(mw.test_ok, 0)
 		time.sleep(0.010)
 		self.set(mw.test_end, 1)
 
 	def scan_reset(self):
-		self.set(mw.scan_ng, 0)
+		#self.set(mw.scan_ng, 0)
+		#self.set(mw.scan_end, 0)
 		self.set(mw.scan_end, 0)
 
 	def scan_pass(self):
-		self.set(mw.scan_ng, 0)
-		time.sleep(0.010)
+		# self.set(mw.scan_ng, 0)
+		# time.sleep(0.010)
+		# self.set(mw.scan_end, 1)
 		self.set(mw.scan_end, 1)
 
 	def scan_fail(self):
-		self.set(mw.scan_ng, 1)
-		time.sleep(0.010)
-		self.set(mw.scan_end, 1)
+		# self.set(mw.scan_ng, 1)
+		# time.sleep(0.010)
+		# self.set(mw.scan_end, 1)
+		self.set(mw.scan_end, 2)

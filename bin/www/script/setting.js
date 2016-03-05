@@ -35,14 +35,13 @@ function model_sub_redraw(nrow, ncol, mask) {
 			div = irt.mlstring(function(){/*
 				<div>
 					<input class="mask_checkbox" id="mask_$id" type="checkbox" $checked />
-					<label for="mask_$id">$name</label>
+					<label id="mask_label_$id" for="mask_$id">$name</label>
 				</div>
 			*/});
 
-			div = div.replace("$id", i);
-			div = div.replace("$id", i);
-			div = div.replace("$name", name);
-			div = div.replace("$checked", checked);
+			div = div.replace(/\$id/g, i)
+			div = div.replace(/\$name/g, name);
+			div = div.replace(/\$checked/g, checked);
 			html.push(div);
 		}
 
@@ -56,6 +55,8 @@ function model_sub_redraw(nrow, ncol, mask) {
 		var h = 100/nrow + "%";
 		$("#mask div").removeAttr("width").removeAttr("height").css({"width":w, "height":h});
 		$("#mask").show();
+		//$("#mask_label_0 > span").css("background-color", "#00ff00")
+		//$("#mask div label span").css("background-color", "#00ff00")
 }
 
 function model_load() {
@@ -81,16 +82,17 @@ function model_load() {
 		$("#m_npts").val(row.npts);
 		$("#m_nofs").val(row.nofs);
 		$("#m_barcode").val(row.barcode);
+		$("#m_track").val(row.track);
 		model_sub_redraw(row.nrow, row.ncol, settings.mask);
 		if(row.zpl.length > 2)
 			$("#m_zpl").html(JSON.parse(row.zpl));
 
 		$("#m_track").val(row.track);
-		row.printlabel = (row.printlabel == "1") ? "1" : "0";
+		//row.printlabel = (row.printlabel == "1") ? "1" : "0";
 		$("#m_printlabel").val(row.printlabel);
-		$("#m_barcode").attr("disabled", row.printlabel == "1");
-		$("#m_openzpl").attr("disabled", row.printlabel != "1");
-		$("#m_zpl").attr("disabled", row.printlabel != "1");
+		$("#m_barcode").attr("disabled", (row.printlabel & 1) != 1);
+		$("#m_openzpl").attr("disabled", (row.printlabel & 2) != 2);
+		$("#m_zpl").attr("disabled", (row.printlabel & 2) != 2);
 	});
 }
 
@@ -335,6 +337,7 @@ $(function() {
 		ncol = $("#m_ncol").val();
 		npts = $("#m_npts").val();
 		nofs = $("#m_nofs").val();
+		track = $("#m_track").val();
 		barcode = $("#m_barcode").val().trim()
 		printlabel = $("#m_printlabel").val();
 
@@ -373,14 +376,14 @@ $(function() {
 		irt.db().get(sql, function(err, row){
 			var sql_upd = irt.mlstring(function(){/*
 				UPDATE model SET nrow = $nrow, ncol = $ncol,
-				npts = $npts, nofs = $nofs, zpl = '$zpl',
+				npts = $npts, nofs = $nofs, track = '$track', zpl = '$zpl',
 				rules = '$rules', printlabel = '$printlabel', barcode = '$barcode'
 				WHERE id = $id
 			*/});
 
 			var sql_ins = irt.mlstring(function(){/*
-				INSERT INTO model(nrow, ncol, npts, nofs, printlabel, zpl, barcode, rules, name)
-				VALUES($nrow, $ncol, $npts, $nofs, '$printlabel', '$zpl', '$barcode', '$rules', '$model')
+				INSERT INTO model(nrow, ncol, npts, nofs, track, printlabel, zpl, barcode, rules, name)
+				VALUES($nrow, $ncol, $npts, $nofs, '$track', '$printlabel', '$zpl', '$barcode', '$rules', '$model')
 			*/});
 
 			var sql = sql_ins;
@@ -394,6 +397,7 @@ $(function() {
 			sql = sql.replace("$npts", npts);
 			sql = sql.replace("$nofs", nofs);
 			sql = sql.replace("$rules", rules);
+			sql = sql.replace("$track", track);
 			sql = sql.replace("$printlabel", printlabel);
 			sql = sql.replace("$zpl", zpl);
 			sql = sql.replace("$barcode", barcode);
@@ -500,9 +504,9 @@ $(function() {
 	});
 
 	$("#m_printlabel").change(function() {
-		$("#m_barcode").attr("disabled", this.value == "1");
-		$("#m_openzpl").attr("disabled", this.value != "1");
-		$("#m_zpl").attr("disabled", this.value != "1");
+		$("#m_barcode").attr("disabled", (this.value & 1) != 1);
+		$("#m_openzpl").attr("disabled", (this.value & 2) != 2);
+		$("#m_zpl").attr("disabled", (this.value & 2) != 2);
 	})
 
 	gcfg_load();
