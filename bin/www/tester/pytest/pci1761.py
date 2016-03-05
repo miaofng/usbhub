@@ -6,7 +6,6 @@
 #import win32com.client
 #import pythoncom
 from ctypes import *
-from comtypes.client import *
 from instrument import Instrument
 import time
 import threading
@@ -19,13 +18,13 @@ import threading
 
 class Pci1761(Instrument):
 	lock = threading.Lock()
+	brd = None
+	di = None
+	do = None
 
 	def __init__(self, brd = 0):
 		Instrument.__init__(self)
-		self.di = di = CreateObject("BDaqOcx.InstantDiCtrl.1")
-		self.do = do = CreateObject("BDaqOcx.InstantDoCtrl.1")
-		di.setSelectedDevice("PCI-1761,BID#%d"%brd)
-		do.setSelectedDevice("PCI-1761,BID#%d"%brd)
+		self.brd = brd
 
 	def release(self):
 		if self.di:
@@ -36,6 +35,15 @@ class Pci1761(Instrument):
 			self.do = None
 
 	def query(self, **arg):
+		if self.di is None:
+			from comtypes.client import *
+			self.di = di = CreateObject("BDaqOcx.InstantDiCtrl.1")
+			di.setSelectedDevice("PCI-1761,BID#%d"%brd)
+		if self.do is None:
+			from comtypes.client import *
+			self.do = do = CreateObject("BDaqOcx.InstantDoCtrl.1")
+			do.setSelectedDevice("PCI-1761,BID#%d"%brd)
+
 		self.lock.acquire()
 		retval = None
 		type = arg["type"]
