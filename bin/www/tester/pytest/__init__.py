@@ -13,6 +13,7 @@ from gvm import Gvm, dict_mA, dict_range
 from scanner_fs36 import Fs36
 from omron import Hostlink
 from printer import Printer
+from ims import IMS
 
 __all__ = [
 	"Eloger",
@@ -27,4 +28,5 @@ __all__ = [
 	"Fs36",
 	"Hostlink",
 	"Printer",
+	"IMS",
 ]

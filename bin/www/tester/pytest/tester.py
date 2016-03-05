@@ -18,11 +18,14 @@ class Tester:
 	elock = threading.Lock()
 	emsg = ''
 	ecode = 0
+	ims_saddr = "off"
 
 	def instrument_add(self, name, instrument):
 		assert name not in self.instruments
 		self.instruments[name] = instrument
 		instrument.on_event_add(self, name)
+		if name == "ims":
+			self.ims_saddr = "%s:%d"%instrument.saddr
 
 	def instrument_get(self, name):
 		if name in self.instruments:
@@ -111,7 +114,7 @@ class Tester:
 		status["estop"] = self.flag_estop
 		status["testing"] = self.IsTesting()
 		status["test"] = test_info
-		status["ims_saddr"] = "off"
+		status["ims_saddr"] = self.ims_saddr
 		status["emsg"] = self.emsg
 		status["ecode"] = self.ecode
 		self.alert()

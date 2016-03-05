@@ -52,7 +52,7 @@ class Test(threading.Thread):
 		self.getDuration()
 		self.lock.acquire()
 		info = {
-			"ecode"		: self.ecode,
+			"ecode"		: self.ecode, #0: pass, -1: fail, others: bitN @(ecode + 1) = 1 => sub N fail
 			"status"	: self.status,
 			"barcode"	: self.barcode,
 			"datafile"	: self.dfpath,
@@ -118,27 +118,39 @@ class Test(threading.Thread):
 		#line = "%s#  %-48s"%(time.strftime('%X'), info)
 		#line = "%s#  %-48s"%(self.getDuration(), info)
 
-		while True:
-			suffix = ""
-			line = info[:self.max_line_char]
-			info = info[self.max_line_char:]
-			if len(info) == 0:
-				suffix = {None: '', True: "    [PASS]", False: "    [FAIL]"}
-				suffix = suffix[passed]
+		foldback = False
+		if foldback:
+			while True:
+				suffix = ""
+				line = info[:self.max_line_char]
+				info = info[self.max_line_char:]
+				if len(info) == 0:
+					suffix = {None: '', True: "    [PASS]", False: "    [FAIL]"}
+					suffix = suffix[passed]
 
-				if len(suffix) > 0:
-					#line = "%-64s"%info
-					format = "%%-%ds"%self.max_line_char
-					line = format % line
+					if len(suffix) > 0:
+						#line = "%-64s"%info
+						format = "%%-%ds"%self.max_line_char
+						line = format % line
 
+				line = line + suffix + eol
+				if self.log_file:
+					self.log_file.write(line)
+				else:
+					print line,
+
+				if len(info) == 0:
+					break
+		else:
+			suffix = {None: '', True: "    [PASS]", False: "    [FAIL]"}
+			suffix = suffix[passed]
+			format = "%%-%ds"%self.max_line_char
+			line = format % info
 			line = line + suffix + eol
 			if self.log_file:
 				self.log_file.write(line)
 			else:
 				print line,
-
-			if len(info) == 0:
-				break
 
 		if self.log_file:
 			self.log_file.flush()
@@ -225,15 +237,23 @@ class Test(threading.Thread):
 
 				self.Start(barcode, dfpath)
 				passed = self.Run()
+				#0 passed
+				#-1 failed
+				#-1 - (1<<Esubs) sub board N fail
 
 				if passed is not None:
-					if passed:
+					if isinstance(passed, bool):
+						ecode = passed - 1 #True - 1 = 0
+					else:
+						ecode = passed
+
+					if ecode >= 0:
 						self.Pass()
 						if mode == "AUTO":
 							self.Record()
 							self.onPass()
 					else:
-						self.Fail()
+						self.Fail(ecode)
 						if mode == "AUTO":
 							self.Record()
 							self.onFail()

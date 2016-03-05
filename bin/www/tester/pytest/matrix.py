@@ -202,7 +202,9 @@ class Matrix(Instrument):
 		if bus1 is None:
 			bus1 = bus0
 		ops = {"opt": opt, "bus0": bus0, "line0": line0, "bus1": bus1, "line1": line1}
-		self.opq.put(ops)
+
+		#raise Queue.Full if opq full more than 0.5s
+		self.opq.put(ops, True, 0.5)
 		#print "OPQPUT: %d"%ops["line0"]
 
 		#wait until matrix response or timeout exception
