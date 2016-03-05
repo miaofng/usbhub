@@ -67,7 +67,7 @@ class Test(threading.Thread):
 		self.dat_dir = tester.db.cfg_get("dat_dir")
 		self.opts = opts
 		self.mode = opts["mode"]
-
+		self.station = opts["station"]
 		self.printer = tester.instrument_get("printer")
 		self.scanner = tester.instrument_get("scanner")
 		self.fixture = tester.instrument_get("fixture")
@@ -233,7 +233,7 @@ class Test(threading.Thread):
 					if barcode is None: continue
 				else:
 					barcode = None
-					dfpath = "../../step.log"
+					dfpath = "../../step%d.log"%self.station
 
 				self.Start(barcode, dfpath)
 				passed = self.Run()

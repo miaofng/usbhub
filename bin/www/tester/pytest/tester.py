@@ -153,17 +153,20 @@ class Tester:
 			cmdline = ' '.join(argv)
 			return self.alert("cmd: %s .. --test=???"%cmdline)
 
-		if 0 in self.threads:
-			oldtest = self.threads[0]
+		for key in self.threads:
+			oldtest = self.threads[key]
 			oldtest.release()
 			del oldtest
 
-		Test = self.tests[name]
-		test = Test(self, para)
-		test.setDaemon(True)
-		test.start()
+		#miaofng??? should parse cfg para to decide nr of test threads
+		for key in range(1):
+			Test = self.tests[name]
+			para["station"] = key
+			test = Test(self, para)
+			test.setDaemon(True)
+			test.start()
+			self.threads[key] = test
 
-		self.threads[0] = test
 		return ""
 
 	def cmd_stop(self, argc, argv):
