@@ -25,7 +25,7 @@ import numpy as np
 #0.06NPLC	1.5ppm*RANGE	1000reads/s<1.0mS>
 # 0.2NPLC	0.7ppm*RANGE	0300reads/s<3.3mS>
 #   1NPLC	0.3ppm*RANGE	0050reads/s<020mS>
-ppm = 0.3
+ppm = 1
 
 #according to rut board design
 bus_mp = 0 #measure
@@ -111,7 +111,9 @@ class Gvm():
 	#16mS->4mS, 32mS->8mS
 	ms_fast_factor = 1
 	passed = True
+	ecode = 0
 
+	diode = False
 	hwen = False #hardware enable
 	pmem = []
 	dmem = None
@@ -134,12 +136,15 @@ class Gvm():
 	def __init__(self, db = None, mask = None):
 		self.hwen = False
 		self.hven = True
+		self.hvtravel = True
 		self.db = db
 		if db:
 			dpsCal = self.db.cfg_get("dpsCal")
 			self.dpsCal = json.loads(dpsCal)
 			hven = self.db.cfg_get("hvtest")
-			self.hven &= int(hven)
+			hvtravel = self.db.cfg_get("hvtravel")
+			self.hven = bool(int(hven))
+			self.hvtravel = bool(int(hvtravel))
 
 		self.mask = mask
 		self.executers = {}
@@ -239,7 +244,29 @@ class Gvm():
 		#bank not found :(
 		raise GvmPwrError
 
-	def AddMeasure(self, ofs = 0):
+	#this routine is introduced to avoid UI been stucked
+	#when leakage test with large nr of points. readall()
+	#is called in advance to get the test result then
+	#update the UI display
+	def Switch(self, opt, bus0, line0, line1=None, bus1=None):
+		deadline = time.time() + 10.0
+		while True:
+			try:
+				self.irt.switch(opt, bus0, line0, line1, bus1)
+				break
+			except Queue.Full:
+				qsz = self.dmem.qsize()
+				self.readall(qsz / 10)
+
+			#timeout error to avoid deadlock
+			#should not reach here!
+			assert(time.time() < deadline)
+
+	def AddMeasure(self, sub = None):
+		ofs = 0
+		if sub:
+			ofs = sub["ofs"]
+
 		A = self.A
 		B = self.B
 
@@ -259,6 +286,7 @@ class Gvm():
 		measure["A"] = A
 		measure["B"] = B
 		measure = copy.copy(measure)
+		measure["sub"] = sub
 		self.dmem.put(measure)
 
 		if not self.hwen:
@@ -270,15 +298,15 @@ class Gvm():
 			self.irt.open_all_lines(bus_mp)
 			self.irt.open_all_lines(bus_mn)
 			for line in A:
-				self.irt.switch("CLOS", bus_mp, line)
+				self.Switch("CLOS", bus_mp, line)
 			for line in B:
-				self.irt.switch("CLOS", bus_mn, line)
+				self.Switch("CLOS", bus_mn, line)
 			#self.irt.trig()
-			self.irt.switch("SCAN", bus_mp, A[0])
-			self.irt.switch("SCAN", bus_mn, B[0])
+			self.Switch("SCAN", bus_mp, A[0])
+			self.Switch("SCAN", bus_mn, B[0])
 		else:
-			self.irt.switch("SCAN", bus_mp, A)
-			self.irt.switch("SCAN", bus_mn, B)
+			self.Switch("SCAN", bus_mp, A)
+			self.Switch("SCAN", bus_mn, B)
 
 	def mode(self):
 		if not self.M:
@@ -347,6 +375,8 @@ class Gvm():
 				self.power("LV", lv)
 
 		#time.sleep(0.1)
+		if self.diode:
+			self.N["diode"] = True
 		self.M = self.N
 		self.N = {}
 
@@ -467,6 +497,9 @@ class Gvm():
 		else:
 			bank = 0.1
 
+		if self.diode:
+			bank = 10.0
+
 		self.N["type"] = 'R'
 		self.N["ms"] = ms
 		self.N["mA"] = mA
@@ -512,7 +545,7 @@ class Gvm():
 		self.pins.append(pin)
 		self.AddMeasure()
 		for sub in self.subs:
-			self.AddMeasure(sub["ofs"])
+			self.AddMeasure(sub)
 		return True
 
 	def ex_X(self, instr):
@@ -538,11 +571,11 @@ class Gvm():
 		self.pins.append(line_pwr)
 		self.pins.append(line_gnd)
 		if self.hwen:
-			self.irt.switch("CLOS", bus_up, line_pwr)
-			self.irt.switch("CLOS", bus_un, line_gnd)
+			self.Switch("CLOS", bus_up, line_pwr)
+			self.Switch("CLOS", bus_un, line_gnd)
 			for sub in self.subs:
-				self.irt.switch("CLOS", bus_up, line_pwr + sub["ofs"])
-				self.irt.switch("CLOS", bus_un, line_gnd + sub["ofs"])
+				self.Switch("CLOS", bus_up, line_pwr + sub["ofs"])
+				self.Switch("CLOS", bus_un, line_gnd + sub["ofs"])
 		return True
 
 	def ex_W(self, instr):
@@ -583,6 +616,7 @@ class Gvm():
 	def Run(self):
 		self.start()
 		self.passed = True
+		self.ecode = 0
 
 		for instr in self.pmem:
 			self.lvtest(instr)
@@ -598,7 +632,7 @@ class Gvm():
 				self.readall()
 
 				#hv test fail??
-				if not self.passed:
+				if self.hvtravel and not self.passed:
 					self.log("Search For Leakage Failed Pins:")
 					self.Travel(self.L, self.apin)
 
@@ -610,7 +644,12 @@ class Gvm():
 		pins = pins.tolist()
 		self.log("%d pins in total: %s"%(len(pins), str(pins)))
 		self.log("Test Finished", passed)
-		return passed
+
+		if passed:
+			return passed
+		else:
+			ecode = -1 - self.ecode
+			return ecode
 
 	def Learn(self, lines, diode_en = False):
 		self.start()
@@ -773,9 +812,9 @@ class Gvm():
 			square = instr.group("q0") #like: [DIODE CHECK]
 			if square:
 				if square == "[DIODE CHECK]":
-					self.N["diode"] = True
+					self.diode = True
 				elif square == "[DIODE END]":
-					self.N["diode"] = False
+					self.diode = False
 				elif square[0] == "[":
 					self.log_instr_exception(instr)
 
@@ -795,6 +834,7 @@ class Gvm():
 				if isub > 0:
 					ofs = isub * int(npts) + int(nofs)
 					sub = {"ofs": ofs}
+					sub["idx"] = isub
 					subs.append(sub)
 
 		self.subs = subs
@@ -819,6 +859,9 @@ class Gvm():
 		return emsg
 
 	def readall(self, nr_of_sample = None, report = None):
+		if nr_of_sample == 0:
+			return True
+
 		passed = True
 		if not self.hwen:
 			return passed
@@ -908,6 +951,14 @@ class Gvm():
 		else:
 			#pass test
 			self.passed = self.passed and passed
+			if not passed:
+				idx = 0
+				if "sub" in measure:
+					sub = measure["sub"]
+					if sub:
+						idx = sub["idx"]
+
+				self.ecode |= (1 << idx)
 
 		#show the report
 		self.Report(measure, result, passed)

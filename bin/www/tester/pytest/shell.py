@@ -110,13 +110,13 @@ class Shell(Cmd):
 			return
 
 		if not isinstance(result, basestring):
-			if self.mode_auto:
-				data = json.dumps(result)
-			else:
-				data = []
-				for key, val in result.items():
-					data.append("%s\t\t: %s\n\r"%(key, str(val)))
-				data = ''.join(data)
+			#if self.mode_auto:
+			data = json.dumps(result)
+			# else:
+				# data = []
+				# for key, val in result.items():
+					# data.append("%s\t\t: %s\n\r"%(key, str(val)))
+				# data = ''.join(data)
 		else:
 			if not self.mode_auto:
 				if result != "> ":
